@@ -1,0 +1,220 @@
+# TS-IAM-001 — User Registration
+
+## Identificación
+
+| Campo | Valor |
+|---|---|
+| Identificador | TS-IAM-001 |
+| Historia relacionada | US-IAM-001 — Create Account |
+| Módulo | Identity and Access Management (IAM) |
+| Prioridad | MVP / Alta |
+| Estado | Ready for Development |
+| ADR relacionado | ADR-002 — Authentication Strategy |
+
+## Objetivo técnico
+
+Implementar el registro de usuarios de YouPetMe. Un visitante podrá crear una cuenta con sus datos personales y quedará autenticado al finalizar el proceso.
+
+La solución deberá respetar el monolito modular, Clean Architecture y arquitectura hexagonal, usando React con TypeScript en cliente y NestJS, Prisma y PostgreSQL en servidor.
+
+## Flujo funcional
+
+```text
+Visitor
+  → /register
+  → Client validation
+  → POST /auth/register
+  → RegisterUser use case
+      → Normalize email
+      → Validate input and password
+      → Check duplicate email
+      → Hash password
+      → Create User, UserProfile and UserSession in one transaction
+      → Generate authentication tokens
+      → Publish UserCreated event
+  → Authenticated application
+```
+
+Si la validación de cliente falla, no se realizará la petición y se mostrarán los errores correspondientes. El servidor validará de nuevo toda la entrada; la validación de cliente no sustituye la validación de servidor.
+
+## API
+
+### `POST /auth/register`
+
+Registra una cuenta y crea una sesión autenticada para el usuario.
+
+#### Request body
+
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john@example.com",
+  "password": "my-secure-passphrase",
+  "confirmPassword": "my-secure-passphrase",
+  "termsAccepted": true
+}
+```
+
+#### Reglas de entrada
+
+| Campo | Reglas |
+|---|---|
+| `firstName` | Obligatorio; texto válido tras eliminar espacios iniciales y finales. |
+| `lastName` | Obligatorio; texto válido tras eliminar espacios iniciales y finales. |
+| `email` | Obligatorio; formato de correo válido; se normaliza para comparación y almacenamiento. |
+| `password` | Obligatorio; debe cumplir la política de contraseña de ADR-002. |
+| `termsAccepted` | Obligatorio; debe ser `true` (aceptación de Términos de Servicio y Política de Privacidad). La versión aceptada no la envía el cliente: la determina el servidor. |
+| `confirmPassword` | Obligatorio; debe coincidir exactamente con `password`. Se valida, pero no se almacena ni forma parte de ninguna entidad de dominio. |
+
+La política de contraseña es la definida en ADR-002: mínimo 8 caracteres, máximo razonable de 128 y sin reglas de complejidad obligatorias. Debe estar centralizada y ser consistente entre cliente y servidor; el servidor es la fuente de verdad.
+
+#### Response exitosa — `201 Created`
+
+```json
+{
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "status": "ACTIVE"
+  },
+  "authentication": {
+    "accessToken": "<access-token>",
+    "refreshToken": "<refresh-token>"
+  }
+}
+```
+
+La entrega y almacenamiento de tokens deberá ajustarse a ADR-002. Los secretos, hashes y datos internos de sesión nunca se incluirán en la respuesta.
+
+#### Errores esperados
+
+| Código | Caso | Respuesta esperada |
+|---|---|---|
+| `400 Bad Request` | Datos ausentes o inválidos; contraseña no válida; confirmación distinta; términos no aceptados. | Error estructurado por campo cuando corresponda. |
+| `409 Conflict` | El correo ya pertenece a una cuenta. | Mensaje de negocio sin exponer información sensible adicional. |
+| `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
+
+## Modelo de datos
+
+### `User`
+
+Representa la identidad y las credenciales de una cuenta.
+
+| Campo | Descripción |
+|---|---|
+| `id` | UUID, identificador primario generado por el sistema. |
+| `email` | Correo normalizado, obligatorio y único mediante restricción de base de datos. |
+| `passwordHash` | Hash de la contraseña. Nunca se persiste la contraseña en texto plano. |
+| `status` | Estado de la cuenta. Para un registro completado en el MVP: `ACTIVE`. |
+| `termsAcceptedAt` | Fecha y hora en que el usuario aceptó Términos y Privacidad al registrarse. |
+| `termsVersion` | Identificador de la versión vigente de los textos en ese momento, tomado de la configuración del servidor. |
+| `createdAt`, `updatedAt` | Marcas temporales de auditoría. |
+
+El hashing usa Argon2id con los parámetros definidos en ADR-002; la implementación deberá usar una abstracción de hashing (puerto) para no acoplar el caso de uso a una librería concreta.
+
+### `UserProfile`
+
+Representa los datos de perfil iniciales asociados uno a uno a `User`.
+
+| Campo | Descripción |
+|---|---|
+| `id` | UUID, identificador primario. |
+| `userId` | UUID; relación única y obligatoria con `User`. |
+| `firstName` | Nombre del usuario. |
+| `lastName` | Apellidos del usuario. |
+| `createdAt`, `updatedAt` | Marcas temporales de auditoría. |
+
+### `UserSession`
+
+Representa una sesión revocable del usuario.
+
+| Campo | Descripción |
+|---|---|
+| `id` | UUID, identificador primario. |
+| `userId` | UUID; relación obligatoria con `User`. |
+| `refreshTokenHash` | Hash del material de refresh token, nunca el token en texto plano. |
+| `status` | Estado de sesión, inicialmente `ACTIVE`. |
+| `expiresAt` | Fecha de expiración. |
+| `createdAt`, `updatedAt` | Marcas temporales de auditoría. |
+
+La estructura exacta de tokens, la expiración, la revocación y el transporte deberán cumplir ADR-002.
+
+## Reglas de persistencia y consistencia
+
+- `User`, `UserProfile` y `UserSession` se crearán en una única transacción de base de datos.
+- Si cualquiera de las operaciones falla, no deberá quedar una cuenta parcial ni una sesión huérfana.
+- La unicidad del correo deberá comprobarse en el caso de uso para ofrecer un error de negocio claro y reforzarse con una restricción única en PostgreSQL para evitar condiciones de carrera.
+- Ante una violación de unicidad producida por concurrencia, se traducirá a `409 Conflict`.
+
+## Frontend
+
+La ruta pública `/register` incluirá un formulario para `firstName`, `lastName`, `email`, `password` y `confirmPassword`, más una casilla obligatoria de aceptación de Términos de Servicio y Política de Privacidad con enlaces a ambas páginas (textos estáticos).
+
+- Validará los datos antes de enviar y mostrará errores claros, accesibles y asociados a cada campo.
+- Deshabilitará o protegerá el envío repetido mientras la petición esté en curso.
+- Mostrará los errores de negocio y validación devueltos por la API.
+- Tras una respuesta exitosa, actualizará el estado de autenticación conforme a ADR-002 y redirigirá al área autenticada definida por el producto.
+- No registrará ni expondrá contraseñas, tokens o respuestas sensibles en consola, analítica o mensajes de error.
+
+## Evento de dominio
+
+Al completar correctamente la transacción se publicará el evento `UserCreated`.
+
+El evento contendrá únicamente los datos mínimos no sensibles necesarios para consumidores posteriores, como `userId`, `email`, `occurredAt` y un identificador de correlación cuando esté disponible. No incluirá contraseña, hash ni tokens.
+
+La publicación deberá ocurrir únicamente cuando la creación se haya confirmado. La estrategia de entrega fiable se definirá en la arquitectura de eventos del proyecto.
+
+## Testing
+
+### Unit tests
+
+- Normalización de email.
+- Reglas de validación de registro y coincidencia de contraseñas.
+- Rechazo de correo duplicado.
+- Rechazo cuando `termsAccepted` falta o no es `true`.
+- Registro de `termsAcceptedAt` y `termsVersion` al crear el usuario.
+- Orquestación del caso de uso: hash, creación de entidades, sesión y evento.
+- No persistencia de `confirmPassword` ni contraseñas en texto plano.
+
+### Integration tests
+
+- Endpoint `POST /auth/register` con PostgreSQL y Prisma.
+- Persistencia atómica de `User`, `UserProfile` y `UserSession`.
+- Restricción única de email y traducción correcta a `409 Conflict`.
+- Respuesta de autenticación sin secretos internos.
+
+### End-to-end tests
+
+- Registro completo desde `/register` hasta el acceso al área autenticada.
+- Errores de validación visibles en el formulario, incluido el envío sin aceptar términos.
+- Manejo de correo previamente registrado.
+
+### Manual testing
+
+- Verificar el registro con datos válidos y el inicio de sesión posterior.
+- Verificar redirección, persistencia de sesión y logout conforme a ADR-002.
+- Revisar que no aparezcan contraseñas, hashes ni tokens en interfaz, consola o registros accesibles.
+
+## Definition of Done
+
+- [ ] El visitante puede crear una cuenta válida desde `/register`.
+- [ ] Cliente y servidor validan todos los campos requeridos.
+- [ ] `confirmPassword` se valida y nunca se almacena.
+- [ ] La aceptación de términos es obligatoria y se guarda con fecha y versión (`termsAcceptedAt`, `termsVersion`).
+- [ ] Los correos se normalizan y están protegidos por una restricción única en base de datos.
+- [ ] Las contraseñas se almacenan únicamente como hash según ADR-002.
+- [ ] `User`, `UserProfile` y `UserSession` se crean de forma atómica y con UUID.
+- [ ] El usuario queda autenticado tras el registro conforme a ADR-002.
+- [ ] Los errores de validación y correo duplicado son claros y seguros.
+- [ ] Se publica `UserCreated` sin datos sensibles tras una creación confirmada.
+- [ ] Las pruebas unitarias, de integración y E2E definidas pasan.
+- [ ] Se ha realizado la comprobación manual de los flujos principales y de seguridad básica.
+- [ ] La documentación de API, variables de entorno y decisiones pendientes queda actualizada.
+
+## Referencias
+
+- US-IAM-001 — Create Account
+- ADR-002 — Authentication Strategy
