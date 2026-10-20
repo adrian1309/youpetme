@@ -116,7 +116,7 @@ youpetme/
 │   └── config/                      # Shared tooling configuration
 ├── docs/                            # Official versioned documentation (see Source of truth)
 ├── infra/
-│   └── docker/                      # Local PostgreSQL, MinIO (ARCH-002)
+│   └── docker/                      # Local PostgreSQL; S3-compatible storage planned (ARCH-002, ADR-015)
 ├── .github/workflows/               # CI (ARCH-003)
 ├── .env.example
 ├── pnpm-workspace.yaml

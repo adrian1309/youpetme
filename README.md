@@ -111,7 +111,7 @@ The authoritative documents for the current foundation are:
 
 5. `pnpm dev` — starts the web client (Vite, http://localhost:5173) and the API (http://localhost:3000/api/v1 by default, `API_PORT`). See AGENTS.md — Common commands for the remaining scripts.
 
-Not yet part of the setup, added with the stories that need them: Prisma migrations and seed data (first persistence story), S3-compatible object storage in `infra/docker` (pending a decision, since MinIO's community edition no longer publishes Docker images) and Playwright E2E tests.
+Not yet part of the setup, added with the stories that need them: Prisma migrations and seed data (first persistence story), S3-compatible object storage in `infra/docker` (SeaweedFS per ADR-015, pending presigned-upload verification; MinIO's community edition is no longer maintained) and Playwright E2E tests.
 
 ### Before running anything setup-related
 

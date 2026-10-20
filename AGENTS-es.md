@@ -15,7 +15,7 @@ El proyecto está en fase de fundación de arquitectura.
 No implementar ninguna funcionalidad hasta que su Historia de Usuario, Especificación Técnica y los ADRs aplicables hayan sido revisados y estén suficientemente definidos.
 
 ## Fuente de verdad
-
+# PostgreSQL local; almacenamiento S3-compatible previsto (ARCH-002, ADR-015)
 La documentación oficial y versionada vive en `docs/`. Consultar los documentos relevantes antes de tocar código:
 
 | Carpeta                | Contiene                                            | Documentos clave                                                                                                                                                    |
@@ -118,7 +118,7 @@ youpetme/
 │   └── config/                      # Configuración compartida de herramientas
 ├── docs/                            # Documentación oficial versionada (ver Fuente de verdad)
 ├── infra/
-│   └── docker/                      # PostgreSQL y MinIO locales (ARCH-002)
+│   └── docker/                      # PostgreSQL local; almacenamiento S3-compatible previsto (ARCH-002, ADR-015)
 ├── .github/workflows/               # CI (ARCH-003)
 ├── .env.example
 ├── pnpm-workspace.yaml
