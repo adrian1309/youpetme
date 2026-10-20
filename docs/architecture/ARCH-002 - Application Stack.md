@@ -161,7 +161,8 @@ Production builds (`apps/api`, `apps/web`) exclude: all test files (`**/*.spec.t
 ## Versioning and upgrades
 
 - Exact dependency versions are pinned in the lockfile.
-- Node.js uses a documented LTS version: **Node.js 22 (Active LTS)**. Verify the current Active LTS at setup time (see README — Getting Started) in case this has moved on by then.
+- Node.js uses a documented LTS version: **Node.js 24 (LTS, supported until 2028-04-30)**, pinned in `.nvmrc` and `package.json` `engines`. Confirmed by the project owner at repository initialization (2026-10-20), when Node.js 24 entered Maintenance LTS and Node.js 26 was about to become Active LTS (2026-10-28); a move to Node.js 26 is a major upgrade performed in an isolated branch.
+- pnpm is pinned to **11.21.0** through the `packageManager` field (Corepack). TypeScript is pinned to **6.0.3**, the highest version compatible with the whole toolchain at initialization (NestJS 12 schematics require ≥6; typescript-eslint and ts-jest do not yet support 7).
 - Major upgrades are performed in isolated branches with a complete test run.
 - Preview, beta or early-access features are excluded from the MVP unless explicitly approved in an ADR.
 

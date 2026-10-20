@@ -4,7 +4,7 @@ YouPetMe is a web-based animal adoption platform that connects potential adopter
 
 ## Project status
 
-The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined; application implementation has not started yet.
+The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined. The monorepo skeleton (workspaces, tooling and CI) is in place; feature implementation has not started yet.
 
 ## Product vision
 
@@ -92,23 +92,26 @@ The authoritative documents for the current foundation are:
 
 ## Getting Started
 
-Not yet confirmed step-by-step — the repository has not been initialized yet (see AGENTS.md — Current status). This is the planned setup flow, so it is not lost once initialization actually happens; update this section with the real, verified steps at that point and remove this note.
-
 ### Prerequisites
 
-- **Node.js 22 (Active LTS)** — verify this is still the current Active LTS when setting up, per ARCH-002; ask the project owner before assuming an updated version.
-- **pnpm**, pinned via Corepack.
-- **Docker** and Docker Compose, for `infra/docker` (local PostgreSQL and MinIO, ARCH-002).
+- **Node.js 24 (LTS)** — the version is pinned in `.nvmrc` and `package.json` `engines` (ARCH-002).
+- **pnpm 11.21.0** — pinned in the `packageManager` field; with Corepack enabled (`corepack enable`), the right version is used automatically.
+- **Docker** and Docker Compose, for `infra/docker` (local PostgreSQL, ARCH-002).
 
 ### Setup order
 
 1. Clone the repository.
-2. `pnpm install` — installs dependencies from the lockfile.
-3. Copy `.env.example` to `.env`. The expected variables are listed in ARCH-001 (`DATABASE_URL`, `API_PORT`, `WEB_ORIGIN`, `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRATION`, `JWT_REFRESH_EXPIRATION`). **Secret values (e.g. the JWT secrets) are never generated or invented on the project owner's behalf — ask them to provide or confirm these.**
-4. Start `infra/docker` (PostgreSQL, MinIO).
-5. Run Prisma migrations against the local database.
-6. (Optional) Seed local data.
-7. `pnpm dev` (see AGENTS.md — Common commands).
+2. `pnpm install` — installs dependencies from `pnpm-lock.yaml`.
+3. Copy `.env.example` to `.env` and fill in real local values. The variables are described in the file itself (ARCH-001). **Secret values (e.g. the JWT secrets) are never generated or invented on the project owner's behalf — ask them to provide or confirm these.**
+4. Start the local infrastructure:
+
+   ```bash
+   docker compose --env-file .env -f infra/docker/compose.yaml up -d
+   ```
+
+5. `pnpm dev` — starts the web client (Vite, http://localhost:5173) and the API (http://localhost:3000/api/v1 by default, `API_PORT`). See AGENTS.md — Common commands for the remaining scripts.
+
+Not yet part of the setup, added with the stories that need them: Prisma migrations and seed data (first persistence story), S3-compatible object storage in `infra/docker` (pending a decision, since MinIO's community edition no longer publishes Docker images) and Playwright E2E tests.
 
 ### Before running anything setup-related
 

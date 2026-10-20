@@ -132,21 +132,23 @@ Todos los módulos bajo `apps/api/src/modules/` siguen la misma subdivisión `do
 
 ### Comandos habituales
 
-Aún no confirmados — el repositorio todavía no tiene un `package.json` inicializado (ver Estado actual). Esta es la convención de comandos planificada, mapeada 1:1 contra los pasos de CI ya definidos en ARCH-003 (pnpm workspaces + Turborepo, ARCH-001), para que los comandos sean consistentes en cuanto el repo exista. Actualizar esta sección con los scripts reales una vez se cree `package.json`, y eliminar esta nota.
+Scripts raíz definidos en `package.json` y orquestados por Turborepo (`turbo.json`). Se corresponden 1:1 con los pasos de CI de ARCH-003 (`.github/workflows/ci.yml`).
 
 ```text
-pnpm install              # instalar dependencias desde el lockfile
-pnpm dev                  # levantar apps/web y apps/api en desarrollo
-pnpm lint                 # ESLint en todo el monorepo
-pnpm format                # Prettier
-pnpm typecheck              # comprobación de tipos TypeScript
-pnpm test                  # unit + component tests (Vitest para web, Jest para API — ADR-005)
-pnpm test:integration       # tests de integración (Jest + Supertest + PostgreSQL vía Testcontainers — ARCH-002)
-pnpm test:e2e                # Playwright, contra la pila de infra/docker (ARCH-002)
-pnpm build                  # build de producción
+pnpm install            # instalar dependencias (la CI usa --frozen-lockfile)
+pnpm dev                # levantar apps/web (Vite) y apps/api (nest start --watch) en desarrollo
+pnpm lint               # ESLint en todo el monorepo
+pnpm format             # Prettier, escribe cambios
+pnpm format:check       # Prettier, solo verificación (CI)
+pnpm typecheck          # comprobación de tipos TypeScript
+pnpm test               # unit + component tests (Vitest para web, Jest para API — ADR-005)
+pnpm test:integration   # tests de integración de la API, *.integration-spec.ts (Jest — ARCH-002); pasa sin tests
+pnpm build              # build de producción
 ```
 
-No asumir que existe ningún otro script (por ejemplo, un comando de test específico por módulo) sin comprobar `package.json`/`turbo.json` primero una vez existan.
+Los scripts de cada workspace se ejecutan con `pnpm --filter <nombre> <script>` (workspaces: `@youpetme/web`, `@youpetme/api`, `@youpetme/contracts`, `@youpetme/config`).
+
+Aún no disponibles: `pnpm test:e2e` (Playwright se añade con el primer recorrido E2E), Testcontainers para los tests de integración y los scripts de Prisma (se añaden con la primera historia de persistencia). No asumir que existe ningún otro script sin comprobar `package.json`/`turbo.json` primero.
 
 ### Testing manual de la API
 
