@@ -25,7 +25,7 @@ Define a pragmatic, typed and testable stack for the YouPetMe web client and API
 | Server validation | NestJS validation layer + Zod schemas | Mandatory request validation at the HTTP boundary. |
 | API documentation | OpenAPI / Swagger | Versioned, inspectable REST contract. |
 | Persistence | PostgreSQL + Prisma ORM | Relational persistence, migrations and typed access. |
-| Media storage | S3-compatible object storage (MinIO in Docker for local development) | Animal photo storage and delivery. |
+| Media storage | S3-compatible object storage (SeaweedFS in Docker for local development; see ADR-015) | Animal photo storage and delivery. |
 | Unit/component tests | Vitest + React Testing Library | Fast application and UI testing. |
 | API integration tests | Jest + Supertest | NestJS and PostgreSQL integration coverage. |
 | End-to-end tests | Playwright | Critical user journeys across supported browsers. |
@@ -110,7 +110,7 @@ Database migrations are committed to source control. Manual schema changes are p
 
 Animal photos (and any future media, such as shelter or store images) are stored as binary objects in **S3-compatible object storage**, not in PostgreSQL. Only object references are persisted in the relational database.
 
-- **Local development:** MinIO running in Docker, alongside PostgreSQL, orchestrated through `infra/docker`.
+- **Local development:** SeaweedFS running in Docker, alongside PostgreSQL, orchestrated through `infra/docker` (ADR-015). It replaces MinIO, whose community edition is no longer maintained; SeaweedFS must first pass the presigned-upload verification described in ADR-015.
 - **Deployed environments:** a managed S3-compatible provider (for example AWS S3 or Cloudflare R2). The exact provider is an infrastructure/deployment decision and may be finalized in a dedicated ADR when deployment is addressed.
 - **Domain boundary:** the `Animal` entity stores photo references (object keys or URLs) only. It has no knowledge of the storage provider, upload mechanism or bucket configuration — those belong to infrastructure, consistent with the hexagonal boundary already defined for persistence.
 - **Upload flow:** the API issues short-lived, signed upload URLs. The web client uploads the binary directly to object storage; the raw file is not proxied through NestJS. The API only receives and validates the resulting object reference before associating it with the `Animal` record.
@@ -134,7 +134,7 @@ Integration and E2E tests must use dedicated test configuration and must never t
 
 - **Unit tests** never touch a real database. Use cases and other application/domain logic are tested against an **in-memory adapter** implementing the same port as the real repository (e.g. an in-memory `UserRepository`), kept only in the test code.
 - **Integration tests** provision PostgreSQL via **Testcontainers**: a real Postgres container is started for the test run (or per test file, for isolation), migrations are applied, and the actual infrastructure adapter (e.g. `PrismaUserRepository`) runs against it — not a mock or an in-memory substitute. This is the concrete mechanism behind the "isolated PostgreSQL" integration testing already listed above.
-- **E2E tests** run against the existing `infra/docker` stack (PostgreSQL and MinIO, see Media storage above), started once per CI run via `docker-compose`, with the API and web app running against it, rather than a fresh Testcontainers instance per test. Per-test container isolation is not needed at this level; a single stable environment for the full E2E suite is simpler and sufficient.
+- **E2E tests** run against the existing `infra/docker` stack (PostgreSQL and the local S3-compatible storage, see Media storage above), started once per CI run via `docker-compose`, with the API and web app running against it, rather than a fresh Testcontainers instance per test. Per-test container isolation is not needed at this level; a single stable environment for the full E2E suite is simpler and sufficient.
 - Testcontainers requires Docker to be available wherever the tests run, including CI; this is expected to work out of the box on GitHub Actions runners but should be verified when the CI pipeline (ARCH-003) is set up.
 
 ### Test file location and naming
@@ -194,6 +194,7 @@ No deployment/hosting decision has been made; this is a working note of candidat
 - ADR-002 — Authentication Strategy
 - ADR-009 — Styling and Accessible Component Foundation
 - ADR-014 — Transactional Email Delivery
+- ADR-015 — Local Object Storage for Development
 - Vite documentation: https://vite.dev/guide/
 - React Router documentation: https://reactrouter.com/
 - TanStack Query documentation: https://tanstack.com/query/latest/docs/framework/react/overview

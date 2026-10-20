@@ -137,7 +137,7 @@ Representa una sesión revocable del usuario.
 | `userId` | UUID; relación obligatoria con `User`. |
 | `refreshTokenHash` | Hash del material de refresh token, nunca el token en texto plano. |
 | `status` | Estado de sesión, inicialmente `ACTIVE`. |
-| `expiresAt` | Fecha de expiración. |
+| `expiresAt` | Fecha de expiración de la sesión: la del refresh token vigente (7 días, ADR-002), que se renueva con cada rotación. |
 | `createdAt`, `updatedAt` | Marcas temporales de auditoría. |
 
 La estructura exacta de tokens, la expiración, la revocación y el transporte deberán cumplir ADR-002.
