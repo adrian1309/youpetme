@@ -1,0 +1,25 @@
+{
+  "name": "youpetme",
+  "private": true,
+  "description": "YouPetMe animal adoption platform monorepo",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": "11.21.0"
+  },
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:integration": "turbo run test:integration",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "turbo": "^2.11.9",
+    "typescript": "6.0.3"
+  }
+}

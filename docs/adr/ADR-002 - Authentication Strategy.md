@@ -101,6 +101,13 @@ The previous refresh token will be invalidated.
 
 This reduces the usefulness of a stolen refresh token.
 
+## Token Lifetimes
+
+- **Access token:** 15 minutes (`JWT_ACCESS_EXPIRATION=15m`). Short enough that a stolen access token is of little use.
+- **Refresh token:** 7 days (`JWT_REFRESH_EXPIRATION=7d`). Each rotation issues a new refresh token with a new 7-day lifetime, so an actively used session stays signed in, and an unused one expires after a week.
+
+These values are the MVP defaults, chosen as a balance between convenience and security. They live in configuration, not in code, so they can be tuned without a code change. A longer-lived "remember me" session is future functionality and is not part of the MVP.
+
 ---
 
 ## Session Model

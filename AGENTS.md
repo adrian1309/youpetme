@@ -116,7 +116,7 @@ youpetme/
 │   └── config/                      # Shared tooling configuration
 ├── docs/                            # Official versioned documentation (see Source of truth)
 ├── infra/
-│   └── docker/                      # Local PostgreSQL, MinIO (ARCH-002)
+│   └── docker/                      # Local PostgreSQL; S3-compatible storage planned (ARCH-002, ADR-015)
 ├── .github/workflows/               # CI (ARCH-003)
 ├── .env.example
 ├── pnpm-workspace.yaml
@@ -130,21 +130,23 @@ Every module under `apps/api/src/modules/` follows the same `domain/application/
 
 ### Common commands
 
-Not yet confirmed — the repository has not been initialized with a `package.json` yet (see Current status). This is the planned command convention, mapped 1:1 to the CI steps already defined in ARCH-003 (pnpm workspaces + Turborepo, ARCH-001), so commands stay consistent once the repo exists. Update this section with the actual scripts once `package.json` is created, and remove this note.
+Root scripts defined in `package.json` and orchestrated by Turborepo (`turbo.json`). They map 1:1 to the CI steps in ARCH-003 (`.github/workflows/ci.yml`).
 
 ```text
-pnpm install            # install dependencies from the lockfile
-pnpm dev                # run apps/web and apps/api in development
-pnpm lint                # ESLint across the monorepo
-pnpm format              # Prettier
-pnpm typecheck            # TypeScript type checking
-pnpm test                # unit + component tests (Vitest for web, Jest for API — ADR-005)
-pnpm test:integration     # integration tests (Jest + Supertest + Testcontainers-provisioned PostgreSQL — ARCH-002)
-pnpm test:e2e             # Playwright, against the infra/docker stack (ARCH-002)
-pnpm build                # production build
+pnpm install            # install dependencies (CI uses --frozen-lockfile)
+pnpm dev                # run apps/web (Vite) and apps/api (nest start --watch) in development
+pnpm lint               # ESLint across the monorepo
+pnpm format             # Prettier, writes changes
+pnpm format:check       # Prettier, verification only (CI)
+pnpm typecheck          # TypeScript type checking
+pnpm test               # unit + component tests (Vitest for web, Jest for API — ADR-005)
+pnpm test:integration   # API integration tests, *.integration-spec.ts (Jest — ARCH-002); passes with no tests
+pnpm build              # production build
 ```
 
-Do not assume any other script exists (e.g. a specific per-module test command) without checking `package.json`/`turbo.json` first once they exist.
+Per-workspace scripts can be run with `pnpm --filter <name> <script>` (workspaces: `@youpetme/web`, `@youpetme/api`, `@youpetme/contracts`, `@youpetme/config`).
+
+Not yet available: `pnpm test:e2e` (Playwright is added with the first E2E journey), Testcontainers for integration tests, and Prisma scripts (added with the first persistence story). Do not assume any other script exists without checking `package.json`/`turbo.json` first.
 
 ### Manual API testing
 

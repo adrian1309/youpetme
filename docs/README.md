@@ -80,6 +80,7 @@ Accepted decisions with alternatives and consequences.
 | [ADR-012 — Security Approach](adr/ADR-012%20-%20Security%20Approach.md) | Adapted SDL principles and automated security checks. |
 | [ADR-013 — Development Methodology: SDD, BDD and TDD](adr/ADR-013%20-%20Development%20Methodology%20SDD%20BDD%20TDD.md) | Test-first development is mandatory. |
 | [ADR-014 — Transactional Email Delivery](adr/ADR-014%20-%20Transactional%20Email%20Delivery.md) | Resend behind an `EmailSender` port. |
+| [ADR-015 — Local Object Storage for Development](adr/ADR-015%20-%20Local%20Object%20Storage%20for%20Development.md) | SeaweedFS replaces MinIO for local S3-compatible storage. |
 
 ## UX / UI
 

@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+.turbo
+pnpm-lock.yaml
+# Existing documentation is not reformatted as part of tooling changes
+docs
+*.md
