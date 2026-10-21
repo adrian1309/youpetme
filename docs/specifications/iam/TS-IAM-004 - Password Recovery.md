@@ -49,6 +49,8 @@ Login
 
 ### `POST /auth/password-reset/request`
 
+Ruta completa bajo el prefijo de la API: `POST /api/v1/auth/password-reset/request`.
+
 Solicita el envío de un email de recuperación.
 
 #### Request body
@@ -73,6 +75,8 @@ Siempre se responde `202 Accepted`, **exista o no una cuenta con ese email**, pa
 
 ### `POST /auth/password-reset/confirm`
 
+Ruta completa bajo el prefijo de la API: `POST /api/v1/auth/password-reset/confirm`.
+
 Confirma el reseteo con el token recibido por email.
 
 #### Request body
@@ -80,8 +84,8 @@ Confirma el reseteo con el token recibido por email.
 ```json
 {
   "token": "<reset-token>",
-  "password": "NewPassword123!",
-  "confirmPassword": "NewPassword123!"
+  "password": "my-new-passphrase",
+  "confirmPassword": "my-new-passphrase"
 }
 ```
 

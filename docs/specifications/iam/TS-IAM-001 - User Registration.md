@@ -41,6 +41,8 @@ Si la validación de cliente falla, no se realizará la petición y se mostrará
 
 ### `POST /auth/register`
 
+Ruta completa bajo el prefijo de la API: `POST /api/v1/auth/register`.
+
 Registra una cuenta y crea una sesión autenticada para el usuario.
 
 #### Request body
@@ -81,13 +83,14 @@ La política de contraseña es la definida en ADR-002: mínimo 8 caracteres, má
     "status": "ACTIVE"
   },
   "authentication": {
-    "accessToken": "<access-token>",
-    "refreshToken": "<refresh-token>"
+    "accessToken": "<access-token>"
   }
 }
 ```
 
-La entrega y almacenamiento de tokens deberá ajustarse a ADR-002. Los secretos, hashes y datos internos de sesión nunca se incluirán en la respuesta.
+El refresh token **no** viaja en el cuerpo de la respuesta. Para el cliente web, conforme a ADR-002, el servidor lo entrega en una cookie `HttpOnly` y `Secure` mediante la cabecera `Set-Cookie`, con la política `SameSite` y el alcance de ruta definidos en ADR-002 y en la configuración del servidor, de modo que JavaScript nunca pueda leerlo. El access token se mantiene en memoria en el cliente. Un cliente móvil futuro podrá recibir el refresh token por otro canal, como indica ADR-002.
+
+Los secretos, hashes y datos internos de sesión nunca se incluirán en la respuesta.
 
 #### Errores esperados
 
@@ -184,7 +187,7 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 - Endpoint `POST /auth/register` con PostgreSQL y Prisma.
 - Persistencia atómica de `User`, `UserProfile` y `UserSession`.
 - Restricción única de email y traducción correcta a `409 Conflict`.
-- Respuesta de autenticación sin secretos internos.
+- Respuesta de autenticación sin secretos internos, con el refresh token únicamente en la cookie `HttpOnly` y no en el cuerpo.
 
 ### End-to-end tests
 
@@ -207,7 +210,7 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 - [ ] Los correos se normalizan y están protegidos por una restricción única en base de datos.
 - [ ] Las contraseñas se almacenan únicamente como hash según ADR-002.
 - [ ] `User`, `UserProfile` y `UserSession` se crean de forma atómica y con UUID.
-- [ ] El usuario queda autenticado tras el registro conforme a ADR-002.
+- [ ] El usuario queda autenticado tras el registro conforme a ADR-002: access token en el cuerpo y refresh token en cookie `HttpOnly`.
 - [ ] Los errores de validación y correo duplicado son claros y seguros.
 - [ ] Se publica `UserCreated` sin datos sensibles tras una creación confirmada.
 - [ ] Las pruebas unitarias, de integración y E2E definidas pasan.

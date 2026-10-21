@@ -39,6 +39,8 @@ Si la validación de cliente falla, no se realizará la petición. El servidor v
 
 ### `POST /auth/login`
 
+Ruta completa bajo el prefijo de la API: `POST /api/v1/auth/login`.
+
 Autentica a un usuario existente y crea una sesión autenticada.
 
 #### Request body
@@ -46,7 +48,7 @@ Autentica a un usuario existente y crea una sesión autenticada.
 ```json
 {
   "email": "john@example.com",
-  "password": "Password123!"
+  "password": "my-secure-passphrase"
 }
 ```
 
@@ -55,7 +57,7 @@ Autentica a un usuario existente y crea una sesión autenticada.
 | Campo | Reglas |
 |---|---|
 | `email` | Obligatorio; formato de correo válido; se normaliza para la búsqueda. |
-| `password` | Obligatorio; no se valida contra la política de complejidad aquí (eso es solo en registro/cambio) — cualquier valor no vacío se comprueba contra el hash almacenado. |
+| `password` | Obligatorio; no se valida contra la política de contraseña aquí (eso es solo en registro y reseteo) — cualquier valor no vacío se comprueba contra el hash almacenado. |
 
 #### Response exitosa — `200 OK`
 
@@ -69,13 +71,12 @@ Autentica a un usuario existente y crea una sesión autenticada.
     "status": "ACTIVE"
   },
   "authentication": {
-    "accessToken": "<access-token>",
-    "refreshToken": "<refresh-token>"
+    "accessToken": "<access-token>"
   }
 }
 ```
 
-Igual que en TS-IAM-001, la entrega y almacenamiento de tokens sigue ADR-002. Nunca se incluyen secretos, hashes o datos internos de sesión en la respuesta.
+Igual que en TS-IAM-001, el refresh token **no** viaja en el cuerpo: el servidor lo entrega en una cookie `HttpOnly` y `Secure` mediante `Set-Cookie`, y el access token se mantiene en memoria en el cliente (ADR-002). Nunca se incluyen secretos, hashes o datos internos de sesión en la respuesta.
 
 #### Errores esperados
 
@@ -120,6 +121,7 @@ Al completar correctamente el login se publicará el evento `UserLoggedIn`, con 
 ### Integration tests
 - Endpoint `POST /auth/login` con PostgreSQL (Testcontainers) y Prisma.
 - Creación de `UserSession` tras login exitoso.
+- El refresh token llega solo en la cookie `HttpOnly` y no en el cuerpo de la respuesta.
 
 ### End-to-end tests
 - Login completo desde `/login` hasta el área autenticada.
