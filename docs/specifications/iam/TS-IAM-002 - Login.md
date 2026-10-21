@@ -15,13 +15,15 @@ TS-IAM-002 — Login
 
 Implementar el inicio de sesión de un usuario ya registrado en YouPetMe. Un visitante con credenciales válidas queda autenticado al finalizar el proceso.
 
+Esta especificación incluye también la renovación de sesión (`POST /api/v1/auth/refresh`): como el access token vive 15 minutos y solo en memoria, sin este endpoint la sesión se perdería a los 15 minutos o al recargar la página (ADR-002).
+
 ## Flujo funcional
 
 ```text
 Visitor
   → /login
   → Client validation
-  → POST /auth/login
+  → POST /api/v1/auth/login
   → LoginUser use case
       → Normalize email
       → Find user by normalized email
@@ -87,9 +89,48 @@ Igual que en TS-IAM-001, el refresh token **no** viaja en el cuerpo: el servidor
 | `403 Forbidden` | La cuenta existe pero su `status` no es `ACTIVE` (p. ej. `SUSPENDED`). | Mensaje de negocio sin detalle interno del motivo exacto. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
+### `POST /auth/refresh`
+
+Ruta completa bajo el prefijo de la API: `POST /api/v1/auth/refresh`.
+
+Renueva el access token y rota el refresh token de la sesión actual (ADR-002 — Refresh Token Rotation).
+
+#### Request
+
+Sin body. El refresh token se lee de la cookie `HttpOnly` y `Secure`; el cliente no lo gestiona.
+
+#### Response exitosa — `200 OK`
+
+```json
+{
+  "authentication": {
+    "accessToken": "<access-token>"
+  }
+}
+```
+
+- Se emite un nuevo access token (15 minutos) y un nuevo refresh token (7 días), entregado de nuevo solo en cookie `Set-Cookie`.
+- El refresh token anterior queda invalidado: se actualiza el hash almacenado en la `UserSession` y `expiresAt` pasa a reflejar la nueva caducidad.
+- Los valores de caducidad provienen de configuración (`JWT_ACCESS_EXPIRATION`, `JWT_REFRESH_EXPIRATION`).
+
+#### Errores esperados
+
+| Código | Caso | Respuesta esperada |
+|---|---|---|
+| `401 Unauthorized` | Cookie ausente, refresh token inválido, caducado o ya rotado, o `UserSession` no activa (`REVOKED`/`EXPIRED`). | Error genérico, sin detalle del motivo. El cliente pasa a estado no autenticado. |
+| `403 Forbidden` | La cuenta del usuario no está `ACTIVE`. | Mensaje de negocio sin detalle interno. |
+| `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
+
+Si se presenta un refresh token que ya fue rotado (reutilización), se rechaza con `401` y se revoca la `UserSession` correspondiente, porque indica un posible robo del token. Claude Code debe confirmar este comportamiento antes de implementarlo.
+
+#### Reglas de seguridad específicas
+
+- La cookie del refresh token usa los atributos definidos para registro y login (`HttpOnly`, `Secure`, `SameSite` y `Path`; valores a proponer y confirmar antes de implementar). Al ser un endpoint basado en cookie, debe tener la protección CSRF acordada.
+- No se publica evento de dominio en el refresh normal (alto volumen y sin valor de negocio).
+
 ## Modelo de datos
 
-No se introduce ninguna entidad nueva. Se reutilizan `User` y `UserSession` (Domain Model), y se crea una nueva fila de `UserSession` por cada login exitoso (consistente con "a user may have multiple active sessions", ADR-002).
+No se introduce ninguna entidad nueva. Se reutilizan `User` y `UserSession` (Domain Model), y se crea una nueva fila de `UserSession` por cada login exitoso (consistente con "a user may have multiple active sessions", ADR-002). El refresh actualiza el `refreshTokenHash` y `expiresAt` de la misma `UserSession`, sin crear una nueva.
 
 ## Reglas de seguridad
 
@@ -104,7 +145,9 @@ La ruta pública `/login` incluirá un formulario para `email` y `password`, con
 - Validará los datos antes de enviar.
 - Deshabilitará o protegerá el envío repetido mientras la petición esté en curso.
 - Mostrará el error `401`/`403` de forma genérica y segura, sin distinguir el motivo exacto.
-- Tras una respuesta exitosa, actualizará el estado de autenticación conforme a ADR-002 y redirigirá al área autenticada.
+- Tras una respuesta exitosa, guardará el access token solo en memoria (ADR-002) y redirigirá al área autenticada: la home `/` en estado autenticado.
+- Al arrancar la aplicación o recargar la página, intentará restaurar la sesión llamando a `POST /api/v1/auth/refresh`; si responde `401`, el usuario queda como visitante sin mostrar error.
+- Ante un `401` en una petición autenticada, intentará un único refresh y reintentará la petición una vez; si el refresh falla, limpiará el estado de autenticación y redirigirá a `/login`. Peticiones concurrentes comparten un único refresh en curso.
 
 ## Evento de dominio
 
@@ -117,15 +160,18 @@ Al completar correctamente el login se publicará el evento `UserLoggedIn`, con 
 - Verificación de contraseña contra el hash almacenado (casos correcto/incorrecto).
 - Rechazo cuando `status` no es `ACTIVE`.
 - Mensaje de error idéntico para email inexistente vs contraseña incorrecta.
+- Refresh: rotación del token, rechazo de token caducado, ya rotado o de sesión revocada, y revocación de la sesión ante reutilización.
 
 ### Integration tests
-- Endpoint `POST /auth/login` con PostgreSQL (Testcontainers) y Prisma.
+- Endpoint `POST /api/v1/auth/login` con PostgreSQL (Testcontainers) y Prisma.
 - Creación de `UserSession` tras login exitoso.
 - El refresh token llega solo en la cookie `HttpOnly` y no en el cuerpo de la respuesta.
+- Endpoint `POST /api/v1/auth/refresh`: devuelve un nuevo access token y una nueva cookie, y el refresh token anterior deja de funcionar.
 
 ### End-to-end tests
 - Login completo desde `/login` hasta el área autenticada.
 - Errores de credenciales inválidas visibles en el formulario.
+- Recargar la página con sesión activa mantiene al usuario autenticado (restauración vía refresh).
 
 ## Definition of Done
 
@@ -135,6 +181,8 @@ Al completar correctamente el login se publicará el evento `UserLoggedIn`, con 
 - [ ] Una cuenta con `status` distinto de `ACTIVE` no puede iniciar sesión.
 - [ ] Se crea una nueva `UserSession` por cada login exitoso, conforme a ADR-002.
 - [ ] Se publica `UserLoggedIn` sin datos sensibles tras un login exitoso.
+- [ ] `POST /api/v1/auth/refresh` renueva el access token y rota el refresh token; un refresh token ya rotado, caducado o de una sesión revocada es rechazado.
+- [ ] Recargar la página con sesión activa no obliga a volver a iniciar sesión.
 - [ ] Las pruebas unitarias, de integración y E2E definidas pasan.
 - [ ] No aparecen contraseñas, hashes ni tokens en interfaz, consola o registros accesibles.
 

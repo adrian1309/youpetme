@@ -15,14 +15,14 @@ El proyecto está en fase de fundación de arquitectura.
 No implementar ninguna funcionalidad hasta que su Historia de Usuario, Especificación Técnica y los ADRs aplicables hayan sido revisados y estén suficientemente definidos.
 
 ## Fuente de verdad
-# PostgreSQL local; almacenamiento S3-compatible previsto (ARCH-002, ADR-015)
+
 La documentación oficial y versionada vive en `docs/`. Consultar los documentos relevantes antes de tocar código:
 
 | Carpeta                | Contiene                                            | Documentos clave                                                                                                                                                    |
 | ---------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/product/`        | Alcance de producto, decisiones del MVP             | Project Overview, Product Definition, Functional Map, MVP                                                                                                           |
 | `docs/requirements/`   | Gestión de requisitos, trazabilidad                 | Requirements Overview, Non Functional Requirements                                                                                                                  |
-| `docs/user-stories/`   | Objetivos de usuario, criterios de aceptación       | —                                                                                                                                                                   |
+| `docs/user-stories/`   | Objetivos de usuario, criterios de aceptación (archivo; prevalece Jira, ver abajo) | —                                                                                                                                                                   |
 | `docs/specifications/` | Comportamiento técnico, expectativas de testing     | p. ej. TS-IAM-001                                                                                                                                                   |
 | `docs/adr/`            | Decisiones de arquitectura aceptadas                | ADR-002 en adelante — ver esta carpeta o el README para la lista completa actualizada; va creciendo con el tiempo                                                   |
 | `docs/architecture/`   | Estructura, convenciones, flujo de entrega          | ARCH-001 (estructura de repositorio/módulos), ARCH-002 (stack tecnológico completo y decisiones explícitamente descartadas), ARCH-003 (ramas/CI/Definition of Done) |
@@ -42,20 +42,33 @@ ADR aceptado
 
 Reportar cualquier contradicción material en vez de elegir silenciosamente un comportamiento distinto.
 
-### Planificado: Jira y Figma como fuente de verdad para historias y diseño
+### Jira como fuente de verdad de las Historias de Usuario
 
-Aún no implementado; anotado aquí para que no se pierda. La intención es que **Jira** se convierta en la fuente de verdad para Historias de Usuario y Epics (sustituyendo `docs/user-stories/`), y **Figma** en la fuente de verdad para diseño UI/UX y wireframes (sustituyendo `docs/ux-ui/wireframes/` y, donde aplique, `docs/ux-ui/flows/`). Una vez hecha esta migración, se espera que Claude Code lea el estado y contenido de las Historias de Usuario desde Jira y el detalle de diseño desde Figma (probablemente vía integraciones MCP para cada uno), y que pueda actualizar el estado de una historia en Jira a medida que avanza el trabajo, en vez de depender solo de los documentos Markdown actuales del repositorio. Hasta que esto esté realmente configurado y esta nota se sustituya por instrucciones concretas, la fuente de verdad actual basada en `docs/` descrita arriba sigue siendo la válida.
+Jira (proyecto `SCRUM`) es la fuente de verdad del **contenido y el estado** de las Historias de Usuario y los Epics. Se accede mediante el servidor MCP de Atlassian llamado `atlassian` (herramientas `mcp__atlassian__*`), autenticado con OAuth por el dueño del proyecto.
 
-### Planificado: arquitectura de subagentes para entregar Historias de Usuario
+- `docs/user-stories/` se conserva como archivo versionado y es a lo que las Especificaciones Técnicas se refieren por nombre. Si una historia difiere entre Jira y `docs/user-stories/`, prevalece Jira; reportar la diferencia en vez de elegir en silencio.
+- Leer las Historias de Usuario mediante el subagente `jira-reader` (abajo), no llamando directamente a las herramientas de Jira desde el agente principal.
+- El acceso es de **solo lectura**. Nunca crear, editar, comentar ni cambiar el estado de incidencias de Jira salvo que el dueño del proyecto lo pida explícitamente. Actualizar el estado de una historia a medida que avanza el trabajo es una posible funcionalidad futura, no el comportamiento actual.
 
-Aún no implementado; anotado aquí para que no se pierda. La intención es definir un conjunto de subagentes de Claude Code (`.claude/agents/`), cada uno centrado en una etapa de la entrega de una Historia de Usuario, para que el agente principal de Claude Code pueda delegar automáticamente según la tarea y la descripción de cada subagente, sin que el dueño del proyecto tenga que invocar manualmente cada etapa:
+### Planificado: Figma como fuente de verdad del diseño
 
-- **jira-reader** — lee el contenido y estado de una Historia de Usuario desde Jira (depende de la integración con Jira anotada arriba); acceso a herramientas limitado al conector MCP de Jira.
-- **implementer** — implementa la Historia de Usuario siguiendo Test-Driven Development (Red → Green → Refactor, arriba); acceso a herramientas de edición de archivos y ejecución de tests.
+Aún no implementado; anotado aquí para que no se pierda. La intención es que **Figma** se convierta en la fuente de verdad del diseño UI/UX y los wireframes (sustituyendo `docs/ux-ui/wireframes/` y, donde aplique, `docs/ux-ui/flows/`), leído por Claude Code probablemente mediante una integración MCP. Hasta que esto esté configurado y esta nota se sustituya por instrucciones concretas, los documentos Markdown de `docs/ux-ui/` siguen siendo la referencia de diseño.
+
+### Subagentes para entregar Historias de Usuario
+
+Los subagentes viven en `.claude/agents/`, cada uno centrado en una etapa de la entrega de una Historia de Usuario, para que el agente principal pueda delegar automáticamente según la tarea y la descripción del subagente.
+
+Definidos actualmente:
+
+- **jira-reader** (`.claude/agents/jira-reader.md`) — lee el contenido, las subtareas y el estado de una Historia de Usuario desde Jira. Solo lectura: su acceso a herramientas se limita a operaciones de lectura de Jira.
+
+Planificados, aún no creados — no asumir que existen:
+
+- **implementer** — implementa la Historia de Usuario siguiendo Test-Driven Development (Red → Green → Refactor, abajo); acceso a herramientas de edición de archivos y ejecución de tests.
 - **reviewer** — revisa y refactoriza código ya implementado, manteniendo todos los tests en verde.
 - **tester** — escribe y ejecuta tests unitarios, de integración y end-to-end según la estrategia de testing de ARCH-002.
 
-La descripción de cada subagente debe ser lo bastante específica para que la delegación automática de Claude Code enrute las tareas correctamente. Esto depende de la migración a Jira/Figma de arriba específicamente para `jira-reader`; los otros tres subagentes no dependen de ella. Hasta que estos se creen realmente y esta nota se sustituya por configuración concreta, no debe asumirse que existe ninguna delegación a subagentes.
+La descripción de cada subagente debe ser lo bastante específica para que la delegación automática de Claude Code enrute las tareas correctamente. Hasta que se creen los subagentes planificados y esta sección se actualice, no debe asumirse ninguna delegación hacia ellos.
 
 ## Reglas de arquitectura
 
@@ -167,7 +180,7 @@ Usar `curl` desde la terminal (Claude Code puede ejecutarlo directamente como pa
 
 Antes de implementar:
 
-1. Identificar la Historia de Usuario y la Especificación Técnica relacionadas.
+1. Identificar la Historia de Usuario (leída de Jira mediante el subagente `jira-reader`) y la Especificación Técnica relacionadas.
 2. Comprobar los ADRs aplicables y las restricciones de arquitectura.
 3. Evaluar el impacto en validación, autorización, privacidad y migraciones.
 4. Identificar los escenarios de test unitarios, de integración y end-to-end, incluyendo los casos de fallo.

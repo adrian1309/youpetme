@@ -20,7 +20,7 @@ Official, versioned documentation lives under `docs/`. Consult the relevant docu
 | ---------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/product/`        | Product scope, MVP decisions              | Project Overview, Product Definition, Functional Map, MVP                                                                                       |
 | `docs/requirements/`   | Requirements management, traceability     | Requirements Overview, Non Functional Requirements                                                                                              |
-| `docs/user-stories/`   | User goals, acceptance criteria           | —                                                                                                                                               |
+| `docs/user-stories/`   | User goals, acceptance criteria (archive; Jira prevails, see below) | —                                                                                                                                               |
 | `docs/specifications/` | Technical behaviour, test expectations    | e.g. TS-IAM-001                                                                                                                                 |
 | `docs/adr/`            | Accepted architecture decisions           | ADR-002 onward — see this folder or README for the current full list; it grows over time                                                        |
 | `docs/architecture/`   | Structure, conventions, delivery workflow | ARCH-001 (repository/module structure), ARCH-002 (full technology stack and explicit non-decisions), ARCH-003 (branching/CI/Definition of Done) |
@@ -40,20 +40,33 @@ Accepted ADR
 
 Report any material contradiction rather than silently choosing a different behaviour.
 
-### Planned: Jira and Figma as source of truth for stories and design
+### Jira as source of truth for User Stories
 
-Not yet implemented; noted here so it is not lost. The intent is for **Jira** to become the source of truth for User Stories and Epics (replacing `docs/user-stories/`), and **Figma** to become the source of truth for UI/UX design and wireframes (replacing `docs/ux-ui/wireframes/` and, where design-driven, `docs/ux-ui/flows/`). Once this migration happens, Claude Code is expected to read User Story status and content from Jira and design detail from Figma (most likely via MCP integrations for each), and to be able to update a story's status in Jira as work progresses, rather than relying solely on the Markdown documents currently in the repository. Until this is actually set up and this note is replaced with concrete instructions, the current `docs/`-based source of truth described above remains authoritative.
+Jira (project `SCRUM`) is the source of truth for the **content and status** of User Stories and Epics. It is reached through the Atlassian MCP server named `atlassian` (tools `mcp__atlassian__*`), authenticated with OAuth by the project owner.
 
-### Planned: subagent architecture for User Story delivery
+- `docs/user-stories/` is kept as a versioned archive and is what the Technical Specifications refer to by name. If a story differs between Jira and `docs/user-stories/`, Jira prevails; report the difference rather than silently choosing one.
+- Read User Stories through the `jira-reader` subagent (below), not by calling Jira tools directly from the main agent.
+- Access is **read-only**. Never create, edit, comment on or transition Jira issues unless the project owner explicitly asks. Updating a story's status as work progresses is possible future functionality, not current behaviour.
 
-Not yet implemented; noted here so it is not lost. The intent is to define a set of Claude Code subagents (`.claude/agents/`), each scoped to one stage of delivering a User Story, so Claude Code's main agent can delegate automatically based on task and subagent description, without the project owner manually invoking each stage:
+### Planned: Figma as source of truth for design
 
-- **jira-reader** — reads a User Story's content and status from Jira (depends on the Jira integration noted above); scoped tool access limited to the Jira MCP connector.
-- **implementer** — implements the User Story following Test-Driven Development (Red → Green → Refactor, above); scoped tool access for file editing and running tests.
+Not yet implemented; noted here so it is not lost. The intent is for **Figma** to become the source of truth for UI/UX design and wireframes (replacing `docs/ux-ui/wireframes/` and, where design-driven, `docs/ux-ui/flows/`), read by Claude Code most likely through an MCP integration. Until this is set up and this note is replaced with concrete instructions, the Markdown documents under `docs/ux-ui/` remain authoritative for design.
+
+### Subagents for User Story delivery
+
+Subagents live in `.claude/agents/`, each scoped to one stage of delivering a User Story, so the main agent can delegate automatically based on the task and the subagent's description.
+
+Currently defined:
+
+- **jira-reader** (`.claude/agents/jira-reader.md`) — reads a User Story's content, subtasks and status from Jira. Read-only: its tool access is limited to Jira read operations.
+
+Planned, not yet created — do not assume they exist:
+
+- **implementer** — implements the User Story following Test-Driven Development (Red → Green → Refactor, below); scoped tool access for file editing and running tests.
 - **reviewer** — reviews and refactors already-implemented code, keeping all tests passing.
 - **tester** — writes and runs unit, integration and end-to-end tests per ARCH-002's testing strategy.
 
-Each subagent's description must be specific enough for Claude Code's automatic delegation to route tasks correctly. This depends on the Jira/Figma migration above for `jira-reader` specifically; the other three subagents do not. Until these are actually created and this note is replaced with concrete configuration, no subagent delegation should be assumed to exist.
+Each subagent's description must be specific enough for Claude Code's automatic delegation to route tasks correctly. Until the planned subagents are created and this section is updated, no delegation to them should be assumed.
 
 ## Architecture rules
 
@@ -165,7 +178,7 @@ Use `curl` from the terminal (Claude Code can run this directly as part of its o
 
 Before implementation:
 
-1. Identify the related User Story and Technical Specification.
+1. Identify the related User Story (read from Jira through the `jira-reader` subagent) and Technical Specification.
 2. Check applicable ADRs and architecture constraints.
 3. Assess validation, authorization, privacy and migration impacts.
 4. Identify unit, integration and end-to-end test scenarios, including failure paths.

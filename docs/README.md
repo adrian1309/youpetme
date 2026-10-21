@@ -81,6 +81,7 @@ Accepted decisions with alternatives and consequences.
 | [ADR-013 — Development Methodology: SDD, BDD and TDD](adr/ADR-013%20-%20Development%20Methodology%20SDD%20BDD%20TDD.md) | Test-first development is mandatory. |
 | [ADR-014 — Transactional Email Delivery](adr/ADR-014%20-%20Transactional%20Email%20Delivery.md) | Resend behind an `EmailSender` port. |
 | [ADR-015 — Local Object Storage for Development](adr/ADR-015%20-%20Local%20Object%20Storage%20for%20Development.md) | SeaweedFS replaces MinIO for local S3-compatible storage. |
+| [ADR-016 — Domain Event Delivery](adr/ADR-016%20-%20Domain%20Event%20Delivery.md) | In-process event dispatch after commit, behind an `EventPublisher` port. |
 
 ## UX / UI
 

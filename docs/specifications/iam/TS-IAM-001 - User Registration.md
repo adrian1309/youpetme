@@ -168,7 +168,7 @@ Al completar correctamente la transacción se publicará el evento `UserCreated`
 
 El evento contendrá únicamente los datos mínimos no sensibles necesarios para consumidores posteriores, como `userId`, `email`, `occurredAt` y un identificador de correlación cuando esté disponible. No incluirá contraseña, hash ni tokens.
 
-La publicación deberá ocurrir únicamente cuando la creación se haya confirmado. La estrategia de entrega fiable se definirá en la arquitectura de eventos del proyecto.
+La publicación deberá ocurrir únicamente cuando la creación se haya confirmado. La estrategia de publicación está definida en ADR-016 (despacho en proceso tras el commit, detrás de un puerto `EventPublisher`).
 
 ## Testing
 
@@ -221,3 +221,4 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 
 - US-IAM-001 — Create Account
 - ADR-002 — Authentication Strategy
+- ADR-016 — Domain Event Delivery

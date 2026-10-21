@@ -20,7 +20,7 @@ Permitir que un usuario autenticado cierre su sesión actual, revocando la sesi�
 ```text
 Authenticated user
   → Logout action
-  → POST /auth/logout
+  → POST /api/v1/auth/logout
   → RevokeSession use case
       → Identify current UserSession from the refresh token
       → Mark UserSession status as REVOKED
@@ -35,6 +35,8 @@ Logout revoca únicamente la sesión actual, no todas las sesiones del usuario (
 
 ### `POST /auth/logout`
 
+Ruta completa bajo el prefijo de la API: `POST /api/v1/auth/logout`.
+
 Revoca la sesión autenticada actual.
 
 #### Request
@@ -43,7 +45,7 @@ Requiere una sesión autenticada válida (access token vigente); no necesita bod
 
 #### Response exitosa — `204 No Content`
 
-Sin cuerpo de respuesta.
+Sin cuerpo de respuesta. El servidor elimina la cookie del refresh token (`Set-Cookie` con caducidad inmediata).
 
 #### Errores esperados
 
@@ -60,7 +62,7 @@ No se introduce ninguna entidad nueva. Se actualiza el `status` de la `UserSessi
 
 Cualquier vista autenticada expondrá una acción de "Cerrar sesión":
 
-- Llama a `POST /auth/logout`.
+- Llama a `POST /api/v1/auth/logout`.
 - Independientemente de la respuesta del servidor, limpia el estado de autenticación en cliente (access token en memoria) para no dejar al usuario en un estado inconsistente si la petición de red falla.
 - Redirige a una vista pública (p. ej. Home o `/login`).
 
@@ -74,7 +76,7 @@ Al completar correctamente la revocación se publica `SessionRevoked`, con `sess
 - El use case marca la sesión correcta como `REVOKED` y ninguna otra sesión del mismo usuario.
 
 ### Integration tests
-- Endpoint `POST /auth/logout` con PostgreSQL (Testcontainers): la sesión queda `REVOKED` en base de datos tras la llamada.
+- Endpoint `POST /api/v1/auth/logout` con PostgreSQL (Testcontainers): la sesión queda `REVOKED` en base de datos tras la llamada.
 - Una petición autenticada posterior con el refresh token ya revocado es rechazada.
 
 ### End-to-end tests
