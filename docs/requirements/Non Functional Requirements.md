@@ -28,7 +28,7 @@ YouPetMe is treated as a real product from a data-protection standpoint, not onl
 - **Right to erasure:** deleting an account (the existing `DELETED` `User Status` in the Domain Model) must result in an actual purge of personal data, not only a status flag. This is a concrete use case to define for IAM before it is considered complete, not a future aspiration.
 - **Right to access / data portability:** users should be able to request an export of their personal data. This is not required for the MVP visual prototype and does not block it, but should be scoped as a use case before a real launch.
 - **Records of processing:** what personal data is collected, why, and how long it is retained should be documented per data category as the domain model grows (this document, plus Domain Model, are the natural home for it).
-- Guest AI matching interactions are not persisted (see Requirements Overview — Access Model), which limits privacy exposure for unauthenticated usage by design and reduces the surface this requirement needs to cover.
+- Guest AI matching interactions are not persisted on the server (see Requirements Overview — Access Model); the only thing kept is the adopter profile in the guest's own browser (localStorage), under their control. This limits privacy exposure for unauthenticated usage by design and reduces the surface this requirement needs to cover.
 - The AI Assistant (Diango) does not persist conversation history beyond the current session for the MVP (see ADR-011). A future persistent, cross-session memory for Diango is explicitly deferred until its own retention and right-to-erasure design is reviewed against these principles — it must not be implemented as a side effect of another feature.
 
 ## AI usage — cost and abuse protection

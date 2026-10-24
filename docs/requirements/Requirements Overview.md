@@ -28,6 +28,8 @@ Implementation
     ↓
 Testing
 
+This hierarchy is, in substance, a Spec-Driven Development (SDD) approach: no production functionality is implemented before its User Story and Use Cases are defined and approved (see Development Rule below). **ADR-013 — Development Methodology: SDD, BDD and TDD** names this explicitly and layers two further disciplines on top of it: Acceptance Criteria are expressed as Given/When/Then behaviour scenarios (BDD), and each scenario's implementation follows a test-first discipline (TDD).
+
 ---
 
 ## Access Model (Guest vs Authenticated)
@@ -56,7 +58,7 @@ This applies across all functional areas, present and future, including modules 
 
 ### AI matching as a guest — clarifications
 
-- A guest can use the AI matching input and receive recommendations exactly like an authenticated user. No data is persisted for a guest interaction; nothing about a guest's prompts or results is stored beyond the interaction itself.
+- A guest can use the AI matching input and receive recommendations exactly like an authenticated user. No data is persisted on the server for a guest interaction; nothing about a guest's prompts or results is stored server-side beyond the interaction itself. The extracted adopter profile may be kept only in the guest's own browser (localStorage), so it can be offered as a starting point if they register (ADR-010).
 - If the user registers, previously detected preferences may be offered as a *starting point* for their saved profile. This is a convenience default, not a restriction: an authenticated user retains full freedom to enter different prompts at any time, and the system must not narrow their input to what was inferred earlier.
 - Because AI matching invokes a paid, rate-limitable AI service and is reachable without authentication, anonymous usage must be protected against abuse (for example, a rate limit per IP/session for unauthenticated requests). This is a non-functional requirement to capture formally in `Non Functional Requirements.md` before implementation, even though it is out of scope for the MVP visual prototype.
 

@@ -54,7 +54,8 @@ Registra una cuenta y crea una sesión autenticada para el usuario.
   "email": "john@example.com",
   "password": "my-secure-passphrase",
   "confirmPassword": "my-secure-passphrase",
-  "termsAccepted": true
+  "termsAccepted": true,
+  "hasSeenWelcome": true
 }
 ```
 
@@ -67,6 +68,7 @@ Registra una cuenta y crea una sesión autenticada para el usuario.
 | `email` | Obligatorio; formato de correo válido; se normaliza para comparación y almacenamiento. |
 | `password` | Obligatorio; debe cumplir la política de contraseña de ADR-002. |
 | `termsAccepted` | Obligatorio; debe ser `true` (aceptación de Términos de Servicio y Política de Privacidad). La versión aceptada no la envía el cliente: la determina el servidor. |
+| `hasSeenWelcome` | Opcional; booleano. Lo envía el cliente como `true` si el guest ya vio la bienvenida de Diango (localStorage). Si falta, vale `false`. |
 | `confirmPassword` | Obligatorio; debe coincidir exactamente con `password`. Se valida, pero no se almacena ni forma parte de ninguna entidad de dominio. |
 
 La política de contraseña es la definida en ADR-002: mínimo 8 caracteres, máximo razonable de 128 y sin reglas de complejidad obligatorias. Debe estar centralizada y ser consistente entre cliente y servidor; el servidor es la fuente de verdad.
@@ -111,6 +113,7 @@ Representa la identidad y las credenciales de una cuenta.
 | `id` | UUID, identificador primario generado por el sistema. |
 | `email` | Correo normalizado, obligatorio y único mediante restricción de base de datos. |
 | `passwordHash` | Hash de la contraseña. Nunca se persiste la contraseña en texto plano. |
+| `role` | Rol del usuario. Todo registro público crea una cuenta `USER`; `ADMIN` no se crea por registro (Domain Model — Roles). |
 | `status` | Estado de la cuenta. Para un registro completado en el MVP: `ACTIVE`. |
 | `termsAcceptedAt` | Fecha y hora en que el usuario aceptó Términos y Privacidad al registrarse. |
 | `termsVersion` | Identificador de la versión vigente de los textos en ese momento, tomado de la configuración del servidor. |
@@ -128,6 +131,8 @@ Representa los datos de perfil iniciales asociados uno a uno a `User`.
 | `userId` | UUID; relación única y obligatoria con `User`. |
 | `firstName` | Nombre del usuario. |
 | `lastName` | Apellidos del usuario. |
+| `hasSeenWelcome` | Booleano; empieza en `false` (o en `true` si el cliente informa de que el guest ya vio la bienvenida de Diango, ADR-011). |
+| `matchingPreferences` | Opcional; empieza en `null`. Solo se rellena si el usuario acepta las preferencias de matching que el cliente conservaba como guest (ADR-010). |
 | `createdAt`, `updatedAt` | Marcas temporales de auditoría. |
 
 ### `UserSession`
@@ -179,6 +184,7 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 - Rechazo de correo duplicado.
 - Rechazo cuando `termsAccepted` falta o no es `true`.
 - Registro de `termsAcceptedAt` y `termsVersion` al crear el usuario.
+- `UserProfile` nace con `hasSeenWelcome` según lo enviado (por defecto `false`) y `matchingPreferences = null`.
 - Orquestación del caso de uso: hash, creación de entidades, sesión y evento.
 - No persistencia de `confirmPassword` ni contraseñas en texto plano.
 

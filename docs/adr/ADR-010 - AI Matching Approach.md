@@ -32,6 +32,36 @@ We will use:
 
 **Option 2 — LLM-based structured extraction, structured filtering/scoring, and an LLM-generated explanation.** No vector database is introduced for the MVP.
 
+## Adopter attributes and mapping to the Animal taxonomy
+
+The extraction step produces a transient *adopter profile* (never persisted for guests; see Requirements Overview — AI matching as a guest). These attributes describe the adopter, not the animal, so they are not part of the `Animal` taxonomy. What is shared with the taxonomy are the values the matching rules compare against (Domain Model — Taxonomy).
+
+Adopter attributes extracted for the MVP (all optional; a missing value means "no constraint"):
+
+- `housingSize`: `SMALL`, `MEDIUM`, `LARGE`
+- `activityLevel`: `LOW`, `MODERATE`, `HIGH`
+- `experienceWithAnimals`: `NONE`, `SOME`, `EXPERIENCED`
+- `hasChildren`, `hasOtherAnimals`: booleans
+- `preferredSpecies`, `preferredSize`, `preferredAgeGroup`: using the exact `Animal` taxonomy values
+
+Mapping rules. **Hard filters** exclude an animal; **scoring** only ranks the remaining ones:
+
+| Adopter attribute | Rule on `Animal` |
+|---|---|
+| (always) | Only `status = AVAILABLE`. |
+| `preferredSpecies` / `preferredSize` / `preferredAgeGroup` | Hard filter on the stated value. |
+| `housingSize = SMALL` | Hard filter: exclude `size = LARGE`. |
+| `hasChildren = true` | Hard filter: exclude `compatibleWithChildren = false`; `null` (unknown) is kept without a score bonus. |
+| `hasOtherAnimals = true` | Hard filter: exclude `compatibleWithOtherAnimals = false`; `null` is kept without a bonus. |
+| `activityLevel = HIGH` | Score up `ENERGETIC` and `PLAYFUL`. |
+| `activityLevel = LOW` | Score up `CALM` and `INDEPENDENT`. |
+| `experienceWithAnimals = NONE` | Score up `AFFECTIONATE`; score down `SHY` and `ENERGETIC`. |
+| `housingSize = MEDIUM` / `LARGE` | Score up `size` closer to the housing size; no exclusion. |
+
+Where the adopter profile lives: for a guest it is never stored on the server and stays only in the browser (localStorage); for an authenticated user the profile from their latest matching run is saved in `UserProfile.matchingPreferences` (Domain Model), so it can be offered as a starting point and used as basic context by the AI Assistant (ADR-011, Option Y). After a guest registers, the client offers the locally held profile as the starting point; if the user accepts, it is saved to the same field. It is never used to restrict what the user can ask.
+
+The exact weights and tie-breaking are implementation details of the technical specification, not of this decision. If a rule needs an attribute the taxonomy cannot express, the taxonomy is extended deliberately (see Disadvantages) rather than inventing values in the extraction prompt.
+
 ## Consequences
 
 ### Advantages

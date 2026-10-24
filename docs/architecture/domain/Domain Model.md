@@ -15,6 +15,7 @@ Conceptual attributes:
 - id
 - email
 - passwordHash
+- role (`USER` or `ADMIN`; see Roles)
 - status
 - termsAcceptedAt
 - termsVersion
@@ -33,8 +34,12 @@ Conceptual attributes:
 - userId
 - firstName
 - lastName
+- hasSeenWelcome (boolean, default `false`; whether the user has already seen Diango's welcome moment — ADR-011)
+- matchingPreferences (optional, structured; the adopter profile last extracted by AI Matching — ADR-010; `null` until used)
 - createdAt
 - updatedAt
+
+`matchingPreferences` is a convenience starting point, not a restriction: the user can always enter different preferences, and it is never used to narrow what they can ask. A guest's preferences are never stored server-side; until the guest registers they live only in the browser (localStorage, the same guest pattern as Favourites — Functional Map), and after registration the client offers them as the starting point for this field. `AdopterProfile` remains a future profile; when it exists, `matchingPreferences` is the natural candidate to move into it.
 
 ---
 
@@ -80,7 +85,7 @@ Roles and profiles must not be treated as the same concept.
 
 ### MVP roles
 
-Only `USER` and `ADMIN` are implemented for the MVP. `SHELTER_MANAGER`, `STORE_MANAGER` and `VETERINARY_MANAGER` remain documented future roles: the MVP's own shelter is managed as `ADMIN`, and Store/Veterinary are out of scope entirely per the MVP document. These roles must not be added to the enum until the corresponding functionality is actually being implemented, to avoid unused authorization values.
+A user has exactly one `role` (`User.role`). Every account created through registration is `USER`; `ADMIN` accounts are not created through the public registration flow (how the first admin is provisioned is a technical decision for the implementation, e.g. a seed). Only `USER` and `ADMIN` are implemented for the MVP. `SHELTER_MANAGER`, `STORE_MANAGER` and `VETERINARY_MANAGER` remain documented future roles: the MVP's own shelter is managed as `ADMIN`, and Store/Veterinary are out of scope entirely per the MVP document. These roles must not be added to the enum until the corresponding functionality is actually being implemented, to avoid unused authorization values.
 
 ### Unauthenticated access ("guest" / "visitor")
 
@@ -129,6 +134,24 @@ Passwords must never be stored in plaintext.
 Only a secure password hash may be persisted.
 
 Password confirmation is a frontend/application validation concern and is never stored.
+
+---
+
+## UserSession
+
+A UserSession is one revocable authenticated session of a User, associated with one refresh token (ADR-002). A user may have several active sessions (one per device or login).
+
+Conceptual attributes:
+
+- id
+- userId
+- refreshTokenHash (hash of the current refresh token; the plaintext token is never persisted)
+- status: `ACTIVE`, `REVOKED`, `EXPIRED`
+- expiresAt (expiry of the current refresh token, 7 days; renewed on each rotation — ADR-002)
+- createdAt
+- updatedAt
+
+A session is created on registration and on each login, updated on refresh-token rotation, and set to `REVOKED` on logout, on a password change/reset (all of the user's sessions), or when a rotated refresh token is reused. Access tokens are not stored.
 
 ---
 
@@ -226,8 +249,8 @@ Conceptual attributes:
 - animalId (references `Animal`)
 - applicantUserId (references `User`)
 - message (free text from the applicant, optional)
-- status: `PENDING`, `APPROVED`, `REJECTED`, `COMPLETED`
-- decidedByUserId (the `ADMIN` who approved/rejected, once decided)
+- status: `PENDING`, `APPROVED`, `REJECTED`, `COMPLETED`, `CANCELLED`
+- decidedByUserId (the `ADMIN` who approved/rejected/cancelled, once decided)
 - decidedAt
 - createdAt, updatedAt
 
@@ -238,7 +261,11 @@ Conceptual attributes:
 - `REJECTED` — the shelter declines the request; the `Animal` remains/returns to `AVAILABLE`.
 - `COMPLETED` — the adoption is finalized after the offline process (meeting, paperwork — Product Definition, MVP flow) concludes; the corresponding `Animal` moves to `ADOPTED`.
 
-A `CANCELLED` status (applicant withdraws) is not modelled for the MVP; this is future scope if a real need for it appears.
+- `CANCELLED` — an `APPROVED` request that does not proceed (e.g. the applicant does not follow through after the meeting); the `ADMIN` cancels it and the `Animal` returns from `RESERVED` to `AVAILABLE`. Only an `APPROVED` request can be cancelled. A cancelled request does not block the same user from submitting a new request for that animal later.
+
+Allowed transitions: `PENDING` → `APPROVED` | `REJECTED`; `APPROVED` → `COMPLETED` | `CANCELLED`. `REJECTED`, `COMPLETED` and `CANCELLED` are final.
+
+Withdrawal of a request by the applicant is not modelled for the MVP; this is future scope if a real need for it appears.
 
 ## Related documents
 

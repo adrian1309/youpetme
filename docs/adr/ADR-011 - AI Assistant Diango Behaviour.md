@@ -29,7 +29,7 @@ The AI Assistant (Functional Map — AI Assistant; MVP — AI, "Basic AI assista
 ### User context
 
 - **Option X — No context.** Diango does not know anything about who it is talking to.
-- **Option Y — Basic profile context.** Diango's system prompt is seeded with already-available data about the current user (e.g. `UserProfile` fields, prior AI Matching results) for the current interaction, without any new data collection or storage.
+- **Option Y — Basic profile context.** Diango's system prompt is seeded with already-available data about the current user (e.g. `UserProfile` fields, the adopter profile saved by AI Matching, `UserProfile.matchingPreferences`) for the current interaction, without any new data collection or storage.
 - **Option Z — Learned context from interaction history.** Diango adapts based on the user's past conversations over time, which depends on Option C (persistent memory) being in place first.
 
 ## Decision
@@ -40,7 +40,7 @@ For the **MVP**, we will use: **Option 2 (agent with tool use)** for the interac
 
 ### Welcome/introduction moment (MVP)
 
-In addition to the ongoing chatbot behaviour, the MVP includes a one-time **welcome trigger**: on a user's first visit, Diango appears centred on screen with a single speech-bubble message, distinct from the regular chatbot surface. Once dismissed, Diango returns to its normal always-available presence (Design System — AI-assisted experiences) and behaves as the agent described above. Whether the user has already seen this welcome moment is tracked per authenticated user (a flag on `UserProfile`) or, for a guest, client-side (localStorage), consistent with the guest/authenticated persistence split already established for Favourites (Functional Map — Animals, Future).
+In addition to the ongoing chatbot behaviour, the MVP includes a one-time **welcome trigger**: on a user's first visit, Diango appears centred on screen with a single speech-bubble message, distinct from the regular chatbot surface. Once dismissed, Diango returns to its normal always-available presence (Design System — AI-assisted experiences) and behaves as the agent described above. Whether the user has already seen this welcome moment is tracked per authenticated user (the `UserProfile.hasSeenWelcome` flag) or, for a guest, client-side (localStorage). When a guest who has already seen the welcome registers, the client sends that mark and the new profile is created with `hasSeenWelcome = true`, consistent with the guest/authenticated persistence split already established for Favourites (Functional Map — Animals, Future).
 
 ## Consequences
 
