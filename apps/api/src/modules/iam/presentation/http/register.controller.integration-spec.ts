@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 
 import { AppModule } from '../../../../app/app.module';
+import { buildOpenApiDocument } from '../../../../app/openapi';
 import { configureApp } from '../../../../app/configure-app';
 import { PrismaService } from '../../../../platform/database/prisma.service';
 import {
@@ -321,6 +322,19 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
       expect(output).not.toContain(refreshToken);
       expect(output).not.toContain((response.body as RegisterResponse).authentication.accessToken);
       expect(output).not.toContain(user.passwordHash);
+    });
+  });
+
+  describe('OpenAPI', () => {
+    it('documents the endpoint, its responses and the refresh cookie', () => {
+      const document = buildOpenApiDocument(app);
+
+      const operation = document.paths['/api/v1/auth/register']?.post;
+      expect(operation).toBeDefined();
+      expect(Object.keys(operation!.responses)).toEqual(
+        expect.arrayContaining(['201', '400', '409', '500']),
+      );
+      expect(JSON.stringify(operation)).toContain('refresh_token');
     });
   });
 
