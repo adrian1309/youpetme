@@ -1,3 +1,5 @@
+import { STATUS_CODES } from 'node:http';
+
 import {
   type ArgumentsHost,
   Catch,
@@ -31,7 +33,10 @@ function toDetails(issues: readonly ValidationIssue[]): ErrorDetail[] {
   }));
 }
 
-/** Translates domain errors into the stable error shape; unexpected errors stay generic. */
+/**
+ * Registered globally: translates domain errors into the stable error shape and keeps framework
+ * and unexpected errors generic, so no parser, database or stack detail reaches the client.
+ */
 @Catch()
 export class IamExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(IamExceptionFilter.name);
@@ -66,7 +71,7 @@ export class IamExceptionFilter implements ExceptionFilter {
         status,
         body: {
           statusCode: status,
-          error: exception.name,
+          error: STATUS_CODES[status] ?? 'Error',
           message: 'Request could not be processed',
         },
       };

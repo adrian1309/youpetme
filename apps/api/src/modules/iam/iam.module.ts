@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Logger, Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
 import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 
 import type { AppConfig } from '../../platform/configuration/app-config';
@@ -20,12 +21,14 @@ import {
   REGISTER_USER_USE_CASE,
   USER_REPOSITORY,
 } from './iam.tokens';
+import { IamExceptionFilter } from './presentation/http/iam-exception.filter';
 import { RegisterController } from './presentation/http/register.controller';
 
 @Module({
   imports: [EventEmitterModule.forRoot()],
   controllers: [RegisterController],
   providers: [
+    { provide: APP_FILTER, useClass: IamExceptionFilter },
     {
       provide: USER_REPOSITORY,
       inject: [PrismaService],

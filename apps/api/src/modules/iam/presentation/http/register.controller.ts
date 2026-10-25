@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { Body, Controller, HttpCode, Inject, Post, Res, UseFilters } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post, Res } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { RegisterResponse } from '@youpetme/contracts';
 import type { Response } from 'express';
@@ -10,13 +10,11 @@ import type { AppConfig } from '../../../../platform/configuration/app-config';
 import type { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { ValidationFailedError } from '../../domain/errors/validation-failed.error';
 import { REGISTER_USER_USE_CASE } from '../../iam.tokens';
-import { IamExceptionFilter } from './iam-exception.filter';
 import { setRefreshTokenCookie } from './refresh-token-cookie';
 import { parseRegisterBody } from './register.request';
 
 @ApiTags('auth')
 @Controller('auth')
-@UseFilters(IamExceptionFilter)
 export class RegisterController {
   constructor(
     @Inject(REGISTER_USER_USE_CASE) private readonly registerUser: RegisterUserUseCase,

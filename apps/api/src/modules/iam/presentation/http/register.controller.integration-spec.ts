@@ -325,6 +325,32 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
     });
   });
 
+  describe('Errors raised before reaching the controller', () => {
+    it('answers a malformed JSON body with the stable 400 shape, without parser details', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .set('Content-Type', 'application/json')
+        .send('{bad')
+        .expect(400);
+
+      expect(response.body).toEqual({
+        statusCode: 400,
+        error: 'Bad Request',
+        message: 'Request could not be processed',
+      });
+    });
+
+    it('answers an unknown route with the stable 404 shape', async () => {
+      const response = await request(app.getHttpServer()).get('/api/v1/nope').expect(404);
+
+      expect(response.body).toEqual({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'Request could not be processed',
+      });
+    });
+  });
+
   describe('OpenAPI', () => {
     it('documents the endpoint, its responses and the refresh cookie', () => {
       const document = buildOpenApiDocument(app);
