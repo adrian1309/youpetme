@@ -2,6 +2,9 @@
 export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 128;
 
+/** Maximum length (in characters) of firstName and lastName once trimmed. */
+export const NAME_MAX_LENGTH = 100;
+
 /** POST /api/v1/auth/register (TS-IAM-001). */
 export interface RegisterRequest {
   firstName: string;

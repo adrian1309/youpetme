@@ -31,4 +31,34 @@ describe('UserProfile.create', () => {
     ]);
     expect(() => UserProfile.create({ ...base, firstName: '   ' })).toThrow(ValidationFailedError);
   });
+
+  it('exposes the 100-character name limit', () => {
+    expect(UserProfile.NAME_MAX_LENGTH).toBe(100);
+  });
+
+  it('accepts names of exactly 100 characters, counted after trimming', () => {
+    const hundred = 'a'.repeat(100);
+
+    expect(UserProfile.validateNames(` ${hundred} `, hundred)).toEqual([]);
+    expect(UserProfile.create({ ...base, firstName: ` ${hundred} ` }).firstName).toBe(hundred);
+  });
+
+  it('rejects names longer than 100 characters as TOO_LONG', () => {
+    const tooLong = 'a'.repeat(101);
+
+    expect(UserProfile.validateNames(tooLong, 'Doe')).toEqual([
+      { field: 'firstName', code: 'TOO_LONG' },
+    ]);
+    expect(UserProfile.validateNames('John', tooLong)).toEqual([
+      { field: 'lastName', code: 'TOO_LONG' },
+    ]);
+    expect(() => UserProfile.create({ ...base, lastName: tooLong })).toThrow(ValidationFailedError);
+  });
+
+  it('counts characters, not UTF-16 units: 100 emoji fit, 101 do not', () => {
+    expect(UserProfile.validateNames('😀'.repeat(100), 'Doe')).toEqual([]);
+    expect(UserProfile.validateNames('😀'.repeat(101), 'Doe')).toEqual([
+      { field: 'firstName', code: 'TOO_LONG' },
+    ]);
+  });
 });

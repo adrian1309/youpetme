@@ -21,11 +21,22 @@ export class UserProfile {
     readonly updatedAt: Date,
   ) {}
 
+  /** Maximum characters of a first or last name once trimmed (TS-IAM-001). */
+  static readonly NAME_MAX_LENGTH = 100;
+
   static validateNames(firstName: string, lastName: string): ValidationIssue[] {
-    const issues: ValidationIssue[] = [];
-    if (firstName.trim().length === 0) issues.push({ field: 'firstName', code: 'REQUIRED' });
-    if (lastName.trim().length === 0) issues.push({ field: 'lastName', code: 'REQUIRED' });
-    return issues;
+    return [
+      ...UserProfile.validateName('firstName', firstName),
+      ...UserProfile.validateName('lastName', lastName),
+    ];
+  }
+
+  private static validateName(field: string, value: string): ValidationIssue[] {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) return [{ field, code: 'REQUIRED' }];
+    // Count characters (code points), as PostgreSQL's char_length does.
+    if ([...trimmed].length > UserProfile.NAME_MAX_LENGTH) return [{ field, code: 'TOO_LONG' }];
+    return [];
   }
 
   /** A new profile has no matching preferences; they are only filled in later (ADR-010). */

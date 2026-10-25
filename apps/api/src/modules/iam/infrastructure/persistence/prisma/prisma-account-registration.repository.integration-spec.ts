@@ -128,4 +128,22 @@ describe('PrismaAccountRegistrationRepository (PostgreSQL)', () => {
       }),
     ).rejects.toThrow();
   });
+
+  it('rejects at database level a name longer than 100 characters', async () => {
+    const account = buildAccount();
+    await repository.register(account);
+
+    await expect(
+      db.prisma.userProfile.update({
+        where: { id: account.profile.id },
+        data: { firstName: 'a'.repeat(101) },
+      }),
+    ).rejects.toThrow();
+    await expect(
+      db.prisma.userProfile.update({
+        where: { id: account.profile.id },
+        data: { lastName: 'a'.repeat(100) },
+      }),
+    ).resolves.toBeDefined();
+  });
 });

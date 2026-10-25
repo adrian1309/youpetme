@@ -331,6 +331,28 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
       );
     });
 
+    it.each(['firstName', 'lastName'] as const)(
+      'rejects a %s of 101 characters with TOO_LONG and a message that states the limit',
+      async (field) => {
+        const response = await request(app.getHttpServer())
+          .post('/api/v1/auth/register')
+          .send({ ...validBody, [field]: 'a'.repeat(101) })
+          .expect(400);
+
+        expect((response.body as ErrorResponse).details).toEqual([
+          { field, code: 'TOO_LONG', message: 'Must be at most 100 characters long' },
+        ]);
+        expect(await prisma.user.count()).toBe(0);
+      },
+    );
+
+    it('accepts names of exactly 100 characters', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ ...validBody, firstName: 'a'.repeat(100), lastName: 'b'.repeat(100) })
+        .expect(201);
+    });
+
     it('rejects a JSON array as the body', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/auth/register')

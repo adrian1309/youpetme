@@ -24,12 +24,16 @@ const MESSAGES: Record<string, string> = {
   TOO_LONG: 'Password must be at most 128 characters long',
   MISMATCH: 'Passwords do not match',
   MUST_BE_TRUE: 'You must accept the Terms of Service and the Privacy Policy',
+  // Field-specific wording takes precedence over the code-only messages above.
+  'firstName.TOO_LONG': 'Must be at most 100 characters long',
+  'lastName.TOO_LONG': 'Must be at most 100 characters long',
 };
 
 function toDetails(issues: readonly ValidationIssue[]): ErrorDetail[] {
   return issues.map((issue) => ({
     ...issue,
-    message: MESSAGES[issue.code] ?? 'This field is invalid',
+    message:
+      MESSAGES[`${issue.field}.${issue.code}`] ?? MESSAGES[issue.code] ?? 'This field is invalid',
   }));
 }
 
