@@ -49,6 +49,11 @@ const envSchema = z
   .refine((env) => env.COOKIE_SAMESITE !== 'None' || env.COOKIE_SECURE, {
     path: ['COOKIE_SAMESITE'],
     message: 'SameSite=None requires COOKIE_SECURE=true',
+  })
+  // A refresh token signed with the access secret could be replayed as an access token.
+  .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
+    path: ['JWT_REFRESH_SECRET'],
+    message: 'must differ from JWT_ACCESS_SECRET',
   });
 
 /**

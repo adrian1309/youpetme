@@ -91,4 +91,12 @@ describe('loadAppConfig', () => {
       'COOKIE_SAMESITE',
     );
   });
+
+  it('rejects using the same secret for access and refresh tokens', () => {
+    const attempt = () =>
+      loadAppConfig({ ...validEnv, JWT_REFRESH_SECRET: validEnv.JWT_ACCESS_SECRET });
+
+    expect(attempt).toThrow('JWT_REFRESH_SECRET');
+    expect(attempt).not.toThrow(validEnv.JWT_ACCESS_SECRET);
+  });
 });
