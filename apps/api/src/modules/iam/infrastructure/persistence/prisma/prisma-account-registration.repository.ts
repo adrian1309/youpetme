@@ -55,11 +55,25 @@ export class PrismaAccountRegistrationRepository implements AccountRegistrationR
   }
 }
 
-/** A unique violation on users.email (also what a concurrent duplicate registration produces). */
+/** Name of the unique index on users.email (see the init migration). */
+const EMAIL_UNIQUE_INDEX = 'users_email_key';
+
+/**
+ * A P2002 on users.email, which is also what a concurrent duplicate registration produces.
+ * Driver adapters report the violated index; the classic `meta.target` lists the fields.
+ */
 function isEmailUniqueViolation(error: unknown): boolean {
-  return (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === 'P2002' &&
-    JSON.stringify(error.meta ?? {}).includes('email')
-  );
+  if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') {
+    return false;
+  }
+  const meta = error.meta as
+    | {
+        target?: unknown;
+        driverAdapterError?: { cause?: { constraint?: { index?: unknown } } };
+      }
+    | undefined;
+  if (meta?.driverAdapterError?.cause?.constraint?.index === EMAIL_UNIQUE_INDEX) {
+    return true;
+  }
+  return Array.isArray(meta?.target) && meta.target.includes('email');
 }
