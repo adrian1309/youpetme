@@ -171,6 +171,19 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
       expect(JSON.stringify(user)).not.toContain('confirmPassword');
     });
 
+    it.each(['İstanbul@example.com', 'ΑΣ@example.com', 'ÀÉÎ@example.com', 'ß@example.com'])(
+      'accepts the non-ASCII email %s and stores it lowercased, never a 500',
+      async (email) => {
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/register')
+          .send({ ...validBody, email })
+          .expect(201);
+
+        const stored = await prisma.user.findFirstOrThrow();
+        expect(stored.email).toBe(email.trim().toLowerCase());
+      },
+    );
+
     it('ignores unknown fields such as role', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
