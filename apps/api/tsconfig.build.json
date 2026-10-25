@@ -5,5 +5,11 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "exclude": ["**/*.spec.ts", "**/*.integration-spec.ts", "**/*.e2e-spec.ts", "test"]
+  "exclude": [
+    "**/*.spec.ts",
+    "**/*.integration-spec.ts",
+    "**/*.e2e-spec.ts",
+    "**/testing/**",
+    "test"
+  ]
 }
