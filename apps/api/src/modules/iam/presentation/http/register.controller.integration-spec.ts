@@ -1,6 +1,7 @@
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { ErrorResponse, RegisterRequest, RegisterResponse } from '@youpetme/contracts';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
 import request from 'supertest';
 
@@ -197,6 +198,49 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
     });
   });
 
+  describe('Domain events', () => {
+    it('delivers UserCreated to a subscriber through the real module, without sensitive data', async () => {
+      const received: unknown[] = [];
+      const emitter = app.get(EventEmitter2, { strict: false });
+      const listener = (event: unknown) => received.push(event);
+      emitter.on('UserCreated', listener);
+
+      try {
+        const response = await request(app.getHttpServer())
+          .post('/api/v1/auth/register')
+          .send(validBody)
+          .expect(201);
+
+        expect(received).toHaveLength(1);
+        expect(received[0]).toMatchObject({
+          userId: (response.body as RegisterResponse).user.id,
+          email: 'john@example.com',
+        });
+        expect(JSON.stringify(received[0])).not.toMatch(/hash|password|token/i);
+      } finally {
+        emitter.off('UserCreated', listener);
+      }
+    });
+
+    it('still answers 201 when a subscriber fails', async () => {
+      const emitter = app.get(EventEmitter2, { strict: false });
+      const failing = () => {
+        throw new Error('welcome email provider down');
+      };
+      emitter.on('UserCreated', failing);
+
+      try {
+        await request(app.getHttpServer())
+          .post('/api/v1/auth/register')
+          .send(validBody)
+          .expect(201);
+        expect(await prisma.user.count()).toBe(1);
+      } finally {
+        emitter.off('UserCreated', failing);
+      }
+    });
+  });
+
   describe('Given an email that is already registered', () => {
     it('responds 409 without exposing anything about the existing account', async () => {
       await request(app.getHttpServer()).post('/api/v1/auth/register').send(validBody).expect(201);
@@ -284,6 +328,30 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
           expect.objectContaining({ field: 'termsAccepted', code: 'INVALID_TYPE' }),
         ]),
       );
+    });
+
+    it('rejects a JSON array as the body', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send([validBody])
+        .expect(400);
+
+      expect((response.body as ErrorResponse).details).toEqual([
+        expect.objectContaining({ field: 'body', code: 'INVALID_TYPE' }),
+      ]);
+      expect(await prisma.user.count()).toBe(0);
+    });
+
+    it('rejects a non-boolean hasSeenWelcome', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ ...validBody, hasSeenWelcome: 'true' })
+        .expect(400);
+
+      expect((response.body as ErrorResponse).details).toEqual([
+        expect.objectContaining({ field: 'hasSeenWelcome', code: 'INVALID_TYPE' }),
+      ]);
+      expect(await prisma.user.count()).toBe(0);
     });
 
     it('never echoes the submitted password in the error body', async () => {
