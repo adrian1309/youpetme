@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import { Body, Controller, HttpCode, Inject, Post, Res } from '@nestjs/common';
+import { Body, Controller, HttpCode, Inject, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { RegisterResponse } from '@youpetme/contracts';
 import type { Response } from 'express';
@@ -9,12 +9,14 @@ import { APP_CONFIG } from '../../../../platform/configuration/configuration.tok
 import type { AppConfig } from '../../../../platform/configuration/app-config';
 import type { RegisterUserUseCase } from '../../application/use-cases/register-user.use-case';
 import { ValidationFailedError } from '../../domain/errors/validation-failed.error';
+import { TrustedBrowserRequestGuard } from '../../../../platform/http/trusted-browser-request.guard';
 import { REGISTER_USER_USE_CASE } from '../../iam.tokens';
 import { setRefreshTokenCookie } from './refresh-token-cookie';
 import { parseRegisterBody } from './register.request';
 
 @ApiTags('auth')
 @Controller('auth')
+@UseGuards(TrustedBrowserRequestGuard)
 export class RegisterController {
   constructor(
     @Inject(REGISTER_USER_USE_CASE) private readonly registerUser: RegisterUserUseCase,
@@ -44,6 +46,8 @@ export class RegisterController {
   })
   @ApiResponse({ status: 201, description: 'Account created; sets the refresh_token cookie' })
   @ApiResponse({ status: 400, description: 'Invalid input; `details` lists each failing field' })
+  @ApiResponse({ status: 403, description: 'Origin present and different from WEB_ORIGIN' })
+  @ApiResponse({ status: 415, description: 'Content-Type is not application/json' })
   @ApiResponse({ status: 409, description: 'The email already belongs to an account' })
   @ApiResponse({ status: 500, description: 'Unexpected error (generic message)' })
   @HttpCode(201)

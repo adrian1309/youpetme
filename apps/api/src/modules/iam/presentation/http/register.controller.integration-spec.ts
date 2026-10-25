@@ -407,6 +407,61 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
     });
   });
 
+  describe('Cross-site request protection', () => {
+    it('rejects a form-encoded body with 415 and creates nothing', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .type('form')
+        .send({ ...validBody, termsAccepted: 'true' })
+        .expect(415);
+
+      expect(response.body).toEqual({
+        statusCode: 415,
+        error: 'Unsupported Media Type',
+        message: 'Request could not be processed',
+      });
+      expect(response.headers['set-cookie']).toBeUndefined();
+      expect(await prisma.user.count()).toBe(0);
+    });
+
+    it('rejects a text/plain body with 415', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .set('Content-Type', 'text/plain')
+        .send(JSON.stringify(validBody))
+        .expect(415);
+      expect(await prisma.user.count()).toBe(0);
+    });
+
+    it('rejects another Origin with 403, without setting a cookie or creating the account', async () => {
+      const response = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .set('Origin', 'https://evil.example')
+        .send(validBody)
+        .expect(403);
+
+      expect(response.body).toEqual({
+        statusCode: 403,
+        error: 'Forbidden',
+        message: 'Request could not be processed',
+      });
+      expect(response.headers['set-cookie']).toBeUndefined();
+      expect(await prisma.user.count()).toBe(0);
+    });
+
+    it('accepts the configured Origin', async () => {
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .set('Origin', WEB_ORIGIN)
+        .send(validBody)
+        .expect(201);
+    });
+
+    it('accepts a request without Origin (curl, tests, non-browser clients)', async () => {
+      await request(app.getHttpServer()).post('/api/v1/auth/register').send(validBody).expect(201);
+    });
+  });
+
   describe('Errors raised before reaching the controller', () => {
     it('answers a malformed JSON body with the stable 400 shape, without parser details', async () => {
       const response = await request(app.getHttpServer())
@@ -440,7 +495,7 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
       const operation = document.paths['/api/v1/auth/register']?.post;
       expect(operation).toBeDefined();
       expect(Object.keys(operation!.responses)).toEqual(
-        expect.arrayContaining(['201', '400', '409', '500']),
+        expect.arrayContaining(['201', '400', '403', '409', '415', '500']),
       );
       expect(JSON.stringify(operation)).toContain('refresh_token');
     });
