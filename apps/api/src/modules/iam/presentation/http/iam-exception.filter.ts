@@ -25,6 +25,7 @@ const MESSAGES: Record<string, string> = {
   MISMATCH: 'Passwords do not match',
   MUST_BE_TRUE: 'You must accept the Terms of Service and the Privacy Policy',
   // Field-specific wording takes precedence over the code-only messages above.
+  'email.TOO_LONG': 'Must be at most 254 characters long',
   'firstName.TOO_LONG': 'Must be at most 100 characters long',
   'lastName.TOO_LONG': 'Must be at most 100 characters long',
 };

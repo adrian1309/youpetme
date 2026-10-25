@@ -19,8 +19,9 @@ describe('Email', () => {
     expect(Email.validate('john@example.com')).toEqual([]);
   });
 
-  it('rejects addresses longer than 254 characters', () => {
-    const tooLong = `${'a'.repeat(250)}@example.com`;
-    expect(Email.validate(tooLong)).toEqual([{ field: 'email', code: 'INVALID_FORMAT' }]);
+  it('rejects addresses longer than 254 characters as TOO_LONG and accepts exactly 254', () => {
+    const tooLong = `${'a'.repeat(243)}@example.com`;
+    expect(Email.validate(`${'a'.repeat(242)}@example.com`)).toEqual([]);
+    expect(Email.validate(tooLong)).toEqual([{ field: 'email', code: 'TOO_LONG' }]);
   });
 });

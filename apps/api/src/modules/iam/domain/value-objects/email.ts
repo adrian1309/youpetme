@@ -16,7 +16,11 @@ export class Email {
     if (normalized.length === 0) {
       return [{ field: 'email', code: 'REQUIRED' }];
     }
-    if (normalized.length > MAX_LENGTH || !EMAIL_PATTERN.test(normalized)) {
+    // The length check runs first so the pattern is never applied to oversized input.
+    if (normalized.length > MAX_LENGTH) {
+      return [{ field: 'email', code: 'TOO_LONG' }];
+    }
+    if (!EMAIL_PATTERN.test(normalized)) {
       return [{ field: 'email', code: 'INVALID_FORMAT' }];
     }
     return [];
