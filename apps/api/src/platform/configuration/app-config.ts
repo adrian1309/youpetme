@@ -20,6 +20,7 @@ export interface AppConfig {
 }
 
 const MIN_SECRET_LENGTH = 32;
+const PLACEHOLDER_PREFIX = 'change-me';
 
 const duration = z.string().transform((value, ctx) => {
   try {
@@ -32,6 +33,7 @@ const duration = z.string().transform((value, ctx) => {
 
 const envSchema = z
   .object({
+    NODE_ENV: z.string().optional(),
     DATABASE_URL: z.string().min(1),
     API_PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     WEB_ORIGIN: z.string().min(1),
@@ -49,6 +51,26 @@ const envSchema = z
   .refine((env) => env.COOKIE_SAMESITE !== 'None' || env.COOKIE_SECURE, {
     path: ['COOKIE_SAMESITE'],
     message: 'SameSite=None requires COOKIE_SECURE=true',
+  })
+  // Outside local development the values shipped in .env.example must not be usable (ARCH-001).
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV !== 'production') return;
+    for (const name of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'] as const) {
+      if (env[name].startsWith(PLACEHOLDER_PREFIX)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [name],
+          message: 'must not be a placeholder in production',
+        });
+      }
+    }
+    if (!env.COOKIE_SECURE) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['COOKIE_SECURE'],
+        message: 'must be true in production',
+      });
+    }
   })
   // A refresh token signed with the access secret could be replayed as an access token.
   .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {

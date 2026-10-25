@@ -99,4 +99,44 @@ describe('loadAppConfig', () => {
     expect(attempt).toThrow('JWT_REFRESH_SECRET');
     expect(attempt).not.toThrow(validEnv.JWT_ACCESS_SECRET);
   });
+
+  describe('in production', () => {
+    const production = { ...validEnv, NODE_ENV: 'production', COOKIE_SECURE: 'true' };
+
+    it('accepts a real configuration', () => {
+      expect(() => loadAppConfig(production)).not.toThrow();
+    });
+
+    it('rejects the placeholder secrets shipped in .env.example', () => {
+      expect(() =>
+        loadAppConfig({
+          ...production,
+          JWT_ACCESS_SECRET: 'change-me-access-secret-at-least-32-characters',
+        }),
+      ).toThrow('JWT_ACCESS_SECRET');
+      expect(() =>
+        loadAppConfig({
+          ...production,
+          JWT_REFRESH_SECRET: 'change-me-refresh-secret-at-least-32-characters',
+        }),
+      ).toThrow('JWT_REFRESH_SECRET');
+    });
+
+    it('rejects a refresh cookie without Secure', () => {
+      expect(() => loadAppConfig({ ...production, COOKIE_SECURE: 'false' })).toThrow(
+        'COOKIE_SECURE',
+      );
+    });
+
+    it('keeps the same values valid for local development', () => {
+      expect(() =>
+        loadAppConfig({
+          ...validEnv,
+          NODE_ENV: 'development',
+          JWT_ACCESS_SECRET: 'change-me-access-secret-at-least-32-characters',
+          COOKIE_SECURE: 'false',
+        }),
+      ).not.toThrow();
+    });
+  });
 });
