@@ -21,6 +21,7 @@ export interface AppConfig {
 
 const MIN_SECRET_LENGTH = 32;
 const PLACEHOLDER_PREFIX = 'change-me';
+const EXAMPLE_TERMS_VERSION = 'example-version-replace-me';
 
 const duration = z.string().transform((value, ctx) => {
   try {
@@ -63,6 +64,13 @@ const envSchema = z
           message: 'must not be a placeholder in production',
         });
       }
+    }
+    if (env.TERMS_VERSION === EXAMPLE_TERMS_VERSION) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['TERMS_VERSION'],
+        message: 'must be the real version of the published texts in production',
+      });
     }
     if (!env.COOKIE_SECURE) {
       ctx.addIssue({

@@ -128,6 +128,12 @@ describe('loadAppConfig', () => {
       );
     });
 
+    it('rejects the example TERMS_VERSION shipped in .env.example', () => {
+      expect(() =>
+        loadAppConfig({ ...production, TERMS_VERSION: 'example-version-replace-me' }),
+      ).toThrow('TERMS_VERSION');
+    });
+
     it('keeps the same values valid for local development', () => {
       expect(() =>
         loadAppConfig({
@@ -135,6 +141,7 @@ describe('loadAppConfig', () => {
           NODE_ENV: 'development',
           JWT_ACCESS_SECRET: 'change-me-access-secret-at-least-32-characters',
           COOKIE_SECURE: 'false',
+          TERMS_VERSION: 'example-version-replace-me',
         }),
       ).not.toThrow();
     });
