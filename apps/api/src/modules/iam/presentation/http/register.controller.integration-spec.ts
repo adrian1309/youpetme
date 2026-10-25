@@ -107,6 +107,7 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
       expect(Object.keys(body.authentication)).toEqual(['accessToken']);
       expect(JSON.stringify(response.body)).not.toMatch(/refresh|hash|password/i);
       expect(response.headers['cache-control']).toBe('no-store');
+      expect(response.headers['x-powered-by']).toBeUndefined();
 
       const claims = await new JwtService().verifyAsync<{ sub: string; role: string }>(
         body.authentication.accessToken,

@@ -12,6 +12,8 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   const config = app.get<AppConfig>(APP_CONFIG);
   configureApp(app, { webOrigin: config.webOrigin });
+  // Close the Prisma connection pool cleanly on SIGTERM/SIGINT.
+  app.enableShutdownHooks();
   if (process.env.NODE_ENV !== 'production') {
     setupOpenApi(app);
   }

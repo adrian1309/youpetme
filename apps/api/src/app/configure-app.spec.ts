@@ -3,7 +3,13 @@ import type { INestApplication } from '@nestjs/common';
 import { API_GLOBAL_PREFIX, configureApp } from './configure-app';
 
 function fakeApp() {
-  return { setGlobalPrefix: jest.fn(), enableCors: jest.fn() };
+  const express = { disable: jest.fn() };
+  return {
+    setGlobalPrefix: jest.fn(),
+    enableCors: jest.fn(),
+    getHttpAdapter: () => ({ getInstance: () => express }),
+    express,
+  };
 }
 
 describe('configureApp', () => {
@@ -33,5 +39,13 @@ describe('configureApp', () => {
     configureApp(app as unknown as INestApplication);
 
     expect(app.enableCors).not.toHaveBeenCalled();
+  });
+
+  it('does not advertise the framework through the X-Powered-By header', () => {
+    const app = fakeApp();
+
+    configureApp(app as unknown as INestApplication);
+
+    expect(app.express.disable).toHaveBeenCalledWith('x-powered-by');
   });
 });

@@ -10,6 +10,10 @@ export interface ConfigureAppOptions {
 
 export function configureApp(app: INestApplication, options: ConfigureAppOptions = {}): void {
   app.setGlobalPrefix(API_GLOBAL_PREFIX);
+  // Do not advertise the framework to clients.
+  (app.getHttpAdapter().getInstance() as { disable(setting: string): void }).disable(
+    'x-powered-by',
+  );
   if (options.webOrigin) {
     app.enableCors({ origin: options.webOrigin, credentials: true });
   }
