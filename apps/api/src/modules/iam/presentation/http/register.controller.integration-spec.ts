@@ -353,6 +353,28 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
         .expect(201);
     });
 
+    it('rejects an email longer than 254 characters as INVALID_FORMAT and accepts exactly 254', async () => {
+      const tooLong = `${'a'.repeat(243)}@example.com`;
+      const limit = `${'a'.repeat(242)}@example.com`;
+      expect(tooLong).toHaveLength(255);
+      expect(limit).toHaveLength(254);
+
+      const rejected = await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ ...validBody, email: tooLong })
+        .expect(400);
+      expect((rejected.body as ErrorResponse).details).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ field: 'email', code: 'INVALID_FORMAT' }),
+        ]),
+      );
+
+      await request(app.getHttpServer())
+        .post('/api/v1/auth/register')
+        .send({ ...validBody, email: limit })
+        .expect(201);
+    });
+
     it('rejects a JSON array as the body', async () => {
       const response = await request(app.getHttpServer())
         .post('/api/v1/auth/register')
