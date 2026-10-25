@@ -26,7 +26,10 @@
       "ts",
       "js",
       "json"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    }
   },
   "dependencies": {
     "@nestjs/common": "^12.2.0",
