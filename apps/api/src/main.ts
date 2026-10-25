@@ -4,11 +4,14 @@ import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app/app.module';
 import { configureApp } from './app/configure-app';
+import type { AppConfig } from './platform/configuration/app-config';
+import { APP_CONFIG } from './platform/configuration/configuration.tokens';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
-  configureApp(app);
-  await app.listen(process.env.API_PORT ?? 3000);
+  const config = app.get<AppConfig>(APP_CONFIG);
+  configureApp(app, { webOrigin: config.webOrigin });
+  await app.listen(config.apiPort);
 }
 
 void bootstrap();
