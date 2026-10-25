@@ -9,8 +9,8 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "jest",
-    "test:integration": "jest --config jest.integration.config.js --passWithNoTests",
+    "test": "node --experimental-vm-modules --no-warnings ./node_modules/jest/bin/jest.js",
+    "test:integration": "node --experimental-vm-modules --no-warnings ./node_modules/jest/bin/jest.js --config jest.integration.config.js --passWithNoTests",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy"
