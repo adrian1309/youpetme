@@ -1,0 +1,76 @@
+// IAM persistence model (Domain Model, TS-IAM-001). Prisma is an infrastructure detail:
+// nothing generated from this file may be imported from domain/ or application/.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/platform/database/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum SessionStatus {
+  ACTIVE
+  REVOKED
+  EXPIRED
+}
+
+model User {
+  id              String     @id @db.Uuid
+  email           String     @unique
+  passwordHash    String     @map("password_hash")
+  role            UserRole
+  status          UserStatus
+  termsAcceptedAt DateTime   @map("terms_accepted_at") @db.Timestamptz(3)
+  termsVersion    String     @map("terms_version")
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  profile  UserProfile?
+  sessions UserSession[]
+
+  @@map("users")
+}
+
+model UserProfile {
+  id                  String   @id @db.Uuid
+  userId              String   @unique @map("user_id") @db.Uuid
+  firstName           String   @map("first_name")
+  lastName            String   @map("last_name")
+  hasSeenWelcome      Boolean  @default(false) @map("has_seen_welcome")
+  matchingPreferences Json?    @map("matching_preferences")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
+}
+
+model UserSession {
+  id               String        @id @db.Uuid
+  userId           String        @map("user_id") @db.Uuid
+  refreshTokenHash String        @map("refresh_token_hash")
+  status           SessionStatus
+  expiresAt        DateTime      @map("expires_at") @db.Timestamptz(3)
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}

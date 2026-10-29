@@ -6,3 +6,4 @@ pnpm-lock.yaml
 # Existing documentation is not reformatted as part of tooling changes
 docs
 *.md
+apps/api/src/platform/database/generated/
