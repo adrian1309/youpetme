@@ -18,6 +18,7 @@ Define a pragmatic, typed and testable stack for the YouPetMe web client and API
 | Server state | TanStack Query | API queries, mutations, cache and invalidation. |
 | Forms | React Hook Form | Form state, submissions and accessible field errors. |
 | Client validation | Zod | Schema-based validation close to form contracts. |
+| Internationalisation | i18next + react-i18next | Spanish-first UI copy kept in translation files, keyed by screen and field. |
 | Styling | Tailwind CSS | Utility-first implementation of the Design System's tokens (colour, spacing, typography, breakpoints). See ADR-009. |
 | Accessible UI primitives | Radix UI | Unstyled, accessible interactive primitives (dialog, dropdown, tabs) with keyboard navigation and ARIA handled, styled with Tailwind. See ADR-009. |
 | Animation | Framer Motion | Declarative animations and transitions (e.g. the AI Assistant mascot, skeleton-to-content transitions, staggered list animations) per Design System's perceived performance patterns. |
@@ -27,6 +28,7 @@ Define a pragmatic, typed and testable stack for the YouPetMe web client and API
 | Persistence | PostgreSQL + Prisma ORM | Relational persistence, migrations and typed access. |
 | Media storage | S3-compatible object storage (SeaweedFS in Docker for local development; see ADR-015) | Animal photo storage and delivery. |
 | Unit/component tests | Vitest + React Testing Library | Fast application and UI testing. |
+| Automated accessibility checks | axe-core | Accessibility assertions inside component tests. |
 | API integration tests | Jest + Supertest | NestJS and PostgreSQL integration coverage. |
 | End-to-end tests | Playwright | Critical user journeys across supported browsers. |
 | Transactional email | Resend (behind an `EmailSender` port) | Password-reset and other transactional emails; console/in-memory adapters in dev/test. See ADR-014. |
@@ -44,7 +46,7 @@ Vite provides a fast development server, HMR and optimized production builds for
 
 React Router will define all browser routes. It will distinguish among:
 
-- Public routes, such as `/register` and `/login`.
+- Public routes, such as `/register`, `/login`, `/terms` and `/privacy`.
 - Protected application routes, requiring an authenticated session.
 - Error and not-found routes.
 
@@ -56,11 +58,17 @@ TanStack Query owns server state: requests, mutations, cache, invalidation, retr
 
 Local UI state remains in React component state unless it is truly cross-cutting. A global client-state library will not be introduced initially. This avoids duplicating remote API state in a second store.
 
+The authentication session (the access token, held in memory only, per ADR-002) is exposed through a React context provider, not a store.
+
 ### Forms and validation
 
 React Hook Form manages form state and submission. Zod schemas validate browser input. The API repeats all validation independently, so a modified client cannot bypass business or security rules.
 
 `confirmPassword` is a form-only field: it is validated in the registration interaction and never persisted.
+
+### Internationalisation
+
+The web client is Spanish-first (Non Functional Requirements) and uses i18next with react-i18next from the start, so that additional languages can be added later without touching components. Copy lives in translation files keyed by screen and field. Validation schemas carry translation keys, never literal text, and visual components never hard-code user-facing strings.
 
 ### Web directory structure
 
@@ -124,7 +132,7 @@ This keeps photo storage swappable behind a port, mirroring the `UserRepository`
 | Test level | Tooling | Scope |
 |---|---|---|
 | Unit | Vitest (web), Jest (API) | Pure domain rules, use cases, utilities and isolated components. Use-case tests against a port (e.g. `UserRepository`) use an in-memory adapter, not a database. |
-| Component | React Testing Library | Form behaviour, visible errors and accessible interactions. |
+| Component | React Testing Library + axe-core | Form behaviour, visible errors and accessible interactions, including automated accessibility checks. |
 | Integration | Jest + Supertest + isolated PostgreSQL | API endpoints, Prisma repositories, transactions and constraints. |
 | E2E | Playwright | Browser journeys such as registration, login and logout. |
 
@@ -147,7 +155,7 @@ The suffix alone identifies what a test needs to run (nothing special, a Testcon
 
 ### Build exclusions
 
-Production builds (`apps/api`, `apps/web`) exclude: all test files (`**/*.spec.ts`, `**/*.integration-spec.ts`, `**/*.e2e-spec.ts`), test-only helpers such as the in-memory adapters and database fixtures in `testing/` folders (`**/testing/**`), the `test/`/`e2e/` folders, `docs/`, and any `.env*` file other than `.env.example`.
+Production builds (`apps/api`, `apps/web`) exclude: all test files (`**/*.spec.ts`, `**/*.integration-spec.ts`, `**/*.e2e-spec.ts`), the `test/`/`e2e/` folders, `docs/`, and any `.env*` file other than `.env.example`.
 
 ## Security baseline
 
@@ -161,10 +169,9 @@ Production builds (`apps/api`, `apps/web`) exclude: all test files (`**/*.spec.t
 ## Versioning and upgrades
 
 - Exact dependency versions are pinned in the lockfile.
+- A new dependency is pinned to an exact version published at least 7 days earlier, which can be older than the latest release.
 - Node.js uses a documented LTS version: **Node.js 24 (LTS, supported until 2028-04-30)**, pinned in `.nvmrc` and `package.json` `engines`. Confirmed by the project owner at repository initialization (2026-10-20), when Node.js 24 entered Maintenance LTS and Node.js 26 was about to become Active LTS (2026-10-28); a move to Node.js 26 is a major upgrade performed in an isolated branch.
 - pnpm is pinned to **11.21.0** through the `packageManager` field (Corepack). TypeScript is pinned to **6.0.3**, the highest version compatible with the whole toolchain at initialization (NestJS 12 schematics require ≥6; typescript-eslint and ts-jest do not yet support 7).
-- Persistence and test tooling pinned with the first persistence story (SCRUM-19), checked on the npm registry on 2026-10-25: Prisma **7.10.1** (`prisma`, `@prisma/client`, `@prisma/adapter-pg`) and Testcontainers **12.2.1** (`testcontainers`, `@testcontainers/postgresql`), both stable releases. Note: the `latest` dist-tag of the `prisma` CLI package pointed at `8.0.0-rc.27` (a release candidate, excluded by the rule below), so `prisma` must always be installed with an explicit version. Argon2id uses `argon2` **0.45.1**.
-- NestJS 12 packages are ESM-only, so API tests run Jest with `--experimental-vm-modules` (set in the `test` and `test:integration` scripts of `apps/api`).
 - Major upgrades are performed in isolated branches with a complete test run.
 - Preview, beta or early-access features are excluded from the MVP unless explicitly approved in an ADR.
 
