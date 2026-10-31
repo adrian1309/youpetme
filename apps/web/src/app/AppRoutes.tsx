@@ -15,6 +15,10 @@ export function AppRoutes() {
         <Route path="terms" element={<PlaceholderPage titleKey="placeholder.terms.title" />} />
         <Route path="privacy" element={<PlaceholderPage titleKey="placeholder.privacy.title" />} />
         <Route path="login" element={<PlaceholderPage titleKey="placeholder.login.title" />} />
+        <Route
+          path="*"
+          element={<PlaceholderPage titleKey="notFound.title" bodyKey="notFound.body" />}
+        />
       </Route>
     </Routes>
   );

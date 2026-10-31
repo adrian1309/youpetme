@@ -75,6 +75,10 @@
       "register": "Crear cuenta"
     }
   },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "No hemos encontrado la página que buscas. Revisa la dirección o vuelve al inicio."
+  },
   "placeholder": {
     "terms": { "title": "Términos de Servicio" },
     "privacy": { "title": "Política de Privacidad" },

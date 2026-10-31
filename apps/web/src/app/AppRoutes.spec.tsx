@@ -174,4 +174,37 @@ describe('AppRoutes', () => {
       await expectNoAxeViolations(container, { page: true });
     });
   });
+
+  describe('unknown addresses', () => {
+    it.each(['/nope', '/register/extra', '/terms/old'])(
+      '%s shows a not-found page with a way back, inside the layout',
+      async (path) => {
+        renderWithProviders(<AppRoutes />, { initialEntries: [path] });
+
+        expect(screen.getByRole('banner')).toBeInTheDocument();
+        expect(screen.getByRole('main')).toContainElement(
+          screen.getByRole('heading', { level: 1, name: 'Página no encontrada' }),
+        );
+        expect(
+          screen.getByText(
+            'No hemos encontrado la página que buscas. Revisa la dirección o vuelve al inicio.',
+          ),
+        ).toBeVisible();
+        expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
+        await waitFor(() => expect(document.title).toBe('Página no encontrada · YouPetMe'));
+      },
+    );
+
+    it('does not use the "coming soon" text of the provisional pages', () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/nope'] });
+
+      expect(screen.queryByText('Esta página estará disponible pronto.')).not.toBeInTheDocument();
+    });
+
+    it('has no accessibility violations as a whole page', async () => {
+      const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/nope'] });
+
+      await expectNoAxeViolations(container, { page: true });
+    });
+  });
 });

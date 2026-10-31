@@ -39,6 +39,13 @@ describe('i18n (NFR: translation keys, Spanish first)', () => {
     );
   });
 
+  it('has the not-found copy', () => {
+    expect(i18n.t('notFound.title')).toBe('Página no encontrada');
+    expect(i18n.t('notFound.body')).toBe(
+      'No hemos encontrado la página que buscas. Revisa la dirección o vuelve al inicio.',
+    );
+  });
+
   it('interpolates limits and names instead of hard-coding them', () => {
     expect(i18n.t('register.errors.password.tooShort', { min: 8 })).toBe(
       'La contraseña debe tener al menos 8 caracteres.',
