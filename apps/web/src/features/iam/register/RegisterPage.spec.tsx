@@ -608,6 +608,19 @@ describe('RegisterPage', () => {
     });
   });
 
+  describe('what stays in memory after registering', () => {
+    it('does not keep the submitted password or the response in the query cache', async () => {
+      const user = userEvent.setup();
+      const { queryClient } = renderRegister(vi.fn().mockResolvedValue(jsonResponse(201, created)));
+
+      await fillValidForm(user);
+      await user.click(field.submit());
+      await screen.findByText('home: John');
+
+      await waitFor(() => expect(queryClient.getMutationCache().getAll()).toHaveLength(0));
+    });
+  });
+
   describe('while the request is in flight', () => {
     it('blocks duplicate submissions and announces the state', async () => {
       const user = userEvent.setup();

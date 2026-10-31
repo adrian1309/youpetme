@@ -24,7 +24,10 @@ interface Options {
 }
 
 /** Renders `ui` with the same providers as the app, but with a router in memory and a fake API. */
-export function renderWithProviders(ui: ReactElement, options: Options = {}): RenderResult {
+export function renderWithProviders(
+  ui: ReactElement,
+  options: Options = {},
+): RenderResult & { queryClient: QueryClient } {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
@@ -33,7 +36,7 @@ export function renderWithProviders(ui: ReactElement, options: Options = {}): Re
     fetch: options.fetch ?? (() => Promise.reject(new TypeError('no fake fetch configured'))),
   });
 
-  return render(
+  const result = render(
     <QueryClientProvider client={queryClient}>
       <ApiClientProvider client={client}>
         <AuthProvider>
@@ -42,4 +45,6 @@ export function renderWithProviders(ui: ReactElement, options: Options = {}): Re
       </ApiClientProvider>
     </QueryClientProvider>,
   );
+
+  return { ...result, queryClient };
 }

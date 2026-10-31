@@ -63,6 +63,8 @@ export function RegisterForm({ titleId }: { titleId: string }) {
   });
 
   const mutation = useMutation({
+    // Do not keep the submitted password or the access token in the query cache after unmounting.
+    gcTime: 0,
     mutationFn: (values: RegisterFormValues) =>
       client.post<RegisterResponse>(
         REGISTER_PATH,
