@@ -3,6 +3,9 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  // @youpetme/contracts is a CommonJS workspace package: pre-bundle it so the dev server serves
+  // it as ESM (the production build and Vitest already handle it).
+  optimizeDeps: { include: ['@youpetme/contracts'] },
   test: {
     environment: 'jsdom',
     globals: true,
