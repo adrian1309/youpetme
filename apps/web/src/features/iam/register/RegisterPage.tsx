@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Link, Navigate } from 'react-router';
 
+import { PageTitle } from '../../../components/PageTitle';
 import { useAuth } from '../auth/auth-state';
 import { RegisterForm } from './RegisterForm';
 
@@ -16,6 +17,7 @@ export function RegisterPage() {
 
   return (
     <div className="mx-auto w-full max-w-xl px-4 py-8">
+      <PageTitle title={t('register.title')} />
       <h1 id={TITLE_ID} className="mb-6 text-3xl font-bold text-text">
         {t('register.title')}
       </h1>
