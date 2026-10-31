@@ -46,6 +46,13 @@ describe('i18n (NFR: translation keys, Spanish first)', () => {
     );
   });
 
+  it('has the configuration error copy, without technical detail', () => {
+    expect(i18n.t('configuration.error.title')).toBe('No se puede iniciar la aplicación');
+    expect(i18n.t('configuration.error.body')).toBe(
+      'La configuración de esta versión no es correcta. Quien administra la aplicación debe revisar la variable VITE_API_URL.',
+    );
+  });
+
   it('interpolates limits and names instead of hard-coding them', () => {
     expect(i18n.t('register.errors.password.tooShort', { min: 8 })).toBe(
       'La contraseña debe tener al menos 8 caracteres.',

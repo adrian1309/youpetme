@@ -75,6 +75,12 @@
       "register": "Crear cuenta"
     }
   },
+  "configuration": {
+    "error": {
+      "title": "No se puede iniciar la aplicación",
+      "body": "La configuración de esta versión no es correcta. Quien administra la aplicación debe revisar la variable VITE_API_URL."
+    }
+  },
   "notFound": {
     "title": "Página no encontrada",
     "body": "No hemos encontrado la página que buscas. Revisa la dirección o vuelve al inicio."
