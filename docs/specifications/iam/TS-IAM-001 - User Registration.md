@@ -68,7 +68,7 @@ Registra una cuenta y crea una sesión autenticada para el usuario.
 | `email` | Obligatorio; formato de correo válido; máximo 254 caracteres; se normaliza para comparación y almacenamiento. |
 | `password` | Obligatorio; debe cumplir la política de contraseña de ADR-002. |
 | `termsAccepted` | Obligatorio; debe ser `true` (aceptación de Términos de Servicio y Política de Privacidad). La versión aceptada no la envía el cliente: la determina el servidor. |
-| `hasSeenWelcome` | Opcional; booleano. Lo envía el cliente como `true` si el guest ya vio la bienvenida de Diango (localStorage). Si falta, vale `false`. |
+| `hasSeenWelcome` | Opcional; booleano. Lo envía el cliente como `true` si el guest ya vio la bienvenida de Diango, que el cliente registra en localStorage con la clave `youpetme:diango-welcome-seen` y el valor `"true"` (ADR-011). Si falta, vale `false`. |
 | `confirmPassword` | Obligatorio; debe coincidir exactamente con `password`. Se valida, pero no se almacena ni forma parte de ninguna entidad de dominio. |
 
 La política de contraseña es la definida en ADR-002: mínimo 8 caracteres, máximo razonable de 128 y sin reglas de complejidad obligatorias. Debe estar centralizada y ser consistente entre cliente y servidor; el servidor es la fuente de verdad.
@@ -166,7 +166,10 @@ La ruta pública `/register` incluirá un formulario para `firstName`, `lastName
 - Validará los datos antes de enviar y mostrará errores claros, accesibles y asociados a cada campo.
 - Deshabilitará o protegerá el envío repetido mientras la petición esté en curso.
 - Mostrará los errores de negocio y validación devueltos por la API.
-- Tras una respuesta exitosa, actualizará el estado de autenticación conforme a ADR-002 y redirigirá al área autenticada definida por el producto.
+- Tras una respuesta exitosa, actualizará el estado de autenticación conforme a ADR-002 y redirigirá al área autenticada definida por el producto: la ruta `/`.
+- Los enlaces de la casilla de términos apuntan a `/terms` (Términos de Servicio) y `/privacy` (Política de Privacidad) y se abren en una pestaña nueva. Hasta SCRUM-47 son páginas provisionales.
+- Al enviar, leerá la clave de localStorage de Diango (`youpetme:diango-welcome-seen`) para informar `hasSeenWelcome`.
+- Los textos de la interfaz están en español y se gestionan con i18n.
 - No registrará ni expondrá contraseñas, tokens o respuestas sensibles en consola, analítica o mensajes de error.
 
 ## Evento de dominio
@@ -199,6 +202,8 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 
 ### End-to-end tests
 
+Se implementan en SCRUM-48, con Playwright, en una rama aparte.
+
 - Registro completo desde `/register` hasta el acceso al área autenticada.
 - Errores de validación visibles en el formulario, incluido el envío sin aceptar términos.
 - Manejo de correo previamente registrado.
@@ -211,18 +216,18 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 
 ## Definition of Done
 
-- [ ] El visitante puede crear una cuenta válida desde `/register`.
-- [ ] Cliente y servidor validan todos los campos requeridos.
-- [ ] `confirmPassword` se valida y nunca se almacena.
-- [ ] La aceptación de términos es obligatoria y se guarda con fecha y versión (`termsAcceptedAt`, `termsVersion`).
-- [ ] Los correos se normalizan y están protegidos por una restricción única en base de datos.
-- [ ] Las contraseñas se almacenan únicamente como hash según ADR-002.
-- [ ] `User`, `UserProfile` y `UserSession` se crean de forma atómica y con UUID.
-- [ ] El usuario queda autenticado tras el registro conforme a ADR-002: access token en el cuerpo y refresh token en cookie `HttpOnly`.
-- [ ] Los errores de validación y correo duplicado son claros y seguros.
-- [ ] Se publica `UserCreated` sin datos sensibles tras una creación confirmada.
+- [x] El visitante puede crear una cuenta válida desde `/register`.
+- [x] Cliente y servidor validan todos los campos requeridos.
+- [x] `confirmPassword` se valida y nunca se almacena.
+- [x] La aceptación de términos es obligatoria y se guarda con fecha y versión (`termsAcceptedAt`, `termsVersion`).
+- [x] Los correos se normalizan y están protegidos por una restricción única en base de datos.
+- [x] Las contraseñas se almacenan únicamente como hash según ADR-002.
+- [x] `User`, `UserProfile` y `UserSession` se crean de forma atómica y con UUID.
+- [x] El usuario queda autenticado tras el registro conforme a ADR-002: access token en el cuerpo y refresh token en cookie `HttpOnly`.
+- [x] Los errores de validación y correo duplicado son claros y seguros.
+- [x] Se publica `UserCreated` sin datos sensibles tras una creación confirmada.
 - [ ] Las pruebas unitarias, de integración y E2E definidas pasan.
-- [ ] Se ha realizado la comprobación manual de los flujos principales y de seguridad básica.
+- [x] Se ha realizado la comprobación manual de los flujos principales y de seguridad básica.
 - [ ] La documentación de API, variables de entorno y decisiones pendientes queda actualizada.
 
 ## Referencias
