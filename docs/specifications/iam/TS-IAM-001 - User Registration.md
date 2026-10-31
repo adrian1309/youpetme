@@ -63,24 +63,15 @@ Registra una cuenta y crea una sesión autenticada para el usuario.
 
 | Campo | Reglas |
 |---|---|
-| `firstName` | Obligatorio; texto válido tras eliminar espacios iniciales y finales; máximo 100 caracteres tras eliminarlos (se cuentan caracteres, no bytes). Si lo supera, error `TOO_LONG`. |
-| `lastName` | Obligatorio; texto válido tras eliminar espacios iniciales y finales; máximo 100 caracteres tras eliminarlos (se cuentan caracteres, no bytes). Si lo supera, error `TOO_LONG`. |
-| `email` | Obligatorio; formato de correo válido; se normaliza para comparación y almacenamiento; máximo 254 caracteres tras normalizar (longitud máxima de una dirección SMTP). Si lo supera, error `TOO_LONG`. |
+| `firstName` | Obligatorio; texto válido tras eliminar espacios iniciales y finales; máximo 100 caracteres tras eliminarlos. |
+| `lastName` | Obligatorio; texto válido tras eliminar espacios iniciales y finales; máximo 100 caracteres tras eliminarlos. |
+| `email` | Obligatorio; formato de correo válido; máximo 254 caracteres; se normaliza para comparación y almacenamiento. |
 | `password` | Obligatorio; debe cumplir la política de contraseña de ADR-002. |
 | `termsAccepted` | Obligatorio; debe ser `true` (aceptación de Términos de Servicio y Política de Privacidad). La versión aceptada no la envía el cliente: la determina el servidor. |
 | `hasSeenWelcome` | Opcional; booleano. Lo envía el cliente como `true` si el guest ya vio la bienvenida de Diango (localStorage). Si falta, vale `false`. |
 | `confirmPassword` | Obligatorio; debe coincidir exactamente con `password`. Se valida, pero no se almacena ni forma parte de ninguna entidad de dominio. |
 
-La política de contraseña es la definida en ADR-002: mínimo 8 caracteres, máximo razonable de 128 y sin reglas de complejidad obligatorias. Debe estar centralizada y ser consistente entre cliente y servidor; el servidor es la fuente de verdad. Lo mismo vale para los máximos de nombre y apellidos (`NAME_MAX_LENGTH` en `packages/contracts`).
-
-#### Protección de la petición
-
-Como este endpoint fija la cookie del refresh token, comprueba además las cabeceras de la petición antes de ejecutar el caso de uso (defensa adicional frente a CSRF, junto a `SameSite` y la lista de orígenes de CORS):
-
-- `Origin`: si está presente y es distinto de `WEB_ORIGIN`, se responde `403 Forbidden`. Si no está presente (curl, pruebas, clientes no navegador), la petición pasa: un navegador siempre envía `Origin` en un POST entre sitios.
-- `Content-Type`: si está presente y no es `application/json` (se admite `; charset=…`), se responde `415 Unsupported Media Type`. Si no está presente, la petición pasa.
-
-La comprobación vive en un único lugar reutilizable (guarda de la API) para aplicarla también a los endpoints que leen la cookie (refresh y logout).
+La política de contraseña es la definida en ADR-002: mínimo 8 caracteres, máximo razonable de 128 y sin reglas de complejidad obligatorias. Debe estar centralizada y ser consistente entre cliente y servidor; el servidor es la fuente de verdad.
 
 #### Response exitosa — `201 Created`
 
@@ -107,10 +98,10 @@ Los secretos, hashes y datos internos de sesión nunca se incluirán en la respu
 
 | Código | Caso | Respuesta esperada |
 |---|---|---|
-| `400 Bad Request` | Datos ausentes o inválidos; contraseña no válida; confirmación distinta; términos no aceptados; nombre o apellidos de más de 100 caracteres (`TOO_LONG`); correo de más de 254 caracteres (`TOO_LONG`). | Error estructurado por campo cuando corresponda. |
-| `403 Forbidden` | La cabecera `Origin` está presente y es distinta de `WEB_ORIGIN`. | Error genérico; no se crea la cuenta ni se envía cookie. |
+| `400 Bad Request` | Datos ausentes o inválidos; nombre o apellidos con más de 100 caracteres; correo con más de 254 caracteres; contraseña no válida; confirmación distinta; términos no aceptados. | Error estructurado por campo cuando corresponda. |
+| `403 Forbidden` | La petición trae una cabecera `Origin` distinta del origen web permitido (`WEB_ORIGIN`). Una petición sin cabecera `Origin` (curl, tests, clientes no navegador) se permite. | Error genérico. |
+| `415 Unsupported Media Type` | La petición no usa `Content-Type: application/json`. | Error genérico. |
 | `409 Conflict` | El correo ya pertenece a una cuenta. | Mensaje de negocio sin exponer información sensible adicional. |
-| `415 Unsupported Media Type` | La cabecera `Content-Type` está presente y no es `application/json`. | Error genérico; no se crea la cuenta ni se envía cookie. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
 ## Modelo de datos
@@ -140,8 +131,8 @@ Representa los datos de perfil iniciales asociados uno a uno a `User`.
 |---|---|
 | `id` | UUID, identificador primario. |
 | `userId` | UUID; relación única y obligatoria con `User`. |
-| `firstName` | Nombre del usuario (máximo 100 caracteres; también restringido en base de datos). |
-| `lastName` | Apellidos del usuario (máximo 100 caracteres; también restringido en base de datos). |
+| `firstName` | Nombre del usuario. Restricción de 100 caracteres en base de datos como defensa en profundidad. |
+| `lastName` | Apellidos del usuario. Restricción de 100 caracteres en base de datos como defensa en profundidad. |
 | `hasSeenWelcome` | Booleano; empieza en `false` (o en `true` si el cliente informa de que el guest ya vio la bienvenida de Diango, ADR-011). |
 | `matchingPreferences` | Opcional; empieza en `null`. Solo se rellena si el usuario acepta las preferencias de matching que el cliente conservaba como guest (ADR-010). |
 | `createdAt`, `updatedAt` | Marcas temporales de auditoría. |
@@ -190,9 +181,7 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 
 ### Unit tests
 
-- Normalización de email y límite de 254 caracteres (`TOO_LONG`).
-- Límite de 100 caracteres en nombre y apellidos (`TOO_LONG`), contados como caracteres.
-- Guarda de `Origin` y `Content-Type`: origen ajeno (403), tipo no JSON (415), sin cabeceras (pasa).
+- Normalización de email.
 - Reglas de validación de registro y coincidencia de contraseñas.
 - Rechazo de correo duplicado.
 - Rechazo cuando `termsAccepted` falta o no es `true`.
@@ -207,9 +196,6 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 - Persistencia atómica de `User`, `UserProfile` y `UserSession`.
 - Restricción única de email y traducción correcta a `409 Conflict`.
 - Respuesta de autenticación sin secretos internos, con el refresh token únicamente en la cookie `HttpOnly` y no en el cuerpo.
-- Rechazo con `415` de cuerpos `application/x-www-form-urlencoded` y `text/plain`, y con `403` de un `Origin` ajeno, sin crear la cuenta ni enviar cookie; aceptación de `WEB_ORIGIN` y de peticiones sin `Origin`.
-- Nombre o apellidos de 101 caracteres rechazados con `TOO_LONG` y de 100 aceptados; restricción `CHECK` en base de datos.
-- Correo de 255 caracteres rechazado con `TOO_LONG` y de 254 aceptado.
 
 ### End-to-end tests
 
@@ -234,8 +220,6 @@ La publicación deberá ocurrir únicamente cuando la creación se haya confirma
 - [ ] `User`, `UserProfile` y `UserSession` se crean de forma atómica y con UUID.
 - [ ] El usuario queda autenticado tras el registro conforme a ADR-002: access token en el cuerpo y refresh token en cookie `HttpOnly`.
 - [ ] Los errores de validación y correo duplicado son claros y seguros.
-- [ ] Nombre y apellidos tienen un máximo de 100 caracteres y el correo de 254, validados en servidor.
-- [ ] La petición de registro rechaza un `Origin` ajeno (403) y un `Content-Type` distinto de JSON (415) mediante una guarda reutilizable.
 - [ ] Se publica `UserCreated` sin datos sensibles tras una creación confirmada.
 - [ ] Las pruebas unitarias, de integración y E2E definidas pasan.
 - [ ] Se ha realizado la comprobación manual de los flujos principales y de seguridad básica.
