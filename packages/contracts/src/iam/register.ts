@@ -5,6 +5,9 @@ export const PASSWORD_MAX_LENGTH = 128;
 /** Maximum length (in characters) of firstName and lastName once trimmed. */
 export const NAME_MAX_LENGTH = 100;
 
+/** Maximum length of an email address once normalized (an SMTP address is at most 254). */
+export const EMAIL_MAX_LENGTH = 254;
+
 /** POST /api/v1/auth/register (TS-IAM-001). */
 export interface RegisterRequest {
   firstName: string;

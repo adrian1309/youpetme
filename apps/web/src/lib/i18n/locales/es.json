@@ -1,0 +1,95 @@
+{
+  "common": {
+    "skipToContent": "Saltar al contenido"
+  },
+  "register": {
+    "title": "Crea tu cuenta",
+    "fields": {
+      "firstName": { "label": "Nombre" },
+      "lastName": { "label": "Apellidos" },
+      "email": { "label": "Correo electrónico" },
+      "password": {
+        "label": "Contraseña",
+        "requirement": "Al menos {{min}} caracteres",
+        "met": "cumplido",
+        "pending": "pendiente",
+        "show": "Mostrar contraseña",
+        "hide": "Ocultar contraseña"
+      },
+      "confirmPassword": {
+        "label": "Confirmar contraseña",
+        "show": "Mostrar confirmación de contraseña",
+        "hide": "Ocultar confirmación de contraseña"
+      },
+      "terms": {
+        "label": "Acepto los <terms>Términos de Servicio</terms> y la <privacy>Política de Privacidad</privacy>.",
+        "opensInNewTab": "(se abre en una pestaña nueva)"
+      }
+    },
+    "actions": {
+      "submit": "Crear cuenta",
+      "submitting": "Creando tu cuenta…"
+    },
+    "login": {
+      "prompt": "¿Ya tienes una cuenta?",
+      "link": "Iniciar sesión"
+    },
+    "errors": {
+      "firstName": {
+        "required": "Escribe tu nombre para continuar.",
+        "tooLong": "El nombre debe tener {{nameMax}} caracteres como máximo."
+      },
+      "lastName": {
+        "required": "Escribe tus apellidos para continuar.",
+        "tooLong": "Los apellidos deben tener {{nameMax}} caracteres como máximo."
+      },
+      "email": {
+        "required": "Escribe tu correo electrónico.",
+        "invalid": "Escribe un correo válido, por ejemplo nombre@ejemplo.com.",
+        "tooLong": "El correo debe tener {{emailMax}} caracteres como máximo."
+      },
+      "password": {
+        "required": "Crea una contraseña para continuar.",
+        "tooShort": "La contraseña debe tener al menos {{min}} caracteres.",
+        "tooLong": "La contraseña debe tener {{max}} caracteres como máximo."
+      },
+      "confirmPassword": {
+        "required": "Repite la contraseña para confirmarla.",
+        "mismatch": "Las contraseñas deben coincidir. Revisa que las dos sean iguales."
+      },
+      "terms": {
+        "required": "Para crear la cuenta, acepta los Términos de Servicio y la Política de Privacidad."
+      },
+      "emailInUse": "Este correo ya está en uso. Inicia sesión o prueba con otro correo.",
+      "requestRejected": "No hemos podido enviar tu solicitud. Recarga la página e inténtalo de nuevo.",
+      "server": "Algo ha fallado por nuestra parte. Inténtalo de nuevo en unos minutos.",
+      "network": "No hemos podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+      "reviewFields": "Revisa los datos del formulario e inténtalo de nuevo.",
+      "generic": "No hemos podido crear la cuenta. Inténtalo de nuevo."
+    }
+  },
+  "home": {
+    "greeting": "Hola, {{name}}",
+    "accountCreated": "Tu cuenta está creada.",
+    "visitor": {
+      "register": "Crear cuenta"
+    }
+  },
+  "configuration": {
+    "error": {
+      "title": "No se puede iniciar la aplicación",
+      "body": "La configuración de esta versión no es correcta. Quien administra la aplicación debe revisar la variable VITE_API_URL."
+    }
+  },
+  "notFound": {
+    "title": "Página no encontrada",
+    "body": "No hemos encontrado la página que buscas. Revisa la dirección o vuelve al inicio."
+  },
+  "placeholder": {
+    "terms": { "title": "Términos de Servicio" },
+    "privacy": { "title": "Política de Privacidad" },
+    "login": { "title": "Iniciar sesión" },
+    "body": "Esta página estará disponible pronto.",
+    "back": "Volver al inicio"
+  }
+}
