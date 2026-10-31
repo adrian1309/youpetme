@@ -1,7 +1,15 @@
-export function App() {
+import { BrowserRouter } from 'react-router';
+
+import type { ApiClient } from '../lib/http/api-client';
+import { AppProviders } from './AppProviders';
+import { AppRoutes } from './AppRoutes';
+
+export function App({ apiClient }: { apiClient: ApiClient }) {
   return (
-    <main>
-      <h1>YouPetMe</h1>
-    </main>
+    <AppProviders client={apiClient}>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </AppProviders>
   );
 }
