@@ -28,6 +28,17 @@ describe('i18n (NFR: translation keys, Spanish first)', () => {
     expect(i18n.t('register.login.prompt')).toBe('¿Ya tienes una cuenta?');
   });
 
+  it('has distinct show/hide copy for the password and its confirmation', () => {
+    expect(i18n.t('register.fields.password.show')).toBe('Mostrar contraseña');
+    expect(i18n.t('register.fields.password.hide')).toBe('Ocultar contraseña');
+    expect(i18n.t('register.fields.confirmPassword.show')).toBe(
+      'Mostrar confirmación de contraseña',
+    );
+    expect(i18n.t('register.fields.confirmPassword.hide')).toBe(
+      'Ocultar confirmación de contraseña',
+    );
+  });
+
   it('interpolates limits and names instead of hard-coding them', () => {
     expect(i18n.t('register.errors.password.tooShort', { min: 8 })).toBe(
       'La contraseña debe tener al menos 8 caracteres.',

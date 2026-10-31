@@ -16,7 +16,11 @@
         "show": "Mostrar contraseña",
         "hide": "Ocultar contraseña"
       },
-      "confirmPassword": { "label": "Confirmar contraseña" },
+      "confirmPassword": {
+        "label": "Confirmar contraseña",
+        "show": "Mostrar confirmación de contraseña",
+        "hide": "Ocultar confirmación de contraseña"
+      },
       "terms": {
         "label": "Acepto los <terms>Términos de Servicio</terms> y la <privacy>Política de Privacidad</privacy>.",
         "opensInNewTab": "(se abre en una pestaña nueva)"

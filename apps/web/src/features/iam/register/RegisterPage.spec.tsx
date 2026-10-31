@@ -132,6 +132,31 @@ describe('RegisterPage', () => {
       }
     });
 
+    it('gives each show/hide toggle its own accessible name, so a screen reader user knows which field it controls', async () => {
+      const user = userEvent.setup();
+      renderRegister(vi.fn());
+
+      const showPassword = screen.getByRole('button', { name: 'Mostrar contraseña' });
+      const showConfirmation = screen.getByRole('button', {
+        name: 'Mostrar confirmación de contraseña',
+      });
+      expect(showPassword).not.toBe(showConfirmation);
+
+      await user.click(showConfirmation);
+
+      expect(field.confirmPassword()).toHaveAttribute('type', 'text');
+      expect(field.password()).toHaveAttribute('type', 'password');
+      expect(
+        screen.getByRole('button', { name: 'Ocultar confirmación de contraseña' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Mostrar contraseña' })).toBeInTheDocument();
+
+      await user.click(showPassword);
+
+      expect(field.password()).toHaveAttribute('type', 'text');
+      expect(screen.getByRole('button', { name: 'Ocultar contraseña' })).toBeInTheDocument();
+    });
+
     it('offers a way to log in', () => {
       renderRegister(vi.fn());
 
@@ -171,7 +196,7 @@ describe('RegisterPage', () => {
       expect(field.password()).toHaveFocus();
       await user.keyboard('my-secure-passphrase');
       await user.tab();
-      expect(screen.getAllByRole('button', { name: 'Mostrar contraseña' })[0]).toHaveFocus();
+      expect(screen.getByRole('button', { name: 'Mostrar contraseña' })).toHaveFocus();
       await user.tab();
       expect(field.confirmPassword()).toHaveFocus();
       await user.keyboard('my-secure-passphrase');

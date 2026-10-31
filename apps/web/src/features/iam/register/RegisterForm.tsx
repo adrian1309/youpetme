@@ -185,8 +185,8 @@ export function RegisterForm({ titleId }: { titleId: string }) {
       <PasswordField
         {...bind('confirmPassword')}
         label={t('register.fields.confirmPassword.label')}
-        showLabel={t('register.fields.password.show')}
-        hideLabel={t('register.fields.password.hide')}
+        showLabel={t('register.fields.confirmPassword.show')}
+        hideLabel={t('register.fields.confirmPassword.hide')}
         autoComplete="new-password"
         required
         error={messageFor('confirmPassword')}
