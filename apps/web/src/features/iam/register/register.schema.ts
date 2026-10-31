@@ -8,10 +8,10 @@ import {
 import { z } from 'zod';
 
 /**
- * Same pattern as the API's Email value object. The server stays the source of truth: this only
- * gives the user feedback before sending.
+ * Same pattern as the API's Email value object; email-pattern.parity.spec.ts fails if they
+ * drift apart. The server stays the source of truth: this only gives feedback before sending.
  */
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
 
 /** Validation messages are translation keys; the UI renders them with t() (NFR — i18n). */
 const errorKey = (path: string): string => `register.errors.${path}`;
