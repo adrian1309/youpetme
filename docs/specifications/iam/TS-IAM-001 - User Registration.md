@@ -226,7 +226,7 @@ Se implementan en SCRUM-48, con Playwright, en una rama aparte.
 - [x] El usuario queda autenticado tras el registro conforme a ADR-002: access token en el cuerpo y refresh token en cookie `HttpOnly`.
 - [x] Los errores de validación y correo duplicado son claros y seguros.
 - [x] Se publica `UserCreated` sin datos sensibles tras una creación confirmada.
-- [ ] Las pruebas unitarias, de integración y E2E definidas pasan.
+- [x] Las pruebas unitarias, de integración y E2E definidas pasan.
 - [x] Se ha realizado la comprobación manual de los flujos principales y de seguridad básica.
 - [ ] La documentación de API, variables de entorno y decisiones pendientes queda actualizada.
 

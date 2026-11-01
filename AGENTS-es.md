@@ -156,12 +156,13 @@ pnpm format:check       # Prettier, solo verificación (CI)
 pnpm typecheck          # comprobación de tipos TypeScript
 pnpm test               # unit + component tests (Vitest para web, Jest para API — ADR-005)
 pnpm test:integration   # tests de integración de la API, *.integration-spec.ts (Jest — ARCH-002); pasa sin tests
+pnpm test:e2e           # tests E2E de Playwright, *.e2e-spec.ts (necesita Docker; arranca y para su propio stack aislado; falla si `pnpm dev` está en marcha)
 pnpm build              # build de producción
 ```
 
 Los scripts de cada workspace se ejecutan con `pnpm --filter <nombre> <script>` (workspaces: `@youpetme/web`, `@youpetme/api`, `@youpetme/contracts`, `@youpetme/config`).
 
-Aún no disponibles: `pnpm test:e2e` (Playwright se añade con el primer recorrido E2E), Testcontainers para los tests de integración y los scripts de Prisma (se añaden con la primera historia de persistencia). No asumir que existe ningún otro script sin comprobar `package.json`/`turbo.json` primero.
+Aún no disponibles: Testcontainers para los tests de integración y los scripts de Prisma (se añaden con la primera historia de persistencia). No asumir que existe ningún otro script sin comprobar `package.json`/`turbo.json` primero.
 
 ### Testing manual de la API
 
