@@ -25,6 +25,11 @@
     "test:integration": {
       "dependsOn": ["^build", "generate"],
       "cache": false
+    },
+    "test:e2e": {
+      "dependsOn": ["^build", "@youpetme/api#build"],
+      "cache": false,
+      "passThroughEnv": ["CI", "DOCKER_*", "PLAYWRIGHT_*"]
     }
   }
 }
