@@ -469,6 +469,28 @@ describe('RegisterPage', () => {
 
       expect(await screen.findByText('home: John')).toBeInTheDocument();
     });
+
+    it('focuses the checkbox when it was ticked and then unticked before submitting', async () => {
+      const user = userEvent.setup();
+      const fetchMock = vi.fn();
+      renderRegister(fetchMock);
+
+      await fillValidForm(user);
+      await user.click(field.terms());
+      await user.pointer({ keys: '[MouseLeft>]', target: field.submit() });
+
+      // Pressing must not blur the field: its error would move the button away from the pointer
+      // before the release, and the browser would then fire no click. jsdom has no layout, so the
+      // focus is what shows it here.
+      expect(field.terms()).toHaveFocus();
+
+      await user.pointer({ keys: '[/MouseLeft]' });
+
+      await waitFor(() => expect(field.terms()).toHaveAttribute('aria-invalid', 'true'));
+      expect(field.terms()).toHaveFocus();
+      expect(field.terms()).not.toBeChecked();
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
   });
 
   describe('BDD 6 — required fields left empty', () => {
