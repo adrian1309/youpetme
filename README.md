@@ -111,7 +111,23 @@ The authoritative documents for the current foundation are:
 
 5. `pnpm dev` — starts the web client (Vite, http://localhost:5173) and the API (http://localhost:3000/api/v1 by default, `API_PORT`). See AGENTS.md — Common commands for the remaining scripts.
 
-Not yet part of the setup, added with the stories that need them: Prisma migrations and seed data (first persistence story), S3-compatible object storage in `infra/docker` (SeaweedFS per ADR-015, pending presigned-upload verification; MinIO's community edition is no longer maintained) and Playwright E2E tests.
+### End-to-end tests
+
+Once per machine, download the browser used locally:
+
+```bash
+pnpm --filter @youpetme/web exec playwright install chromium
+```
+
+Then, with Docker running and `pnpm dev` stopped (the E2E stack needs ports 3000 and 5173):
+
+```bash
+pnpm test:e2e
+```
+
+The command builds the apps and starts and removes its own PostgreSQL (Compose project `youpetme-e2e`, port 5433); the development database is not touched and does not use `.env`. Locally it runs Chromium; CI also runs WebKit.
+
+Not yet part of the setup, added with the stories that need them: Prisma migrations and seed data (first persistence story) and S3-compatible object storage in `infra/docker` (SeaweedFS per ADR-015, pending presigned-upload verification; MinIO's community edition is no longer maintained).
 
 ### Before running anything setup-related
 
