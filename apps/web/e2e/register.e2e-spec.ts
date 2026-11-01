@@ -211,6 +211,29 @@ test.describe('US-IAM-001 — Create Account', () => {
     expect(requests).toHaveLength(0);
   });
 
+  test('Scenario 5: a box ticked and then unticked still stops the form and gets the focus', async ({
+    page,
+  }) => {
+    const requests = trackRegisterRequests(page);
+    const form = registerForm(page);
+
+    // When they untick the box and click submit while it still has the focus
+    await fillValidForm(page, newVisitor());
+    await form.terms.uncheck();
+    // WebKit does not focus a clicked checkbox.
+    await form.terms.focus();
+    await form.submit.click();
+
+    // Then the box shows the error and gets the focus, and the form is not sent. The error must
+    // not appear on pressing the button: it would push the button away from the pointer, and the
+    // browser would fire no click, leaving the focus on the button.
+    await expect(form.terms).toHaveAccessibleDescription(
+      'Para crear la cuenta, acepta los Términos de Servicio y la Política de Privacidad.',
+    );
+    await expect(form.terms).toBeFocused();
+    expect(requests).toHaveLength(0);
+  });
+
   test('Scenario 6: every empty required field gets its own error', async ({ page }) => {
     const requests = trackRegisterRequests(page);
     const form = registerForm(page);
