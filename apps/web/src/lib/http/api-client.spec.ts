@@ -86,6 +86,40 @@ describe('createApiClient', () => {
     await expect(client.post('/x', {})).rejects.toBeInstanceOf(NetworkError);
   });
 
+  describe('get', () => {
+    it('GETs with credentials and without a body, and returns the parsed response', async () => {
+      const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { version: '2026-01' }));
+      const client = createApiClient({ baseUrl: 'http://localhost:3000/', fetch: fetchMock });
+
+      await expect(client.get('/api/v1/legal/terms-version')).resolves.toEqual({
+        version: '2026-01',
+      });
+
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe('http://localhost:3000/api/v1/legal/terms-version');
+      expect(init).toMatchObject({ method: 'GET', credentials: 'include' });
+      expect(init.body).toBeUndefined();
+      expect(new Headers(init.headers).get('Accept')).toBe('application/json');
+      expect(new Headers(init.headers).has('Content-Type')).toBe(false);
+    });
+
+    it('throws ApiError on an error status and NetworkError when the request cannot be made', async () => {
+      const failing = createApiClient({
+        baseUrl: 'http://api',
+        fetch: vi.fn().mockResolvedValue(jsonResponse(500, { message: 'x' })),
+      });
+      const offline = createApiClient({
+        baseUrl: 'http://api',
+        fetch: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+      });
+
+      const error = await failing.get('/x').catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(ApiError);
+      expect((error as ApiError).status).toBe(500);
+      await expect(offline.get('/x')).rejects.toBeInstanceOf(NetworkError);
+    });
+  });
+
   it('never puts the request body or response details in error messages', async () => {
     const client = createApiClient({
       baseUrl: 'http://api',

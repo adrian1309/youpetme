@@ -5,9 +5,15 @@
   "register": {
     "title": "Crea tu cuenta",
     "fields": {
-      "firstName": { "label": "Nombre" },
-      "lastName": { "label": "Apellidos" },
-      "email": { "label": "Correo electrónico" },
+      "firstName": {
+        "label": "Nombre"
+      },
+      "lastName": {
+        "label": "Apellidos"
+      },
+      "email": {
+        "label": "Correo electrónico"
+      },
       "password": {
         "label": "Contraseña",
         "requirement": "Al menos {{min}} caracteres",
@@ -86,10 +92,131 @@
     "body": "No hemos encontrado la página que buscas. Revisa la dirección o vuelve al inicio."
   },
   "placeholder": {
-    "terms": { "title": "Términos de Servicio" },
-    "privacy": { "title": "Política de Privacidad" },
-    "login": { "title": "Iniciar sesión" },
+    "login": {
+      "title": "Iniciar sesión"
+    },
     "body": "Esta página estará disponible pronto.",
     "back": "Volver al inicio"
+  },
+  "legal": {
+    "common": {
+      "draft": {
+        "title": "Borrador provisional",
+        "body": "Este texto es un borrador de carácter académico, elaborado como parte de un Trabajo Fin de Máster (TFM). No es un texto legal definitivo, no constituye asesoramiento jurídico y está pendiente de validación."
+      },
+      "version": {
+        "current": "Versión vigente: {{version}}",
+        "loading": "Cargando la versión vigente…",
+        "error": "No hemos podido cargar la versión vigente. Vuelve a intentarlo más tarde."
+      },
+      "back": "Volver al inicio"
+    },
+    "terms": {
+      "title": "Términos de Servicio",
+      "sections": {
+        "service": {
+          "title": "Qué es YouPetMe",
+          "p1": "YouPetMe es una plataforma de adopción de animales que pone en contacto a personas que quieren adoptar con protectoras y organizaciones que gestionan animales en adopción.",
+          "p2": "YouPetMe se desarrolla como Trabajo Fin de Máster (TFM)."
+        },
+        "status": {
+          "title": "Estado del servicio",
+          "p1": "YouPetMe es un prototipo académico en desarrollo, no un servicio en producción. No ofrece ningún compromiso de disponibilidad ni de nivel de servicio."
+        },
+        "account": {
+          "title": "Tu cuenta",
+          "p1": "Para crear una cuenta debes indicar tu nombre, tus apellidos, tu correo electrónico y una contraseña de al menos 8 caracteres, y aceptar estos Términos de Servicio y la Política de Privacidad.",
+          "p2": "Cada correo electrónico solo puede pertenecer a una cuenta. Todas las cuentas creadas desde el registro son cuentas de usuario estándar."
+        },
+        "session": {
+          "title": "Tu sesión",
+          "p1": "Al crear tu cuenta inicias sesión automáticamente. La sesión se mantiene mediante una cookie segura con una validez de 7 días."
+        },
+        "acceptance": {
+          "title": "Aceptación y versiones",
+          "p1": "Cuando creas tu cuenta guardamos la fecha y la hora en que aceptas estos textos y la versión vigente en ese momento, que se muestra al principio de esta página.",
+          "p2": "Si estos textos cambian, cambiará también su versión."
+        },
+        "future": {
+          "title": "Funcionalidades aún no disponibles",
+          "p1": "Otras funciones de YouPetMe, como las solicitudes de adopción o las recomendaciones con inteligencia artificial, todavía no están disponibles. Cuando lo estén, estos términos se actualizarán y tendrán una nueva versión."
+        },
+        "pending": {
+          "title": "Aspectos pendientes de definir",
+          "p1": "Este borrador aún no define los siguientes aspectos:",
+          "owner": "Titular del servicio y datos de contacto: [Pendiente de definir].",
+          "closing": "Cómo dar de baja tu cuenta: [Pendiente de definir].",
+          "law": "Legislación aplicable: [Pendiente de definir]."
+        }
+      }
+    },
+    "privacy": {
+      "title": "Política de Privacidad",
+      "sections": {
+        "controller": {
+          "title": "Responsable del tratamiento",
+          "p1": "Responsable del tratamiento y datos de contacto: [Pendiente de definir]."
+        },
+        "data": {
+          "title": "Datos que tratamos al crear tu cuenta",
+          "p1": "Al crear tu cuenta tratamos estos datos:",
+          "names": "Nombre y apellidos.",
+          "email": "Correo electrónico, normalizado para evitar cuentas duplicadas.",
+          "password": "Contraseña: solo guardamos su hash (Argon2id); la contraseña nunca se guarda en claro. La confirmación de la contraseña se comprueba, pero no se guarda.",
+          "acceptance": "Fecha y hora en que aceptas los Términos de Servicio y esta política, y la versión aceptada.",
+          "welcome": "Si ya has visto la bienvenida de Diango, el asistente de YouPetMe.",
+          "timestamps": "Fechas de creación y de última modificación de la cuenta."
+        },
+        "session": {
+          "title": "Datos de sesión",
+          "p1": "Al crear tu cuenta se abre una sesión asociada a ella, con una caducidad de 7 días. Del token que mantiene la sesión solo guardamos su hash.",
+          "p2": "El token de acceso no se guarda en nuestros sistemas: solo existe en la memoria de tu navegador mientras usas la aplicación."
+        },
+        "browser": {
+          "title": "Datos guardados en tu navegador",
+          "p1": "YouPetMe guarda en tu navegador:",
+          "cookie": "Una cookie de sesión marcada como HttpOnly, necesaria para mantener tu sesión. El código de la página no puede leerla.",
+          "welcome": "La clave youpetme:diango-welcome-seen en el almacenamiento local (localStorage), que recuerda si ya has visto la bienvenida de Diango. Al crear tu cuenta se usa para no volver a mostrártela."
+        },
+        "purpose": {
+          "title": "Para qué usamos tus datos",
+          "account": "Crear y gestionar tu cuenta.",
+          "session": "Mantener tu sesión iniciada.",
+          "acceptance": "Dejar constancia de que aceptaste estos textos y de qué versión aceptaste."
+        },
+        "basis": {
+          "title": "Base jurídica",
+          "p1": "Según la documentación actual del proyecto, el tratamiento se basa en tu consentimiento, que das al marcar la casilla de aceptación al crear tu cuenta. [Pendiente de validar]."
+        },
+        "minimization": {
+          "title": "Solo los datos necesarios",
+          "p1": "En el registro solo pedimos los datos imprescindibles para crear la cuenta. No pedimos, por ejemplo, tu teléfono, tu dirección ni datos de tu vivienda."
+        },
+        "retention": {
+          "title": "Cuánto tiempo conservamos tus datos",
+          "p1": "Plazo de conservación de los datos de la cuenta: [Pendiente de definir].",
+          "p2": "La sesión caduca a los 7 días."
+        },
+        "recipients": {
+          "title": "Quién más puede acceder a tus datos",
+          "p1": "Proveedores que alojan o tratan los datos por cuenta de YouPetMe: [Pendiente de definir]. El alojamiento de la plataforma aún no está decidido."
+        },
+        "rights": {
+          "title": "Tus derechos",
+          "p1": "La normativa de protección de datos (RGPD) te reconoce los derechos de acceso, rectificación, supresión, limitación del tratamiento, oposición y portabilidad.",
+          "p2": "Por ahora la plataforma no ofrece una función para ejercerlos. Canal para ejercerlos: [Pendiente de definir]."
+        },
+        "security": {
+          "title": "Cómo protegemos tus datos",
+          "hash": "Las contraseñas solo se guardan como hash.",
+          "logs": "Las contraseñas y los tokens nunca se escriben en registros ni se devuelven en las respuestas del servidor.",
+          "cookie": "La cookie de sesión no es accesible desde el código de la página."
+        },
+        "changes": {
+          "title": "Cambios en esta política",
+          "p1": "Si esta política cambia, cambiará también su versión, que se muestra al principio de esta página. Al crear tu cuenta guardamos la versión que aceptas."
+        }
+      }
+    }
   }
 }

@@ -10,9 +10,9 @@ interface PlaceholderPageProps {
 }
 
 /**
- * Titled page with a way back to the home. Stand-in for pages that a later story builds (Terms
- * and Privacy: SCRUM-47, Login: SCRUM-6), so links to them work today, and also the not-found
- * page. Replace the route's element when the real page exists.
+ * Titled page with a way back to the home. Stand-in for pages that a later story builds (Login:
+ * SCRUM-6), so links to them work today, and also the not-found page. Replace the route's element
+ * when the real page exists.
  */
 export function PlaceholderPage({ titleKey, bodyKey = 'placeholder.body' }: PlaceholderPageProps) {
   const { t } = useTranslation();

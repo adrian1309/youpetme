@@ -154,22 +154,56 @@ describe('AppRoutes', () => {
     });
   });
 
-  describe('provisional pages that SCRUM-47 and SCRUM-6 will replace', () => {
-    it.each([
-      ['/terms', 'Términos de Servicio'],
-      ['/privacy', 'Política de Privacidad'],
-      ['/login', 'Iniciar sesión'],
-    ])('%s shows a titled placeholder with a way back', async (path, title) => {
-      renderWithProviders(<AppRoutes />, { initialEntries: [path] });
+  describe.each([
+    ['/terms', 'Términos de Servicio'],
+    ['/privacy', 'Política de Privacidad'],
+  ])('%s (SCRUM-47)', (path, title) => {
+    const versionFetch = () => vi.fn().mockResolvedValue(jsonResponse(200, { version: '2026-01' }));
 
-      expect(screen.getByRole('heading', { level: 1, name: title })).toBeInTheDocument();
-      expect(screen.getByText('Esta página estará disponible pronto.')).toBeVisible();
-      expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
+    it('shows the real page with the server version, not the provisional one', async () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: [path], fetch: versionFetch() });
+
+      expect(screen.getByRole('main')).toContainElement(
+        screen.getByRole('heading', { level: 1, name: title }),
+      );
+      expect(await screen.findByText('Versión vigente: 2026-01')).toBeInTheDocument();
+      expect(screen.queryByText('Esta página estará disponible pronto.')).not.toBeInTheDocument();
       await waitFor(() => expect(document.title).toBe(`${title} · YouPetMe`));
     });
 
     it('has no accessibility violations as a whole page', async () => {
-      const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/terms'] });
+      const { container } = renderWithProviders(<AppRoutes />, {
+        initialEntries: [path],
+        fetch: versionFetch(),
+      });
+      await screen.findByText('Versión vigente: 2026-01');
+
+      await expectNoAxeViolations(container, { page: true });
+    });
+
+    it('has no accessibility violations as a whole page when the version cannot be loaded', async () => {
+      const { container } = renderWithProviders(<AppRoutes />, {
+        initialEntries: [path],
+        fetch: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+      });
+      await screen.findByText(/No hemos podido cargar la versión vigente/);
+
+      await expectNoAxeViolations(container, { page: true });
+    });
+  });
+
+  describe('provisional page that SCRUM-6 will replace', () => {
+    it('/login shows a titled placeholder with a way back', async () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/login'] });
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Iniciar sesión' })).toBeInTheDocument();
+      expect(screen.getByText('Esta página estará disponible pronto.')).toBeVisible();
+      expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
+      await waitFor(() => expect(document.title).toBe('Iniciar sesión · YouPetMe'));
+    });
+
+    it('has no accessibility violations as a whole page', async () => {
+      const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/login'] });
 
       await expectNoAxeViolations(container, { page: true });
     });
