@@ -2,6 +2,8 @@ import { Route, Routes } from 'react-router';
 
 import { PlaceholderPage } from '../components/PlaceholderPage';
 import { HomePage } from '../features/iam/home/HomePage';
+import { PrivacyPage } from '../features/iam/legal/PrivacyPage';
+import { TermsPage } from '../features/iam/legal/TermsPage';
 import { RegisterPage } from '../features/iam/register/RegisterPage';
 import { AppLayout } from './AppLayout';
 
@@ -11,9 +13,9 @@ export function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route index element={<HomePage />} />
         <Route path="register" element={<RegisterPage />} />
-        {/* Provisional: SCRUM-47 (terms, privacy) and SCRUM-6 (login) replace these. */}
-        <Route path="terms" element={<PlaceholderPage titleKey="placeholder.terms.title" />} />
-        <Route path="privacy" element={<PlaceholderPage titleKey="placeholder.privacy.title" />} />
+        <Route path="terms" element={<TermsPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
+        {/* Provisional: SCRUM-6 (login) replaces this. */}
         <Route path="login" element={<PlaceholderPage titleKey="placeholder.login.title" />} />
         <Route
           path="*"

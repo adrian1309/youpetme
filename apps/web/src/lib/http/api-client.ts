@@ -9,6 +9,7 @@ export interface ApiClientOptions {
 }
 
 export interface ApiClient {
+  get<TResponse>(path: string): Promise<TResponse>;
   post<TResponse>(path: string, body: unknown): Promise<TResponse>;
 }
 
@@ -28,28 +29,34 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
   const origin = baseUrl.replace(/\/+$/, '');
   const doFetch = fetchImpl ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
 
-  return {
-    async post<TResponse>(path: string, body: unknown): Promise<TResponse> {
-      let response: Response;
-      try {
-        response = await doFetch(`${origin}${path}`, {
-          method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(body),
-        });
-      } catch {
-        throw new NetworkError();
-      }
+  async function send<TResponse>(path: string, init: RequestInit): Promise<TResponse> {
+    let response: Response;
+    try {
+      response = await doFetch(`${origin}${path}`, { ...init, credentials: 'include' });
+    } catch {
+      throw new NetworkError();
+    }
 
-      const payload = await readJson(response);
-      if (!response.ok) {
-        throw new ApiError(response.status, payload as ErrorResponse | undefined);
-      }
-      if (payload === undefined) {
-        throw new ApiError(response.status);
-      }
-      return payload as TResponse;
+    const payload = await readJson(response);
+    if (!response.ok) {
+      throw new ApiError(response.status, payload as ErrorResponse | undefined);
+    }
+    if (payload === undefined) {
+      throw new ApiError(response.status);
+    }
+    return payload as TResponse;
+  }
+
+  return {
+    get<TResponse>(path: string): Promise<TResponse> {
+      return send<TResponse>(path, { method: 'GET', headers: { Accept: 'application/json' } });
+    },
+    post<TResponse>(path: string, body: unknown): Promise<TResponse> {
+      return send<TResponse>(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(body),
+      });
     },
   };
 }

@@ -23,10 +23,11 @@ import {
 } from './iam.tokens';
 import { IamExceptionFilter } from './presentation/http/iam-exception.filter';
 import { RegisterController } from './presentation/http/register.controller';
+import { TermsVersionController } from './presentation/http/terms-version.controller';
 
 @Module({
   imports: [EventEmitterModule.forRoot()],
-  controllers: [RegisterController],
+  controllers: [RegisterController, TermsVersionController],
   providers: [
     { provide: APP_FILTER, useClass: IamExceptionFilter },
     {
