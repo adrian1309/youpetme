@@ -52,4 +52,51 @@ describe('JwtTokenIssuer', () => {
     await expect(jwt.verifyAsync(access, { secret: options.refreshSecret })).rejects.toThrow();
     await expect(jwt.verifyAsync(refresh, { secret: options.accessSecret })).rejects.toThrow();
   });
+
+  describe('verify (refresh tokens)', () => {
+    it('returns the user and session of a valid refresh token', async () => {
+      const token = await issuer.issueRefreshToken(claims);
+
+      await expect(issuer.verify(token)).resolves.toEqual({
+        userId: 'user-1',
+        sessionId: 'session-1',
+        expired: false,
+      });
+    });
+
+    it('still reads the claims of an expired token, flagged as expired', async () => {
+      const token = await jwt.signAsync(
+        { sub: 'user-1', sid: 'session-1', jti: 'j', exp: Math.floor(Date.now() / 1000) - 60 },
+        { secret: options.refreshSecret, algorithm: 'HS256' },
+      );
+
+      await expect(issuer.verify(token)).resolves.toEqual({
+        userId: 'user-1',
+        sessionId: 'session-1',
+        expired: true,
+      });
+    });
+
+    it.each([
+      ['an access token', () => issuer.issueAccessToken({ ...claims, role: 'USER' })],
+      [
+        'a token signed with another secret',
+        () => jwt.signAsync({ sub: 'u', sid: 's' }, { secret: 'c'.repeat(32) }),
+      ],
+      [
+        'a token without a session id',
+        () => jwt.signAsync({ sub: 'u' }, { secret: options.refreshSecret }),
+      ],
+      [
+        'an unsigned token (alg none)',
+        () => {
+          const encode = (part: object) => Buffer.from(JSON.stringify(part)).toString('base64url');
+          return Promise.resolve(`${encode({ alg: 'none' })}.${encode({ sub: 'u', sid: 's' })}.`);
+        },
+      ],
+      ['garbage', () => Promise.resolve('not-a-jwt')],
+    ])('rejects %s', async (_case, makeToken) => {
+      await expect(issuer.verify(await makeToken())).resolves.toBeNull();
+    });
+  });
 });
