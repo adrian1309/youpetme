@@ -78,16 +78,25 @@ describe('startApp', () => {
     ).toBeVisible();
   });
 
+  /** The app restores the session on start-up; answer as if there were none, offline. */
+  function noSession() {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ statusCode: 401, error: 'x', message: 'x' }), { status: 401 }),
+    );
+  }
+
   it('starts the application in development without any configuration', async () => {
+    noSession();
     await start({ DEV: true });
 
-    expect(screen.getByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
+    expect(await screen.findByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
     expect(screen.queryByText('No se puede iniciar la aplicación')).not.toBeInTheDocument();
   });
 
   it('starts the application in production when VITE_API_URL is set', async () => {
+    noSession();
     await start({ DEV: false, VITE_API_URL: 'https://api.example.com' });
 
-    expect(screen.getByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
+    expect(await screen.findByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
   });
 });

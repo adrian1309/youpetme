@@ -1,18 +1,41 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react';
 
-import { AuthContext, type AuthContextValue, type AuthSession } from './auth-state';
+import { useApiClient } from '../../../lib/http/api-client-context';
+import { AuthContext, type AuthContextValue } from './auth-state';
+import { createSessionManager, type SessionManager } from './session-manager';
 
 /**
  * Authentication state for the web app (ADR-004: React state, no global store). The refresh
- * token travels in an HttpOnly cookie the frontend never reads. A page reload drops this state;
- * restoring it needs the refresh endpoint (SCRUM-6), which is out of scope here.
+ * token travels in an HttpOnly cookie the frontend never reads; on start-up the session is
+ * restored from it (TS-IAM-002). `manager` is injectable so tests can start as a visitor.
  */
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<AuthSession | null>(null);
+export function AuthProvider({
+  children,
+  manager: injected,
+}: {
+  children: ReactNode;
+  manager?: SessionManager;
+}) {
+  const client = useApiClient();
+  const [manager] = useState(() => injected ?? createSessionManager({ client }));
+  const state = useSyncExternalStore(manager.subscribe, manager.getState);
+
+  useEffect(() => {
+    void manager.restore();
+  }, [manager]);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ session, isAuthenticated: session !== null, signIn: setSession }),
-    [session],
+    () => ({
+      status: state.status,
+      session: state.session,
+      isAuthenticated: state.status === 'authenticated',
+      expired: state.expired,
+      accountCreated: state.accountCreated === true,
+      signIn: manager.signIn,
+      authorized: manager.authorized,
+      acknowledgeExpiry: manager.acknowledgeExpiry,
+    }),
+    [state, manager],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

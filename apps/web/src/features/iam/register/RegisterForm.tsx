@@ -109,7 +109,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
       const response = await mutation.mutateAsync(values);
       const { accessToken } = response.authentication;
       const { id, firstName, lastName, email } = response.user;
-      signIn({ accessToken, user: { id, firstName, lastName, email } });
+      signIn({ accessToken, user: { id, firstName, lastName, email } }, { accountCreated: true });
       void navigate('/', { replace: true });
     } catch (error) {
       const mapped = mapRegisterError(error);

@@ -134,3 +134,32 @@ describe('createApiClient', () => {
     expect(error.message).not.toContain('secret-detail');
   });
 });
+
+describe('createApiClient — bodiless POST and bearer token (TS-IAM-002)', () => {
+  it('POSTs without a body or Content-Type when no body is given', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { ok: true }));
+    const client = createApiClient({ baseUrl: 'http://api', fetch: fetchMock });
+
+    await client.post('/api/v1/auth/refresh');
+
+    const [, init] = fetchMock.mock.calls[0]!;
+    expect(init).toMatchObject({ method: 'POST', credentials: 'include' });
+    expect(init.body).toBeUndefined();
+    expect(new Headers(init.headers).has('Content-Type')).toBe(false);
+  });
+
+  it('sends the access token as a Bearer Authorization header when given one', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(200, {})));
+    const client = createApiClient({ baseUrl: 'http://api', fetch: fetchMock });
+
+    await client.get('/x', { accessToken: 'token-1' });
+    await client.post('/y', { a: 1 }, { accessToken: 'token-2' });
+    await client.get('/z');
+
+    const header = (call: number) =>
+      new Headers(fetchMock.mock.calls[call]![1].headers).get('Authorization');
+    expect(header(0)).toBe('Bearer token-1');
+    expect(header(1)).toBe('Bearer token-2');
+    expect(header(2)).toBeNull();
+  });
+});
