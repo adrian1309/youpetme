@@ -10,7 +10,10 @@ import {
 import type { ErrorDetail, ErrorResponse } from '@youpetme/contracts';
 import type { Response } from 'express';
 
+import { AccountNotAvailableError } from '../../domain/errors/account-not-available.error';
 import { EmailAlreadyRegisteredError } from '../../domain/errors/email-already-registered.error';
+import { InvalidCredentialsError } from '../../domain/errors/invalid-credentials.error';
+import { SessionNotRenewableError } from '../../domain/errors/session-not-renewable.error';
 import {
   ValidationFailedError,
   type ValidationIssue,
@@ -68,6 +71,40 @@ export class IamExceptionFilter implements ExceptionFilter {
       return {
         status: 409,
         body: { statusCode: 409, error: 'Conflict', message: 'This email is already in use' },
+      };
+    }
+    if (exception instanceof InvalidCredentialsError) {
+      // Same body whether the email is unknown or the password wrong (TS-IAM-002).
+      return {
+        status: 401,
+        body: {
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Invalid email or password',
+          code: 'INVALID_CREDENTIALS',
+        },
+      };
+    }
+    if (exception instanceof AccountNotAvailableError) {
+      return {
+        status: 403,
+        body: {
+          statusCode: 403,
+          error: 'Forbidden',
+          message: 'This account is not available',
+          code: 'ACCOUNT_NOT_AVAILABLE',
+        },
+      };
+    }
+    if (exception instanceof SessionNotRenewableError) {
+      return {
+        status: 401,
+        body: {
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'The session could not be renewed',
+          code: 'SESSION_NOT_RENEWABLE',
+        },
       };
     }
     if (exception instanceof HttpException) {

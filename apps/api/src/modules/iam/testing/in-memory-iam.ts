@@ -11,7 +11,13 @@ import type { IdGenerator } from '../domain/ports/id-generator';
 import type { PasswordHasher } from '../domain/ports/password-hasher';
 import type { RefreshTokenHasher } from '../domain/ports/refresh-token-hasher';
 import type { TokenIssuer } from '../domain/ports/token-issuer';
-import type { UserRepository } from '../domain/ports/user-repository';
+import type {
+  RefreshTokenVerifier,
+  VerifiedRefreshToken,
+} from '../domain/ports/refresh-token-verifier';
+import type { UserAccount, UserRepository } from '../domain/ports/user-repository';
+import type { UserSessionRepository } from '../domain/ports/user-session-repository';
+import type { UserSession } from '../domain/entities/user-session.entity';
 
 /** Records the order of side effects so tests can assert "event after persistence". */
 export class CallLog {
@@ -27,6 +33,25 @@ export class InMemoryAccounts implements UserRepository, AccountRegistrationRepo
 
   existsByEmail(normalizedEmail: string): Promise<boolean> {
     return Promise.resolve(this.accounts.some((a) => a.user.email === normalizedEmail));
+  }
+
+  findAccountByEmail(normalizedEmail: string): Promise<UserAccount | null> {
+    return Promise.resolve(
+      this.toAccount(this.accounts.find((a) => a.user.email === normalizedEmail)),
+    );
+  }
+
+  findAccountById(userId: string): Promise<UserAccount | null> {
+    return Promise.resolve(this.toAccount(this.accounts.find((a) => a.user.id === userId)));
+  }
+
+  private toAccount(account: NewAccount | undefined): UserAccount | null {
+    if (!account) return null;
+    return {
+      user: account.user,
+      firstName: account.profile.firstName,
+      lastName: account.profile.lastName,
+    };
   }
 
   register(account: NewAccount): Promise<void> {
@@ -57,8 +82,16 @@ export class InMemoryEventPublisher implements EventPublisher {
 }
 
 export class FakePasswordHasher implements PasswordHasher {
+  /** Every hash passed to verify, `null` included, so tests can see the dummy verification. */
+  readonly verified: (string | null)[] = [];
+
   hash(plainPassword: string): Promise<string> {
     return Promise.resolve(`hashed(${plainPassword})`);
+  }
+
+  verify(passwordHash: string | null, plainPassword: string): Promise<boolean> {
+    this.verified.push(passwordHash);
+    return Promise.resolve(passwordHash !== null && passwordHash === `hashed(${plainPassword})`);
   }
 }
 
@@ -75,6 +108,64 @@ export class FakeTokenIssuer implements TokenIssuer {
 
   issueRefreshToken(claims: { userId: string; sessionId: string }): Promise<string> {
     return Promise.resolve(`refresh:${claims.userId}:${claims.sessionId}`);
+  }
+}
+
+/** Issues a different refresh token on every call, as the JWT adapter does (random jti). */
+export class RotatingFakeTokenIssuer extends FakeTokenIssuer {
+  private issued = 0;
+
+  override issueRefreshToken(claims: { userId: string; sessionId: string }): Promise<string> {
+    this.issued += 1;
+    return Promise.resolve(`refresh:${claims.userId}:${claims.sessionId}:${this.issued}`);
+  }
+}
+
+/** Accepts tokens shaped like FakeTokenIssuer's; tokens listed in `expired` verify as expired. */
+export class FakeRefreshTokenVerifier implements RefreshTokenVerifier {
+  readonly expired = new Set<string>();
+
+  verify(refreshToken: string): Promise<VerifiedRefreshToken | null> {
+    const match = /^refresh:([^:]+):([^:]+)(:\d+)?$/.exec(refreshToken);
+    if (!match) return Promise.resolve(null);
+    return Promise.resolve({
+      userId: match[1]!,
+      sessionId: match[2]!,
+      expired: this.expired.has(refreshToken),
+    });
+  }
+}
+
+export class InMemorySessions implements UserSessionRepository {
+  readonly sessions = new Map<string, UserSession>();
+
+  constructor(private readonly log: CallLog = new CallLog()) {}
+
+  create(session: UserSession): Promise<void> {
+    this.log.entries.push('createSession');
+    this.sessions.set(session.id, session);
+    return Promise.resolve();
+  }
+
+  findById(sessionId: string): Promise<UserSession | null> {
+    return Promise.resolve(this.sessions.get(sessionId) ?? null);
+  }
+
+  rotate(rotated: UserSession, expectedHash: string): Promise<boolean> {
+    const stored = this.sessions.get(rotated.id);
+    if (!stored || !stored.isActive() || !stored.matches(expectedHash)) {
+      return Promise.resolve(false);
+    }
+    this.sessions.set(rotated.id, rotated);
+    return Promise.resolve(true);
+  }
+
+  end(session: UserSession): Promise<void> {
+    const stored = this.sessions.get(session.id);
+    if (stored?.isActive()) {
+      this.sessions.set(session.id, session);
+    }
+    return Promise.resolve();
   }
 }
 

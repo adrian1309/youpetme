@@ -26,3 +26,28 @@ describe('User.register', () => {
     });
   });
 });
+
+describe('User.reconstitute', () => {
+  const props = {
+    id: 'u-1',
+    email: 'john@example.com',
+    passwordHash: '$argon2id$hash',
+    role: 'USER' as const,
+    termsAcceptedAt: new Date('2026-10-25T10:00:00.000Z'),
+    termsVersion: '2026-01',
+    createdAt: new Date('2026-10-25T10:00:00.000Z'),
+    updatedAt: new Date('2026-10-26T10:00:00.000Z'),
+  };
+
+  it('restores a persisted user without changing any value', () => {
+    const user = User.reconstitute({ ...props, status: 'SUSPENDED' });
+
+    expect(user).toMatchObject({ ...props, status: 'SUSPENDED' });
+  });
+
+  it('lets only an ACTIVE account sign in (US-IAM-002, scenario 3)', () => {
+    expect(User.reconstitute({ ...props, status: 'ACTIVE' }).canSignIn()).toBe(true);
+    expect(User.reconstitute({ ...props, status: 'SUSPENDED' }).canSignIn()).toBe(false);
+    expect(User.reconstitute({ ...props, status: 'DELETED' }).canSignIn()).toBe(false);
+  });
+});

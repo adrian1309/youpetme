@@ -1,3 +1,5 @@
+import type { UserLoggedIn } from './user-logged-in.event';
+
 /** Published after a registration has been committed. Never carries secrets, hashes or tokens. */
 export class UserCreated {
   constructor(
@@ -8,4 +10,4 @@ export class UserCreated {
   ) {}
 }
 
-export type DomainEvent = UserCreated;
+export type DomainEvent = UserCreated | UserLoggedIn;
