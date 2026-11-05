@@ -104,22 +104,6 @@ Los secretos, hashes y datos internos de sesión nunca se incluirán en la respu
 | `409 Conflict` | El correo ya pertenece a una cuenta. | Mensaje de negocio sin exponer información sensible adicional. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
-### `GET /legal/terms-version`
-
-Ruta completa bajo el prefijo de la API: `GET /api/v1/legal/terms-version`. Añadido en SCRUM-47.
-
-Endpoint público y de solo lectura. Devuelve la versión vigente de los Términos de Servicio y la Política de Privacidad: el valor de `TERMS_VERSION`, el mismo que `RegisterUser` guarda en `termsVersion`. Las páginas `/terms` y `/privacy` la muestran, de modo que el usuario ve la misma versión que se registra al aceptar. No accede a la base de datos, no usa cookies y no exige cabecera `Origin`.
-
-#### Response exitosa — `200 OK`
-
-```json
-{
-  "version": "2026-01"
-}
-```
-
-Los textos viven en el cliente web y la versión en la configuración del servidor. Cuando cambie un texto, hay que cambiar `TERMS_VERSION` en el mismo despliegue.
-
 ## Modelo de datos
 
 ### `User`
@@ -183,7 +167,7 @@ La ruta pública `/register` incluirá un formulario para `firstName`, `lastName
 - Deshabilitará o protegerá el envío repetido mientras la petición esté en curso.
 - Mostrará los errores de negocio y validación devueltos por la API.
 - Tras una respuesta exitosa, actualizará el estado de autenticación conforme a ADR-002 y redirigirá al área autenticada definida por el producto: la ruta `/`.
-- Los enlaces de la casilla de términos apuntan a `/terms` (Términos de Servicio) y `/privacy` (Política de Privacidad) y se abren en una pestaña nueva. Desde SCRUM-47 son páginas estáticas con un texto provisional de carácter académico. Se marcan de forma visible como borrador y muestran la versión vigente obtenida de `GET /api/v1/legal/terms-version`. Si no se puede obtener, el texto sigue siendo legible.
+- Los enlaces de la casilla de términos apuntan a `/terms` (Términos de Servicio) y `/privacy` (Política de Privacidad) y se abren en una pestaña nueva. Hasta SCRUM-47 son páginas provisionales.
 - Al enviar, leerá la clave de localStorage de Diango (`youpetme:diango-welcome-seen`) para informar `hasSeenWelcome`.
 - Los textos de la interfaz están en español y se gestionan con i18n.
 - No registrará ni expondrá contraseñas, tokens o respuestas sensibles en consola, analítica o mensajes de error.
@@ -223,7 +207,6 @@ Se implementan en SCRUM-48, con Playwright, en una rama aparte.
 - Registro completo desde `/register` hasta el acceso al área autenticada.
 - Errores de validación visibles en el formulario, incluido el envío sin aceptar términos.
 - Manejo de correo previamente registrado.
-- Los enlaces de la casilla abren `/terms` y `/privacy` en una pestaña nueva, sin perder el formulario, y ambas páginas muestran la misma versión que configura el servidor (SCRUM-47).
 
 ### Manual testing
 
@@ -243,7 +226,7 @@ Se implementan en SCRUM-48, con Playwright, en una rama aparte.
 - [x] El usuario queda autenticado tras el registro conforme a ADR-002: access token en el cuerpo y refresh token en cookie `HttpOnly`.
 - [x] Los errores de validación y correo duplicado son claros y seguros.
 - [x] Se publica `UserCreated` sin datos sensibles tras una creación confirmada.
-- [x] Las pruebas unitarias, de integración y E2E definidas pasan.
+- [ ] Las pruebas unitarias, de integración y E2E definidas pasan.
 - [x] Se ha realizado la comprobación manual de los flujos principales y de seguridad básica.
 - [ ] La documentación de API, variables de entorno y decisiones pendientes queda actualizada.
 
