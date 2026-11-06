@@ -101,6 +101,45 @@ The previous refresh token will be invalidated.
 
 This reduces the usefulness of a stolen refresh token.
 
+## Token Design
+
+- Access tokens are JWTs signed with HS256 and valid for 15 minutes.
+- Refresh tokens are JWTs signed with HS256 and valid for 7 days. They are delivered only in the cookie described below.
+- The server never stores a refresh token. It stores only its SHA-256 hash, in `UserSession.refreshTokenHash`.
+- Each refresh rotates the token inside the same `UserSession`: the stored hash and `expiresAt` are replaced, so the previous token stops working. The 7 days therefore count from the last refresh (sliding window), and a session unused for 7 days expires.
+- A login creates a new `UserSession`. A refresh never does.
+- A `UserSession` is `ACTIVE`, `REVOKED` or `EXPIRED`. Only an `ACTIVE` session can be refreshed.
+- A normal refresh publishes no domain event.
+- Symmetric signing is adequate while a single API issues and verifies the tokens. It should be revisited if another service ever has to verify them.
+
+## Refresh Token Reuse
+
+If a refresh token that was already rotated is presented, the server answers `401` and revokes the `UserSession`. Reuse is treated as a possible theft: neither the legitimate holder nor the attacker keeps access, and the user signs in again. A refresh against a `REVOKED` or `EXPIRED` session is also rejected with `401`.
+
+The server gives no grace period for a token that has just been rotated (see Client-side Refresh Coordination).
+
+## Cookie and CSRF Policy (Web)
+
+- The refresh cookie is `HttpOnly`, `Secure`, `SameSite=Strict` and has `Path=/api/v1/auth`. `Secure` can be switched off only for local development over HTTP (`COOKIE_SECURE=false`).
+- No CSRF token is used. CSRF is mitigated by three measures:
+  - `SameSite=Strict` keeps the browser from sending the cookie on cross-site requests.
+  - The authentication endpoints reject with `403` a request whose `Origin` header differs from `WEB_ORIGIN`. A request without `Origin` (curl, tests, non-browser clients) is accepted.
+  - The endpoints require `Content-Type: application/json` and answer `415` otherwise.
+- In development the web server runs on a fixed port (5173, `strictPort`). Another port would make the `Origin` guard reject the requests.
+
+**Consequence for deployment.** `SameSite=Strict` only sends the cookie when the web application and the API are on the same site. The deployment ADR must put both under the same registrable domain, or revisit `SameSite` and the CSRF protection before going live. Locally it works because both run on `localhost`.
+
+## Client-side Refresh Coordination (Web)
+
+Because refresh tokens rotate and reuse revokes the session, two refreshes sent at the same time with the same cookie would revoke the session. The web client therefore:
+
+- allows a single refresh in flight per tab, shared by every caller, and
+- serialises refreshes across tabs with the Web Locks API (`navigator.locks`).
+
+**Known limitation.** Where Web Locks are unavailable (very old browsers, or non-secure origins such as HTTP on a host other than `localhost`), the client refreshes without the cross-tab lock. If two tabs refresh at overlapping moments, the second is seen as a reuse, the session is revoked and both tabs fall back to visitor state, so the user signs in again. Production runs on HTTPS, so this is accepted.
+
+Alternatives not adopted: a fallback lock based on `BroadcastChannel` or `localStorage`, and a server-side grace period for just-rotated tokens, which would weaken reuse detection.
+
 ## Token Lifetimes
 
 - **Access token:** 15 minutes (`JWT_ACCESS_EXPIRATION=15m`). Short enough that a stolen access token is of little use.
@@ -182,3 +221,9 @@ Rejected as the primary strategy because the project is intended to support mult
 ### Single Long-lived JWT
 
 Rejected because token revocation and security become more difficult when tokens remain valid for long periods.
+
+---
+
+## Amendments
+
+- **2026-11-06:** added Token Design, Refresh Token Reuse, Cookie and CSRF Policy and Client-side Refresh Coordination, from the implementation of TS-IAM-002 (login and refresh). The API error format is decided in ADR-017.
