@@ -8,9 +8,23 @@ export interface ApiClientOptions {
   fetch?: typeof fetch;
 }
 
+export interface RequestOptions {
+  /** Sent as `Authorization: Bearer …`. Held in memory only (ADR-002). */
+  accessToken?: string;
+}
+
 export interface ApiClient {
-  get<TResponse>(path: string): Promise<TResponse>;
-  post<TResponse>(path: string, body: unknown): Promise<TResponse>;
+  get<TResponse>(path: string, options?: RequestOptions): Promise<TResponse>;
+  /** Without `body`, nothing is sent and no Content-Type is set (e.g. the refresh request). */
+  post<TResponse>(path: string, body?: unknown, options?: RequestOptions): Promise<TResponse>;
+}
+
+function headersFor(options: RequestOptions, json: boolean): Record<string, string> {
+  return {
+    Accept: 'application/json',
+    ...(json ? { 'Content-Type': 'application/json' } : {}),
+    ...(options.accessToken ? { Authorization: `Bearer ${options.accessToken}` } : {}),
+  };
 }
 
 async function readJson(response: Response): Promise<unknown> {
@@ -48,14 +62,19 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
   }
 
   return {
-    get<TResponse>(path: string): Promise<TResponse> {
-      return send<TResponse>(path, { method: 'GET', headers: { Accept: 'application/json' } });
+    get<TResponse>(path: string, options: RequestOptions = {}): Promise<TResponse> {
+      return send<TResponse>(path, { method: 'GET', headers: headersFor(options, false) });
     },
-    post<TResponse>(path: string, body: unknown): Promise<TResponse> {
+    post<TResponse>(
+      path: string,
+      body?: unknown,
+      options: RequestOptions = {},
+    ): Promise<TResponse> {
+      const hasBody = body !== undefined;
       return send<TResponse>(path, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(body),
+        headers: headersFor(options, hasBody),
+        ...(hasBody ? { body: JSON.stringify(body) } : {}),
       });
     },
   };

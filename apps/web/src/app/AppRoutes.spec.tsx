@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { useEffect, type ReactNode } from 'react';
 
 import { useAuth } from '../features/iam/auth/auth-state';
+import { ApiError } from '../lib/http/api-error';
 import { expectNoAxeViolations } from '../test/axe';
 import { jsonResponse, renderWithProviders } from '../test/render-with-providers';
 import { AppRoutes } from './AppRoutes';
@@ -27,6 +28,10 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('link', { name: 'Crear cuenta' })).toHaveAttribute(
         'href',
         '/register',
+      );
+      expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute(
+        'href',
+        '/login',
       );
     });
 
@@ -69,7 +74,7 @@ describe('AppRoutes', () => {
       const header = screen.getByRole('banner');
       expect(header).toHaveTextContent('YouPetMe');
       expect(header).toHaveTextContent('Hola, John');
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Tu cuenta está creada.');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Has iniciado sesión.');
       expect(screen.queryByRole('link', { name: /perfil/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /cerrar sesión/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Crear cuenta' })).not.toBeInTheDocument();
@@ -94,7 +99,7 @@ describe('AppRoutes', () => {
         { initialEntries: ['/register'] },
       );
 
-      expect(await screen.findByText('Tu cuenta está creada.')).toBeInTheDocument();
+      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
       expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
   });
@@ -192,18 +197,22 @@ describe('AppRoutes', () => {
     });
   });
 
-  describe('provisional page that SCRUM-6 will replace', () => {
-    it('/login shows a titled placeholder with a way back', async () => {
-      renderWithProviders(<AppRoutes />, { initialEntries: ['/login'] });
+  describe('provisional page that the password recovery story will replace', () => {
+    it('/forgot-password shows a titled placeholder with a way back', async () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/forgot-password'] });
 
-      expect(screen.getByRole('heading', { level: 1, name: 'Iniciar sesión' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Recuperar contraseña' }),
+      ).toBeInTheDocument();
       expect(screen.getByText('Esta página estará disponible pronto.')).toBeVisible();
       expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
-      await waitFor(() => expect(document.title).toBe('Iniciar sesión · YouPetMe'));
+      await waitFor(() => expect(document.title).toBe('Recuperar contraseña · YouPetMe'));
     });
 
     it('has no accessibility violations as a whole page', async () => {
-      const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/login'] });
+      const { container } = renderWithProviders(<AppRoutes />, {
+        initialEntries: ['/forgot-password'],
+      });
 
       await expectNoAxeViolations(container, { page: true });
     });
@@ -239,6 +248,102 @@ describe('AppRoutes', () => {
       const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/nope'] });
 
       await expectNoAxeViolations(container, { page: true });
+    });
+  });
+
+  describe('session restoration on start-up (US-IAM-002, scenarios 5 and 6)', () => {
+    const refreshed = {
+      user: { id: 'u-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+      authentication: { accessToken: 'restored-token' },
+    };
+
+    it('shows an accessible loading state instead of the page while the session is restored', async () => {
+      let answer: (response: Response) => void = () => undefined;
+      const fetchMock = vi.fn(() => new Promise<Response>((resolve) => (answer = resolve)));
+      renderWithProviders(<AppRoutes />, {
+        initialEntries: ['/'],
+        auth: 'restore',
+        fetch: fetchMock,
+      });
+
+      expect(screen.getByRole('status')).toHaveTextContent('Recuperando tu sesión…');
+      expect(screen.getByRole('banner')).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument();
+
+      answer(jsonResponse(200, { ...refreshed, user: { ...refreshed.user, status: 'ACTIVE' } }));
+
+      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(screen.getByRole('banner')).toHaveTextContent('Hola, John');
+      expect(screen.queryByText('Recuperando tu sesión…')).not.toBeInTheDocument();
+    });
+
+    it('a reload on /login with a valid session goes straight to the home, never showing the form', async () => {
+      renderWithProviders(<AppRoutes />, {
+        initialEntries: ['/login'],
+        auth: 'restore',
+        fetch: vi.fn().mockResolvedValue(jsonResponse(200, refreshed)),
+      });
+
+      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(screen.queryByRole('form')).not.toBeInTheDocument();
+    });
+
+    it('without a renewable session the visitor sees the page and no error', async () => {
+      renderWithProviders(<AppRoutes />, {
+        initialEntries: ['/'],
+        auth: 'restore',
+        fetch: vi
+          .fn()
+          .mockResolvedValue(jsonResponse(401, { statusCode: 401, error: 'x', message: 'x' })),
+      });
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'YouPetMe' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('a session lost while in use (US-IAM-002, scenario 6)', () => {
+    function ProtectedAction() {
+      const { authorized } = useAuth();
+      return (
+        <button
+          type="button"
+          onClick={() => void authorized(() => Promise.reject(new ApiError(401))).catch(() => {})}
+        >
+          acción protegida
+        </button>
+      );
+    }
+
+    /** Signs in once and keeps rendering after the session ends, unlike SignedIn. */
+    function SignInOnce({ children }: { children: ReactNode }) {
+      const { signIn } = useAuth();
+      useEffect(() => signIn(session), [signIn]);
+      return children;
+    }
+
+    it('sends the user to /login when the session can no longer be renewed', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <SignInOnce>
+          <ProtectedAction />
+          <AppRoutes />
+        </SignInOnce>,
+        {
+          initialEntries: ['/'],
+          fetch: vi
+            .fn()
+            .mockResolvedValue(jsonResponse(401, { statusCode: 401, error: 'x', message: 'x' })),
+        },
+      );
+
+      await user.click(screen.getByRole('button', { name: 'acción protegida' }));
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Iniciar sesión' }),
+      ).toBeInTheDocument();
     });
   });
 });

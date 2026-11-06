@@ -4,6 +4,7 @@ import type { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 
 import { AuthProvider } from '../features/iam/auth/auth-provider';
+import { createSessionManager } from '../features/iam/auth/session-manager';
 import { createApiClient } from '../lib/http/api-client';
 import { ApiClientProvider } from '../lib/http/ApiClientProvider';
 import '../lib/i18n';
@@ -21,6 +22,11 @@ interface Options {
   /** The fake fetch behind the API client. */
   fetch?: typeof fetch;
   initialEntries?: string[];
+  /**
+   * `visitor` (default) starts signed out with no start-up refresh; `restore` starts like the
+   * real app, restoring the session through the fake fetch.
+   */
+  auth?: 'visitor' | 'restore';
 }
 
 /** Renders `ui` with the same providers as the app, but with a router in memory and a fake API. */
@@ -36,10 +42,16 @@ export function renderWithProviders(
     fetch: options.fetch ?? (() => Promise.reject(new TypeError('no fake fetch configured'))),
   });
 
+  const manager = createSessionManager({
+    client,
+    locks: null,
+    initialStatus: options.auth === 'restore' ? 'restoring' : 'anonymous',
+  });
+
   const result = render(
     <QueryClientProvider client={queryClient}>
       <ApiClientProvider client={client}>
-        <AuthProvider>
+        <AuthProvider manager={manager}>
           <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>{ui}</MemoryRouter>
         </AuthProvider>
       </ApiClientProvider>
