@@ -89,6 +89,8 @@ Igual que en TS-IAM-001, el refresh token **no** viaja en el cuerpo: el servidor
 | `403 Forbidden` | La cuenta existe pero su `status` no es `ACTIVE` (p. ej. `SUSPENDED`). | Mensaje de negocio sin detalle interno del motivo exacto. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
+Cada error de negocio incluye además un campo `code` estable (ADR-017): `INVALID_CREDENTIALS` en el `401` y `ACCOUNT_NOT_AVAILABLE` en el `403`. El cliente distingue los casos por `code`, no por el texto del mensaje, y así no confunde este `403` con el de la guarda de `Origin`.
+
 ### `POST /auth/refresh`
 
 Ruta completa bajo el prefijo de la API: `POST /api/v1/auth/refresh`.
@@ -103,12 +105,20 @@ Sin body. El refresh token se lee de la cookie `HttpOnly` y `Secure`; el cliente
 
 ```json
 {
+  "user": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "status": "ACTIVE"
+  },
   "authentication": {
     "accessToken": "<access-token>"
   }
 }
 ```
 
+- El objeto `user` tiene la misma forma que en el login. Lo necesita el cliente para recuperar los datos del usuario al recargar la página, porque el access token vive solo en memoria.
 - Se emite un nuevo access token (15 minutos) y un nuevo refresh token (7 días), entregado de nuevo solo en cookie `Set-Cookie`.
 - El refresh token anterior queda invalidado: se actualiza el hash almacenado en la `UserSession` y `expiresAt` pasa a reflejar la nueva caducidad.
 - Los valores de caducidad provienen de configuración (`JWT_ACCESS_EXPIRATION`, `JWT_REFRESH_EXPIRATION`).
@@ -121,11 +131,13 @@ Sin body. El refresh token se lee de la cookie `HttpOnly` y `Secure`; el cliente
 | `403 Forbidden` | La cuenta del usuario no está `ACTIVE`. | Mensaje de negocio sin detalle interno. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
-Si se presenta un refresh token que ya fue rotado (reutilización), se rechaza con `401` y se revoca la `UserSession` correspondiente, porque indica un posible robo del token. Claude Code debe confirmar este comportamiento antes de implementarlo.
+Los errores del refresh llevan un campo `code` estable (ADR-017): `SESSION_NOT_RENEWABLE` en el `401` y `ACCOUNT_NOT_AVAILABLE` en el `403`.
+
+Si se presenta un refresh token que ya fue rotado (reutilización), se rechaza con `401` y se revoca la `UserSession` correspondiente, porque indica un posible robo del token. No hay periodo de gracia para un token recién rotado (ADR-002 — Refresh Token Reuse).
 
 #### Reglas de seguridad específicas
 
-- La cookie del refresh token usa los atributos definidos para registro y login (`HttpOnly`, `Secure`, `SameSite` y `Path`; valores a proponer y confirmar antes de implementar). Al ser un endpoint basado en cookie, debe tener la protección CSRF acordada.
+- La cookie del refresh token usa los atributos definidos en ADR-002 (Cookie and CSRF Policy): `HttpOnly`, `Secure`, `SameSite=Strict` y `Path=/api/v1/auth`. Al ser un endpoint basado en cookie, aplica la protección CSRF de ese mismo apartado.
 - No se publica evento de dominio en el refresh normal (alto volumen y sin valor de negocio).
 
 ## Modelo de datos
@@ -147,7 +159,9 @@ La ruta pública `/login` incluirá un formulario para `email` y `password`, con
 - Mostrará el error `401`/`403` de forma genérica y segura, sin distinguir el motivo exacto.
 - Tras una respuesta exitosa, guardará el access token solo en memoria (ADR-002) y redirigirá al área autenticada: la home `/` en estado autenticado.
 - Al arrancar la aplicación o recargar la página, intentará restaurar la sesión llamando a `POST /api/v1/auth/refresh`; si responde `401`, el usuario queda como visitante sin mostrar error.
+- Si la renovación falla por red o por un `5xx`, al arrancar el usuario queda como visitante sin mostrar error. En una petición ya autenticada se conserva la sesión y el error llega a quien hizo la petición.
 - Ante un `401` en una petición autenticada, intentará un único refresh y reintentará la petición una vez; si el refresh falla, limpiará el estado de autenticación y redirigirá a `/login`. Peticiones concurrentes comparten un único refresh en curso.
+- Las renovaciones se coordinan entre pestañas con Web Locks, para que dos pestañas no usen a la vez el mismo refresh token (ADR-002 — Client-side Refresh Coordination).
 
 ## Evento de dominio
 
@@ -169,6 +183,8 @@ Al completar correctamente el login se publicará el evento `UserLoggedIn`, con 
 - Endpoint `POST /api/v1/auth/refresh`: devuelve un nuevo access token y una nueva cookie, y el refresh token anterior deja de funcionar.
 
 ### End-to-end tests
+Se implementan en una subtarea aparte de SCRUM-6.
+
 - Login completo desde `/login` hasta el área autenticada.
 - Errores de credenciales inválidas visibles en el formulario.
 - Recargar la página con sesión activa mantiene al usuario autenticado (restauración vía refresh).
