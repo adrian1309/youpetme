@@ -1,10 +1,17 @@
-import { randomUUID } from 'node:crypto';
-import { createServer, type Server } from 'node:http';
+import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import { expect, test, type Page, type Request } from '@playwright/test';
 
-import { API_URL } from './support/env.ts';
+import {
+  FOREIGN_ORIGIN,
+  newVisitor,
+  REGISTER_ENDPOINT,
+  registerBody,
+  type Visitor,
+} from './support/accounts.ts';
+import { expectRefreshTokenCookie } from './support/cookies.ts';
+import { closeForeignPage, serveForeignPage } from './support/foreign-origin.ts';
 
 /**
  * Registration journeys against the real API and PostgreSQL (SCRUM-48). The Given/When/Then
@@ -12,26 +19,6 @@ import { API_URL } from './support/env.ts';
  * labels only, and field errors are read through the field's accessible description, which also
  * proves they are associated with it.
  */
-const REGISTER_ENDPOINT = `${API_URL}/api/v1/auth/register`;
-const REFRESH_TOKEN_COOKIE = 'refresh_token';
-const FOREIGN_ORIGIN = 'https://foreign.example';
-
-/** A visitor nobody has registered yet, so tests never share data. */
-function newVisitor() {
-  return {
-    firstName: 'Ana',
-    lastName: 'García',
-    email: `e2e-${randomUUID()}@example.com`,
-    password: 'my-secure-passphrase',
-  };
-}
-
-type Visitor = ReturnType<typeof newVisitor>;
-
-function registerBody(visitor: Visitor) {
-  return { ...visitor, confirmPassword: visitor.password, termsAccepted: true };
-}
-
 function registerForm(page: Page) {
   return {
     firstName: page.getByLabel('Nombre', { exact: true }),
@@ -115,16 +102,7 @@ test.describe('US-IAM-001 — Create Account', () => {
     await expect(page).toHaveURL('/');
 
     // Then the browser stored the refresh token as an HttpOnly, SameSite=Strict cookie
-    const cookies = await page.context().cookies();
-    const refreshCookie = cookies.find(({ name }) => name === REFRESH_TOKEN_COOKIE);
-    // Playwright's WebKit for Windows always reports None (a known failure in its own test suite).
-    const reportsSameSite = !(browserName === 'webkit' && process.platform === 'win32');
-    expect(refreshCookie).toMatchObject({
-      domain: 'localhost',
-      path: '/api/v1/auth',
-      httpOnly: true,
-      ...(reportsSameSite ? { sameSite: 'Strict' } : {}),
-    });
+    await expectRefreshTokenCookie(page.context(), browserName);
 
     // And JavaScript can reach neither the refresh token nor a persisted access token
     expect(await page.evaluate(() => document.cookie)).toBe('');
@@ -259,19 +237,6 @@ test.describe('US-IAM-001 — Create Account', () => {
   });
 });
 
-/**
- * A real page on another origin. It must be a real loopback server: Chromium blocks a page mocked
- * with page.route() from calling localhost (Local Network Access) before CORS is even consulted.
- */
-async function serveForeignPage(): Promise<Server> {
-  const server = createServer((_request, response) => {
-    response.setHeader('Content-Type', 'text/html');
-    response.end('<!doctype html><title>Foreign</title>');
-  });
-  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-  return server;
-}
-
 test.describe('Registration from another origin (SCRUM-48)', () => {
   let foreignPage: Server;
 
@@ -280,8 +245,7 @@ test.describe('Registration from another origin (SCRUM-48)', () => {
   });
 
   test.afterEach(() => {
-    foreignPage.closeAllConnections();
-    foreignPage.close();
+    closeForeignPage(foreignPage);
   });
 
   test('CORS stops a browser on another origin', async ({ page, request }) => {
