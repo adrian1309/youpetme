@@ -235,7 +235,9 @@ test.describe('US-IAM-003 — Logout', () => {
     // And the renewal then succeeds
     const [renewal] = await Promise.all([page.waitForResponse(isRefresh), release()]);
     expect(renewal.status()).toBe(200);
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+    // Nothing visible happens when the app behaves; a reopened session would show the greeting
+    // and send a second logout within milliseconds, so give the page a short, real-time window.
+    await page.waitForTimeout(1_000);
 
     // Then the session is not reopened and no second logout is sent
     await expectVisitor(page);
