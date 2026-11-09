@@ -13,6 +13,7 @@ import type { Response } from 'express';
 import { AccountNotAvailableError } from '../../domain/errors/account-not-available.error';
 import { EmailAlreadyRegisteredError } from '../../domain/errors/email-already-registered.error';
 import { InvalidCredentialsError } from '../../domain/errors/invalid-credentials.error';
+import { SessionOwnershipMismatchError } from '../../domain/errors/session-ownership-mismatch.error';
 import { SessionNotRenewableError } from '../../domain/errors/session-not-renewable.error';
 import {
   ValidationFailedError,
@@ -104,6 +105,17 @@ export class IamExceptionFilter implements ExceptionFilter {
           error: 'Unauthorized',
           message: 'The session could not be renewed',
           code: 'SESSION_NOT_RENEWABLE',
+        },
+      };
+    }
+    if (exception instanceof SessionOwnershipMismatchError) {
+      // Same body as any other unauthenticated request: nothing about the other session leaks.
+      return {
+        status: 401,
+        body: {
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Request could not be processed',
         },
       };
     }

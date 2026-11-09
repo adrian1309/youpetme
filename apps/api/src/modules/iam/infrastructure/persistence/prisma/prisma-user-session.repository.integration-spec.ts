@@ -115,6 +115,14 @@ describe('PrismaUserSessionRepository (PostgreSQL)', () => {
       await expect(sessions.findById(session.id)).resolves.toMatchObject({ status: 'REVOKED' });
     });
 
+    it('reports whether it ended the session, so a second revocation is not acted on twice', async () => {
+      const session = newSession();
+      await sessions.create(session);
+
+      await expect(sessions.end(session.revoke(later))).resolves.toBe(true);
+      await expect(sessions.end(session.revoke(later))).resolves.toBe(false);
+    });
+
     it('only touches the given session', async () => {
       const first = newSession();
       const second = newSession('22222222-2222-4222-8222-222222222222');

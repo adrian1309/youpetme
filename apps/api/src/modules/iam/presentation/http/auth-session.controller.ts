@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { Body, Controller, HttpCode, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { LoginResponse, RefreshResponse } from '@youpetme/contracts';
 import type { Request, Response } from 'express';
 
@@ -11,9 +11,15 @@ import { TrustedBrowserRequestGuard } from '../../../../platform/http/trusted-br
 import type { AuthenticatedSessionResult } from '../../application/dto/authenticated-session.result';
 import type { LoginUserUseCase } from '../../application/use-cases/login-user.use-case';
 import type { RefreshSessionUseCase } from '../../application/use-cases/refresh-session.use-case';
+import type { RevokeSessionUseCase } from '../../application/use-cases/revoke-session.use-case';
 import { SessionNotRenewableError } from '../../domain/errors/session-not-renewable.error';
 import { ValidationFailedError } from '../../domain/errors/validation-failed.error';
-import { LOGIN_USER_USE_CASE, REFRESH_SESSION_USE_CASE } from '../../iam.tokens';
+import {
+  LOGIN_USER_USE_CASE,
+  REFRESH_SESSION_USE_CASE,
+  REVOKE_SESSION_USE_CASE,
+} from '../../iam.tokens';
+import { AccessTokenGuard, authenticatedUserOf } from './access-token.guard';
 import { parseLoginBody } from './login.request';
 import {
   clearRefreshTokenCookie,
@@ -22,8 +28,9 @@ import {
 } from './refresh-token-cookie';
 
 /**
- * Login and session renewal (TS-IAM-002). Both read or set the refresh-token cookie, so both sit
- * behind the Origin/Content-Type guard on top of SameSite and CORS.
+ * Login, session renewal (TS-IAM-002) and logout (TS-IAM-003). All of them read or set the
+ * refresh-token cookie, so all sit behind the Origin/Content-Type guard on top of SameSite and
+ * CORS.
  */
 @ApiTags('auth')
 @Controller('auth')
@@ -32,6 +39,7 @@ export class AuthSessionController {
   constructor(
     @Inject(LOGIN_USER_USE_CASE) private readonly loginUser: LoginUserUseCase,
     @Inject(REFRESH_SESSION_USE_CASE) private readonly refreshSession: RefreshSessionUseCase,
+    @Inject(REVOKE_SESSION_USE_CASE) private readonly revokeSession: RevokeSessionUseCase,
     @Inject(APP_CONFIG) private readonly config: AppConfig,
   ) {}
 
@@ -113,6 +121,36 @@ export class AuthSessionController {
       throw error;
     }
     return this.signedIn(result, response);
+  }
+
+  @Post('logout')
+  @UseGuards(AccessTokenGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Log out: revoke the current session (TS-IAM-003)',
+    description:
+      'Requires a valid access token. No body: the session to revoke is the one of the HttpOnly `refresh_token` cookie, which is cleared. Only that session is revoked. Idempotent: with no usable cookie, or a session that already ended, it still answers 204.',
+  })
+  @ApiResponse({ status: 204, description: 'Logged out; clears the refresh_token cookie' })
+  @ApiResponse({
+    status: 401,
+    description:
+      'Missing, invalid or expired access token, or a refresh cookie of another user (no `code`)',
+  })
+  @ApiResponse({ status: 403, description: 'Origin different from WEB_ORIGIN' })
+  @ApiResponse({ status: 415, description: 'Content-Type present and not application/json' })
+  @ApiResponse({ status: 500, description: 'Unexpected error (generic message)' })
+  @HttpCode(204)
+  async logout(
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    await this.revokeSession.execute({
+      userId: authenticatedUserOf(request).userId,
+      refreshToken: readRefreshTokenCookie(request.headers.cookie),
+    });
+    clearRefreshTokenCookie(response, this.config.refreshCookie);
+    response.setHeader('Cache-Control', 'no-store');
   }
 
   private signedIn(result: AuthenticatedSessionResult, response: Response): LoginResponse {

@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 
+import type { VerifiedAccessToken } from '../../domain/ports/access-token-verifier';
 import type {
   RefreshTokenVerifier,
   VerifiedRefreshToken,
@@ -14,6 +15,14 @@ export interface JwtTokenIssuerOptions {
   refreshSecret: string;
   accessTtlMs: number;
   refreshTtlMs: number;
+}
+
+const ROLES: readonly Role[] = ['USER', 'ADMIN'];
+
+interface AccessClaims {
+  sub?: unknown;
+  sid?: unknown;
+  role?: unknown;
 }
 
 interface RefreshClaims {
@@ -47,6 +56,25 @@ export class JwtTokenIssuer implements TokenIssuer, RefreshTokenVerifier {
         expiresIn: this.options.refreshTtlMs / 1000,
       },
     );
+  }
+
+  /**
+   * Only current HS256 tokens signed with the access secret are accepted, so a refresh token, an
+   * expired or an unsigned token yields null.
+   */
+  async verifyAccessToken(accessToken: string): Promise<VerifiedAccessToken | null> {
+    try {
+      const claims = await this.jwt.verifyAsync<AccessClaims>(accessToken, {
+        secret: this.options.accessSecret,
+        algorithms: ['HS256'],
+      });
+      const { sub, sid, role } = claims;
+      if (typeof sub !== 'string' || typeof sid !== 'string') return null;
+      if (!ROLES.includes(role as Role)) return null;
+      return { userId: sub, sessionId: sid, role: role as Role };
+    } catch {
+      return null;
+    }
   }
 
   /**

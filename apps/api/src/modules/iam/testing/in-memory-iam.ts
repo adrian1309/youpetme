@@ -160,12 +160,12 @@ export class InMemorySessions implements UserSessionRepository {
     return Promise.resolve(true);
   }
 
-  end(session: UserSession): Promise<void> {
+  end(session: UserSession): Promise<boolean> {
+    this.log.entries.push('endSession');
     const stored = this.sessions.get(session.id);
-    if (stored?.isActive()) {
-      this.sessions.set(session.id, session);
-    }
-    return Promise.resolve();
+    if (!stored?.isActive()) return Promise.resolve(false);
+    this.sessions.set(session.id, session);
+    return Promise.resolve(true);
   }
 }
 
