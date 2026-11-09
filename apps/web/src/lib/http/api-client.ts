@@ -11,6 +11,8 @@ export interface ApiClientOptions {
 export interface RequestOptions {
   /** Sent as `Authorization: Bearer …`. Held in memory only (ADR-002). */
   accessToken?: string;
+  /** Cancels the request; a cancelled request rejects with NetworkError. */
+  signal?: AbortSignal;
 }
 
 export interface ApiClient {
@@ -63,7 +65,11 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
 
   return {
     get<TResponse>(path: string, options: RequestOptions = {}): Promise<TResponse> {
-      return send<TResponse>(path, { method: 'GET', headers: headersFor(options, false) });
+      return send<TResponse>(path, {
+        method: 'GET',
+        headers: headersFor(options, false),
+        ...(options.signal ? { signal: options.signal } : {}),
+      });
     },
     post<TResponse>(
       path: string,
@@ -75,6 +81,7 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
         method: 'POST',
         headers: headersFor(options, hasBody),
         ...(hasBody ? { body: JSON.stringify(body) } : {}),
+        ...(options.signal ? { signal: options.signal } : {}),
       });
     },
   };

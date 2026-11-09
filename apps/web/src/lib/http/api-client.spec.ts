@@ -163,3 +163,38 @@ describe('createApiClient — bodiless POST and bearer token (TS-IAM-002)', () =
     expect(header(2)).toBeNull();
   });
 });
+
+describe('createApiClient — cancellation', () => {
+  it('passes the AbortSignal to fetch, so a request can be cancelled', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(jsonResponse(200, {})));
+    const client = createApiClient({ baseUrl: 'http://api', fetch: fetchMock });
+    const controller = new AbortController();
+
+    await client.post('/x', undefined, { signal: controller.signal });
+    await client.get('/y', { signal: controller.signal });
+
+    expect(fetchMock.mock.calls[0]![1].signal).toBe(controller.signal);
+    expect(fetchMock.mock.calls[1]![1].signal).toBe(controller.signal);
+  });
+
+  it('reports a cancelled request as a NetworkError', async () => {
+    const fetchMock = vi.fn(
+      (_url: string, init: RequestInit) =>
+        new Promise<Response>((_resolve, reject) =>
+          init.signal!.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          ),
+        ),
+    );
+    const client = createApiClient({
+      baseUrl: 'http://api',
+      fetch: fetchMock as unknown as typeof fetch,
+    });
+    const controller = new AbortController();
+
+    const pending = client.post('/x', undefined, { signal: controller.signal });
+    controller.abort();
+
+    await expect(pending).rejects.toBeInstanceOf(NetworkError);
+  });
+});

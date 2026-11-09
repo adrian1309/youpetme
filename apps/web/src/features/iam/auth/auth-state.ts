@@ -28,6 +28,8 @@ export interface AuthContextValue {
   /** Runs a request with the access token, renewing the session once on a 401. */
   authorized<T>(request: (accessToken: string) => Promise<T>): Promise<T>;
   acknowledgeExpiry(): void;
+  /** Logs out (TS-IAM-003); the client state is always cleared. Never throws. */
+  signOut(): Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | null>(null);

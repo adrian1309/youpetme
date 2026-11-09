@@ -4,7 +4,13 @@ import { createApiClient } from '../../../lib/http/api-client';
 import { ApiError, NetworkError } from '../../../lib/http/api-error';
 import { jsonResponse } from '../../../test/render-with-providers';
 import type { AuthSession } from './auth-state';
-import { createSessionManager, REFRESH_LOCK_NAME, REFRESH_PATH } from './session-manager';
+import {
+  createSessionManager,
+  LOGOUT_PATH,
+  REFRESH_LOCK_NAME,
+  REFRESH_PATH,
+  type AuthChannel,
+} from './session-manager';
 
 const API = 'http://api.test';
 
@@ -291,6 +297,235 @@ describe('SessionManager (TS-IAM-002, ADR-002)', () => {
       expect(sent).toEqual(['cookie-1', 'cookie-1+']);
       expect(first.getState().status).toBe('authenticated');
       expect(second.getState().status).toBe('authenticated');
+    });
+  });
+
+  describe('signOut (US-IAM-003)', () => {
+    const loggedOut = () => new Response(null, { status: 204 });
+
+    function signedInManager(fetchMock: ReturnType<typeof sequence>) {
+      const manager = setup(fetchMock, { initialStatus: 'anonymous' });
+      manager.signIn(signedIn);
+      return manager;
+    }
+
+    it('Scenario 1 — sends the logout with the access token and the cookie, and signs out', async () => {
+      const fetchMock = sequence(loggedOut);
+      const manager = signedInManager(fetchMock);
+
+      await manager.signOut();
+
+      const [url, init] = fetchMock.mock.calls[0]!;
+      expect(url).toBe(`${API}${LOGOUT_PATH}`);
+      expect(init).toMatchObject({ method: 'POST', credentials: 'include' });
+      expect(new Headers(init!.headers).get('Authorization')).toBe('Bearer old-token');
+      expect(init!.body).toBeUndefined();
+      expect(manager.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+    });
+
+    it.each([
+      ['a network error', () => Promise.reject(new TypeError('Failed to fetch'))],
+      ['a server error', () => jsonResponse(500, { statusCode: 500, error: 'x', message: 'x' })],
+      [
+        'a rejected request',
+        () => jsonResponse(403, { statusCode: 403, error: 'x', message: 'x' }),
+      ],
+    ])(
+      'Scenario 3 — clears the client state anyway after %s, without throwing',
+      async (_case, response) => {
+        const manager = signedInManager(sequence(response));
+
+        await expect(manager.signOut()).resolves.toBeUndefined();
+
+        expect(manager.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+      },
+    );
+
+    it('renews an expired access token once and retries the logout with the new one', async () => {
+      const fetchMock = sequence(
+        () => jsonResponse(401, { statusCode: 401, error: 'x', message: 'x' }),
+        () => jsonResponse(200, refreshed('new-token')),
+        loggedOut,
+      );
+      const manager = signedInManager(fetchMock);
+
+      await manager.signOut();
+
+      const urls = fetchMock.mock.calls.map(([url]) => url);
+      expect(urls).toEqual([
+        `${API}${LOGOUT_PATH}`,
+        `${API}${REFRESH_PATH}`,
+        `${API}${LOGOUT_PATH}`,
+      ]);
+      expect(new Headers(fetchMock.mock.calls[2]![1]!.headers).get('Authorization')).toBe(
+        'Bearer new-token',
+      );
+      expect(manager.getState().status).toBe('anonymous');
+    });
+
+    it('when the session cannot be renewed it signs out without flagging an expiry (no detour to /login)', async () => {
+      const states: boolean[] = [];
+      const manager = signedInManager(
+        sequence(
+          () => jsonResponse(401, { statusCode: 401, error: 'x', message: 'x' }),
+          notRenewable,
+        ),
+      );
+      manager.subscribe(() => states.push(manager.getState().expired));
+
+      await manager.signOut();
+
+      expect(manager.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+      expect(states).not.toContain(true);
+    });
+
+    it('sends a single logout when asked twice at once', async () => {
+      const fetchMock = sequence(loggedOut);
+      const manager = signedInManager(fetchMock);
+
+      await Promise.all([manager.signOut(), manager.signOut()]);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('Scenario 3 — does not wait for a server that never answers: it signs out after the time limit and cancels the request', async () => {
+      let signal: AbortSignal | undefined;
+      const fetchMock = vi.fn<typeof fetch>((_input, init) => {
+        signal = init?.signal ?? undefined;
+        return new Promise<Response>(() => undefined);
+      });
+      const client = createApiClient({ baseUrl: API, fetch: fetchMock });
+      const manager = createSessionManager({
+        client,
+        locks: null,
+        initialStatus: 'anonymous',
+        logoutTimeoutMs: 20,
+      });
+      manager.signIn(signedIn);
+
+      await manager.signOut();
+
+      expect(manager.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+      expect(signal?.aborted).toBe(true);
+    });
+
+    it('a renewal that finishes after the logout never brings the session back', async () => {
+      let answerRefresh: (response: Response) => void = () => undefined;
+      const fetchMock = sequence(
+        () => jsonResponse(401, { statusCode: 401, error: 'x', message: 'x' }),
+        () => new Promise<Response>((resolve) => (answerRefresh = resolve)),
+        () => new Response(null, { status: 204 }),
+      );
+      const client = createApiClient({ baseUrl: API, fetch: fetchMock });
+      const manager = createSessionManager({
+        client,
+        locks: null,
+        initialStatus: 'anonymous',
+        logoutTimeoutMs: 20,
+      });
+      manager.signIn(signedIn);
+
+      await manager.signOut();
+      answerRefresh(jsonResponse(200, refreshed('late-token')));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(manager.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+    });
+
+    it('without a session it only makes sure the state is anonymous', async () => {
+      const fetchMock = sequence();
+      const manager = setup(fetchMock, { initialStatus: 'anonymous' });
+
+      await manager.signOut();
+
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(manager.getState().status).toBe('anonymous');
+    });
+  });
+
+  describe('other tabs (L4: BroadcastChannel)', () => {
+    /** Two tabs joined by an in-memory channel that, like BroadcastChannel, skips the sender. */
+    function linkedChannels() {
+      const ends: { listeners: Set<(event: MessageEvent) => void>; closed: boolean }[] = [];
+      function end(): AuthChannel & { closed: boolean } {
+        const self = { listeners: new Set<(event: MessageEvent) => void>(), closed: false };
+        ends.push(self);
+        return {
+          get closed() {
+            return self.closed;
+          },
+          postMessage(message: unknown) {
+            for (const other of ends) {
+              if (other === self || other.closed) continue;
+              for (const listener of other.listeners) {
+                listener(new MessageEvent('message', { data: message }));
+              }
+            }
+          },
+          addEventListener: (_type, listener) => self.listeners.add(listener),
+          removeEventListener: (_type, listener) => self.listeners.delete(listener),
+          close() {
+            self.closed = true;
+          },
+        };
+      }
+      return [end(), end()] as const;
+    }
+
+    it('signing out in one tab signs out the other tabs at once', async () => {
+      const [channelA, channelB] = linkedChannels();
+      const tabA = setup(
+        sequence(() => new Response(null, { status: 204 })),
+        {
+          initialStatus: 'anonymous',
+        },
+      );
+      const tabB = setup(sequence(), { initialStatus: 'anonymous' });
+      tabA.signIn(signedIn);
+      tabB.signIn(signedIn);
+      tabA.connectTabs(channelA);
+      tabB.connectTabs(channelB);
+
+      await tabA.signOut();
+
+      expect(tabB.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+    });
+
+    it('a tab that is not signed in ignores the message', () => {
+      const [channelA, channelB] = linkedChannels();
+      const tabB = setup(sequence(), { initialStatus: 'anonymous' });
+      const listener = vi.fn();
+      tabB.subscribe(listener);
+      tabB.connectTabs(channelB);
+
+      channelA.postMessage({ type: 'signed-out' });
+
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('ignores messages it does not know', () => {
+      const [channelA, channelB] = linkedChannels();
+      const tabB = setup(sequence(), { initialStatus: 'anonymous' });
+      tabB.signIn(signedIn);
+      tabB.connectTabs(channelB);
+
+      channelA.postMessage({ type: 'something-else' });
+      channelA.postMessage('signed-out');
+
+      expect(tabB.getState().status).toBe('authenticated');
+    });
+
+    it('disconnecting stops listening and closes the channel', () => {
+      const [channelA, channelB] = linkedChannels();
+      const tabB = setup(sequence(), { initialStatus: 'anonymous' });
+      tabB.signIn(signedIn);
+      const disconnect = tabB.connectTabs(channelB);
+
+      disconnect();
+      channelA.postMessage({ type: 'signed-out' });
+
+      expect(channelB.closed).toBe(true);
+      expect(tabB.getState().status).toBe('authenticated');
     });
   });
 });

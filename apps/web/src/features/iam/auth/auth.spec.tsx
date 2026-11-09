@@ -150,4 +150,33 @@ describe('AuthProvider (ADR-002: access token in memory only)', () => {
 
     expect(() => renderHook(() => useAuth())).toThrow('AuthProvider');
   });
+
+  describe('logout in another tab (US-IAM-003, L4)', () => {
+    it('a logout in one tab signs the other tabs out at once, through BroadcastChannel', async () => {
+      const client = clientWith(vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+      const tabs = [0, 1].map(() =>
+        createSessionManager({ client, locks: null, initialStatus: 'anonymous' }),
+      );
+      function Tab({ index }: { index: number }) {
+        const { session: current } = useAuth();
+        return <p>{`tab ${index}: ${current ? 'signed in' : 'visitor'}`}</p>;
+      }
+      render(
+        <ApiClientProvider client={client}>
+          {tabs.map((manager, index) => (
+            <AuthProvider key={index} manager={manager}>
+              <Tab index={index} />
+            </AuthProvider>
+          ))}
+        </ApiClientProvider>,
+      );
+      act(() => tabs.forEach((manager) => manager.signIn(session)));
+      expect(screen.getByText('tab 1: signed in')).toBeInTheDocument();
+
+      await act(() => tabs[0]!.signOut());
+
+      expect(await screen.findByText('tab 1: visitor')).toBeInTheDocument();
+      expect(screen.getByText('tab 0: visitor')).toBeInTheDocument();
+    });
+  });
 });

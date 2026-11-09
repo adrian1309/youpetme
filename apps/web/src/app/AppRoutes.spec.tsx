@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect, type ReactNode } from 'react';
 
@@ -63,7 +63,7 @@ describe('AppRoutes', () => {
   });
 
   describe('/ once authenticated', () => {
-    it('greets the user by name in a minimal header, with no profile or logout entries yet', () => {
+    it('greets the user by name in a minimal header, with a logout action and no profile entry yet', () => {
       renderWithProviders(
         <SignedIn>
           <AppRoutes />
@@ -76,7 +76,7 @@ describe('AppRoutes', () => {
       expect(header).toHaveTextContent('Hola, John');
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Has iniciado sesión.');
       expect(screen.queryByRole('link', { name: /perfil/i })).not.toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /cerrar sesión/i })).not.toBeInTheDocument();
+      expect(within(header).getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();
       expect(screen.queryByRole('link', { name: 'Crear cuenta' })).not.toBeInTheDocument();
     });
 
@@ -248,6 +248,100 @@ describe('AppRoutes', () => {
       const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/nope'] });
 
       await expectNoAxeViolations(container, { page: true });
+    });
+  });
+
+  describe('logout (US-IAM-003)', () => {
+    const loggedOut = () => Promise.resolve(new Response(null, { status: 204 }));
+
+    /** Signs in once and keeps rendering after the logout, unlike SignedIn. */
+    function SignedInOnce({ children }: { children: ReactNode }) {
+      const { signIn } = useAuth();
+      useEffect(() => signIn(session), [signIn]);
+      return children;
+    }
+
+    function logoutButton() {
+      return within(screen.getByRole('banner')).getByRole('button', { name: 'Cerrar sesión' });
+    }
+
+    async function expectPublicHome() {
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'YouPetMe' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('banner')).not.toHaveTextContent('Hola');
+      expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toBeVisible();
+      expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    }
+
+    it('Scenario 1: from any view, "Cerrar sesión" calls the API and lands on the public home', async () => {
+      const user = userEvent.setup();
+      const fetchMock = vi.fn<typeof fetch>(loggedOut);
+      renderWithProviders(
+        <SignedInOnce>
+          <AppRoutes />
+        </SignedInOnce>,
+        { initialEntries: ['/terms'], fetch: fetchMock },
+      );
+
+      await user.click(logoutButton());
+
+      await expectPublicHome();
+      // /terms also asks for the terms version; find the logout among the calls.
+      const logoutCall = fetchMock.mock.calls.find(
+        ([url]) => url === 'http://api.test/api/v1/auth/logout',
+      );
+      expect(logoutCall).toBeDefined();
+      expect(new Headers(logoutCall![1]!.headers).get('Authorization')).toBe(
+        'Bearer access-token-value',
+      );
+    });
+
+    it('Scenario 1: shows that the logout is in progress and sends it only once', async () => {
+      const user = userEvent.setup();
+      let answer: (response: Response) => void = () => undefined;
+      const fetchMock = vi.fn(() => new Promise<Response>((resolve) => (answer = resolve)));
+      renderWithProviders(
+        <SignedInOnce>
+          <AppRoutes />
+        </SignedInOnce>,
+        { initialEntries: ['/'], fetch: fetchMock },
+      );
+
+      await user.click(logoutButton());
+      const pending = within(screen.getByRole('banner')).getByRole('button', {
+        name: 'Cerrando sesión…',
+      });
+      expect(pending).toHaveAttribute('aria-disabled', 'true');
+      await user.click(pending);
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      answer(new Response(null, { status: 204 }));
+      await expectPublicHome();
+    });
+
+    it('Scenario 3: when the network fails, the user is signed out anyway', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <SignedInOnce>
+          <AppRoutes />
+        </SignedInOnce>,
+        {
+          initialEntries: ['/'],
+          fetch: vi.fn().mockRejectedValue(new TypeError('Failed to fetch')),
+        },
+      );
+
+      await user.click(logoutButton());
+
+      await expectPublicHome();
+    });
+
+    it('a visitor sees no logout action', () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
+
+      expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument();
     });
   });
 
