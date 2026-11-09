@@ -6,6 +6,11 @@ import type { AuthSession } from './auth-state';
 
 export const REFRESH_PATH = '/api/v1/auth/refresh';
 export const LOGOUT_PATH = '/api/v1/auth/logout';
+/**
+ * How long a logout waits for the server before signing out anyway (US-IAM-003, scenario 3). A
+ * dead network can take far longer to fail on its own.
+ */
+export const LOGOUT_TIMEOUT_MS = 5_000;
 /** Name of the BroadcastChannel the tabs of the app use to tell each other about a logout. */
 export const AUTH_CHANNEL_NAME = 'youpetme:auth';
 /** Shared by every tab of the app on this origin. */
@@ -71,6 +76,8 @@ export interface SessionManagerOptions {
   /** Defaults to navigator.locks when the browser has it; null runs refreshes unlocked. */
   locks?: RefreshLocks | null;
   initialStatus?: Extract<AuthStatus, 'restoring' | 'anonymous'>;
+  /** Defaults to LOGOUT_TIMEOUT_MS; tests shorten it. */
+  logoutTimeoutMs?: number;
 }
 
 type RefreshOutcome =
@@ -95,6 +102,7 @@ export function createSessionManager({
   client,
   locks = defaultLocks(),
   initialStatus = 'restoring',
+  logoutTimeoutMs = LOGOUT_TIMEOUT_MS,
 }: SessionManagerOptions): SessionManager {
   let state: AuthState = { status: initialStatus, session: null, expired: false };
   const listeners = new Set<() => void>();
@@ -157,7 +165,9 @@ export function createSessionManager({
         if (state.session) setState({ status: 'anonymous', session: null, expired: flagExpiry });
         throw error;
       }
-      if (state.session?.accessToken !== outcome.session.accessToken) {
+      // Signed out while the renewal was in flight: it must not bring the session back.
+      if (!state.session) throw error;
+      if (state.session.accessToken !== outcome.session.accessToken) {
         setState({ ...state, status: 'authenticated', session: outcome.session });
       }
       return request(outcome.session.accessToken);
@@ -171,16 +181,31 @@ export function createSessionManager({
   }
 
   async function requestSignOut(): Promise<void> {
+    const cancel = new AbortController();
+    let timer: ReturnType<typeof setTimeout> | undefined;
     try {
       if (state.session) {
-        await withAccessToken(
-          (accessToken) => client.post<unknown>(LOGOUT_PATH, undefined, { accessToken }),
+        const attempt = withAccessToken(
+          (accessToken) =>
+            client.post<unknown>(LOGOUT_PATH, undefined, { accessToken, signal: cancel.signal }),
           false,
         );
+        const timeLimit = new Promise<void>((resolve) => {
+          timer = setTimeout(resolve, logoutTimeoutMs);
+        });
+        // US-IAM-003, scenario 3: the client signs out even if the server cannot be reached,
+        // and does not wait longer than the time limit to find out.
+        await Promise.race([
+          attempt.then(
+            () => undefined,
+            () => undefined,
+          ),
+          timeLimit,
+        ]);
       }
-    } catch {
-      // US-IAM-003, scenario 3: the client signs out even if the server could not be reached.
     } finally {
+      clearTimeout(timer);
+      cancel.abort();
       signOutLocally();
       tabs?.postMessage(SIGNED_OUT_MESSAGE);
     }

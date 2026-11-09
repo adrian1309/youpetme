@@ -388,6 +388,50 @@ describe('SessionManager (TS-IAM-002, ADR-002)', () => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
+    it('Scenario 3 — does not wait for a server that never answers: it signs out after the time limit and cancels the request', async () => {
+      let signal: AbortSignal | undefined;
+      const fetchMock = vi.fn<typeof fetch>((_input, init) => {
+        signal = init?.signal ?? undefined;
+        return new Promise<Response>(() => undefined);
+      });
+      const client = createApiClient({ baseUrl: API, fetch: fetchMock });
+      const manager = createSessionManager({
+        client,
+        locks: null,
+        initialStatus: 'anonymous',
+        logoutTimeoutMs: 20,
+      });
+      manager.signIn(signedIn);
+
+      await manager.signOut();
+
+      expect(manager.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+      expect(signal?.aborted).toBe(true);
+    });
+
+    it('a renewal that finishes after the logout never brings the session back', async () => {
+      let answerRefresh: (response: Response) => void = () => undefined;
+      const fetchMock = sequence(
+        () => jsonResponse(401, { statusCode: 401, error: 'x', message: 'x' }),
+        () => new Promise<Response>((resolve) => (answerRefresh = resolve)),
+        () => new Response(null, { status: 204 }),
+      );
+      const client = createApiClient({ baseUrl: API, fetch: fetchMock });
+      const manager = createSessionManager({
+        client,
+        locks: null,
+        initialStatus: 'anonymous',
+        logoutTimeoutMs: 20,
+      });
+      manager.signIn(signedIn);
+
+      await manager.signOut();
+      answerRefresh(jsonResponse(200, refreshed('late-token')));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      expect(manager.getState()).toEqual({ status: 'anonymous', session: null, expired: false });
+    });
+
     it('without a session it only makes sure the state is anonymous', async () => {
       const fetchMock = sequence();
       const manager = setup(fetchMock, { initialStatus: 'anonymous' });
