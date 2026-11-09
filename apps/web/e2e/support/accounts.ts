@@ -6,6 +6,7 @@ import { API_URL } from './env.ts';
 export const REGISTER_ENDPOINT = `${API_URL}/api/v1/auth/register`;
 export const LOGIN_ENDPOINT = `${API_URL}/api/v1/auth/login`;
 export const REFRESH_ENDPOINT = `${API_URL}/api/v1/auth/refresh`;
+export const LOGOUT_ENDPOINT = `${API_URL}/api/v1/auth/logout`;
 
 /** An origin other than WEB_ORIGIN, for the Origin guard. */
 export const FOREIGN_ORIGIN = 'https://foreign.example';

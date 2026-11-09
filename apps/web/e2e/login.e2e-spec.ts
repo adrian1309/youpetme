@@ -1,24 +1,13 @@
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type BrowserContext,
-  type Cookie,
-  type Page,
-  type Response,
-} from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import {
   FOREIGN_ORIGIN,
   LOGIN_ENDPOINT,
   newVisitor,
   REFRESH_ENDPOINT,
-  REGISTER_ENDPOINT,
-  registerBody,
-  type Visitor,
 } from './support/accounts.ts';
 import { expectRefreshTokenCookie, refreshTokenCookie } from './support/cookies.ts';
 import {
@@ -29,6 +18,18 @@ import {
 } from './support/database.ts';
 import { WEB_ORIGIN } from './support/env.ts';
 import { closeForeignPage, serveForeignPage } from './support/foreign-origin.ts';
+import {
+  accessTokenOf,
+  expectSignedIn,
+  expectVisitor,
+  isRefresh,
+  logIn,
+  loginForm,
+  registeredVisitor,
+  reloadAndRefresh,
+  submitLogin,
+  useRefreshCookie,
+} from './support/session-ui.ts';
 
 /**
  * Login and session renewal against the real API and PostgreSQL (SCRUM-52, TS-IAM-002). The
@@ -36,76 +37,6 @@ import { closeForeignPage, serveForeignPage } from './support/foreign-origin.ts'
  * and accessible labels only. Every test registers its own user, so none depends on another.
  */
 const REFRESH_LOCK = 'youpetme:auth-refresh';
-
-/** Registers a fresh account through the API, as the UI cannot be the subject under test here. */
-async function registeredVisitor(request: APIRequestContext): Promise<Visitor> {
-  const visitor = newVisitor();
-  const response = await request.post(REGISTER_ENDPOINT, { data: registerBody(visitor) });
-  expect(response.status()).toBe(201);
-  return visitor;
-}
-
-function loginForm(page: Page) {
-  return {
-    email: page.getByLabel('Correo electrónico', { exact: true }),
-    password: page.getByLabel('Contraseña', { exact: true }),
-    submit: page.getByRole('button', { name: 'Iniciar sesión' }),
-  };
-}
-
-const isLogin = (response: Response) =>
-  response.url() === LOGIN_ENDPOINT && response.request().method() === 'POST';
-const isRefresh = (response: Response) =>
-  response.url() === REFRESH_ENDPOINT && response.request().method() === 'POST';
-
-/** Fills /login and submits it; returns the API's answer once the browser has it. */
-async function submitLogin(page: Page, email: string, password: string): Promise<Response> {
-  const form = loginForm(page);
-  await form.email.fill(email);
-  await form.password.fill(password);
-  const [response] = await Promise.all([page.waitForResponse(isLogin), form.submit.click()]);
-  return response;
-}
-
-async function logIn(page: Page, visitor: Visitor): Promise<Response> {
-  await page.goto('/login');
-  const response = await submitLogin(page, visitor.email, visitor.password);
-  expect(response.status()).toBe(200);
-  await expectSignedIn(page, visitor);
-  return response;
-}
-
-/** Reloads the page and returns the answer to the refresh that restores the session. */
-async function reloadAndRefresh(page: Page): Promise<Response> {
-  const [response] = await Promise.all([page.waitForResponse(isRefresh), page.reload()]);
-  return response;
-}
-
-async function expectSignedIn(page: Page, visitor: Visitor) {
-  await expect(page).toHaveURL('/');
-  await expect(page.getByRole('heading', { level: 1, name: 'Has iniciado sesión.' })).toBeVisible();
-  await expect(page.getByRole('banner')).toContainText(`Hola, ${visitor.firstName}`);
-}
-
-/** The visitor home, with no greeting and no error: the user has to sign in again. */
-async function expectVisitor(page: Page) {
-  await expect(page.getByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Iniciar sesión' })).toBeVisible();
-  await expect(page.getByRole('banner')).not.toContainText('Hola');
-  await expect(page.getByRole('alert')).toHaveCount(0);
-}
-
-async function accessTokenOf(response: Response): Promise<string> {
-  const body = (await response.json()) as { authentication: { accessToken: string } };
-  return body.authentication.accessToken;
-}
-
-/** Puts a given refresh token back in the browser, as an attacker or a stale tab would send it. */
-async function useRefreshCookie(context: BrowserContext, cookie: Cookie) {
-  await context.clearCookies();
-  // WebKit on Windows reports SameSite=None; restore what the API actually set.
-  await context.addCookies([{ ...cookie, sameSite: 'Strict' }]);
-}
 
 test.describe('US-IAM-002 — Login', () => {
   test('Scenario 1: an ACTIVE account signs in and lands on the authenticated home', async ({
