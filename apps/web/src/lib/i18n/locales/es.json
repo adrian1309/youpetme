@@ -113,6 +113,10 @@
       "generic": "No hemos podido iniciar sesión. Inténtalo de nuevo."
     }
   },
+  "header": {
+    "signOut": "Cerrar sesión",
+    "signingOut": "Cerrando sesión…"
+  },
   "home": {
     "greeting": "Hola, {{name}}",
     "accountCreated": "Tu cuenta está creada.",

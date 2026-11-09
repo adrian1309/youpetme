@@ -5,6 +5,9 @@ import { ApiError } from '../../../lib/http/api-error';
 import type { AuthSession } from './auth-state';
 
 export const REFRESH_PATH = '/api/v1/auth/refresh';
+export const LOGOUT_PATH = '/api/v1/auth/logout';
+/** Name of the BroadcastChannel the tabs of the app use to tell each other about a logout. */
+export const AUTH_CHANNEL_NAME = 'youpetme:auth';
 /** Shared by every tab of the app on this origin. */
 export const REFRESH_LOCK_NAME = 'youpetme:auth-refresh';
 
@@ -22,6 +25,16 @@ export interface AuthState {
 export interface SignInOptions {
   accountCreated?: boolean;
 }
+
+/** The subset of BroadcastChannel this module needs, so tests can pass an in-memory one. */
+export interface AuthChannel {
+  postMessage(message: unknown): void;
+  addEventListener(type: 'message', listener: (event: MessageEvent) => void): void;
+  removeEventListener(type: 'message', listener: (event: MessageEvent) => void): void;
+  close(): void;
+}
+
+const SIGNED_OUT_MESSAGE = { type: 'signed-out' } as const;
 
 /** The subset of the Web Locks API this module needs (navigator.locks). */
 export interface RefreshLocks {
@@ -41,6 +54,16 @@ export interface SessionManager {
   authorized<T>(request: (accessToken: string) => Promise<T>): Promise<T>;
   /** Clears the expired flag once the UI has reacted to it. */
   acknowledgeExpiry(): void;
+  /**
+   * Logs out (TS-IAM-003): asks the API to revoke the session, then always clears the client
+   * state, whatever the answer, even without a network. Never throws.
+   */
+  signOut(): Promise<void>;
+  /**
+   * Joins the other tabs of the app (decision L4): a logout here signs them out at once. Returns
+   * a function that leaves the channel and closes it.
+   */
+  connectTabs(channel: AuthChannel): () => void;
 }
 
 export interface SessionManagerOptions {
@@ -66,6 +89,7 @@ function defaultLocks(): RefreshLocks | null {
  * - within a tab, concurrent callers share the one refresh in flight;
  * - across tabs, refreshes run one at a time under a Web Lock, so a waiting tab sends the cookie
  *   the previous tab's refresh just rotated.
+ * A logout in one tab is broadcast to the others (TS-IAM-003, decision L4).
  */
 export function createSessionManager({
   client,
@@ -76,6 +100,8 @@ export function createSessionManager({
   const listeners = new Set<() => void>();
   let refreshInFlight: Promise<RefreshOutcome> | null = null;
   let restoreInFlight: Promise<void> | null = null;
+  let signOutInFlight: Promise<void> | null = null;
+  let tabs: AuthChannel | null = null;
 
   function setState(next: AuthState): void {
     state = next;
@@ -110,6 +136,56 @@ export function createSessionManager({
     return refreshInFlight;
   }
 
+  /**
+   * Runs `request` with the access token, renewing the session once on a 401. `flagExpiry` says
+   * whether a rejected renewal flags an expiry (redirect to /login): yes during use; not during a
+   * logout, which clears the state anyway.
+   */
+  async function withAccessToken<T>(
+    request: (accessToken: string) => Promise<T>,
+    flagExpiry: boolean,
+  ): Promise<T> {
+    const token = state.session?.accessToken;
+    if (!token) throw new ApiError(401);
+    try {
+      return await request(token);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 401) throw error;
+      const outcome = await refresh();
+      if (outcome.kind === 'failed') throw outcome.error;
+      if (outcome.kind === 'rejected') {
+        if (state.session) setState({ status: 'anonymous', session: null, expired: flagExpiry });
+        throw error;
+      }
+      if (state.session?.accessToken !== outcome.session.accessToken) {
+        setState({ ...state, status: 'authenticated', session: outcome.session });
+      }
+      return request(outcome.session.accessToken);
+    }
+  }
+
+  function signOutLocally(): void {
+    if (state.status !== 'anonymous' || state.session || state.expired) {
+      setState({ status: 'anonymous', session: null, expired: false });
+    }
+  }
+
+  async function requestSignOut(): Promise<void> {
+    try {
+      if (state.session) {
+        await withAccessToken(
+          (accessToken) => client.post<unknown>(LOGOUT_PATH, undefined, { accessToken }),
+          false,
+        );
+      }
+    } catch {
+      // US-IAM-003, scenario 3: the client signs out even if the server could not be reached.
+    } finally {
+      signOutLocally();
+      tabs?.postMessage(SIGNED_OUT_MESSAGE);
+    }
+  }
+
   return {
     getState: () => state,
 
@@ -139,28 +215,38 @@ export function createSessionManager({
       return restoreInFlight;
     },
 
-    async authorized<T>(request: (accessToken: string) => Promise<T>): Promise<T> {
-      const token = state.session?.accessToken;
-      if (!token) throw new ApiError(401);
-      try {
-        return await request(token);
-      } catch (error) {
-        if (!(error instanceof ApiError) || error.status !== 401) throw error;
-        const outcome = await refresh();
-        if (outcome.kind === 'failed') throw outcome.error;
-        if (outcome.kind === 'rejected') {
-          if (state.session) setState({ status: 'anonymous', session: null, expired: true });
-          throw error;
-        }
-        if (state.session?.accessToken !== outcome.session.accessToken) {
-          setState({ ...state, status: 'authenticated', session: outcome.session });
-        }
-        return request(outcome.session.accessToken);
-      }
+    authorized<T>(request: (accessToken: string) => Promise<T>): Promise<T> {
+      return withAccessToken(request, true);
     },
 
     acknowledgeExpiry() {
       if (state.expired) setState({ ...state, expired: false });
+    },
+
+    signOut() {
+      signOutInFlight ??= requestSignOut().finally(() => {
+        signOutInFlight = null;
+      });
+      return signOutInFlight;
+    },
+
+    connectTabs(channel) {
+      const onMessage = (event: MessageEvent) => {
+        const data: unknown = event.data;
+        const isSignOut =
+          typeof data === 'object' &&
+          data !== null &&
+          (data as { type?: unknown }).type === SIGNED_OUT_MESSAGE.type;
+        // Another tab logged out: the shared session is gone, so this tab follows at once.
+        if (isSignOut && state.session) signOutLocally();
+      };
+      channel.addEventListener('message', onMessage);
+      tabs = channel;
+      return () => {
+        channel.removeEventListener('message', onMessage);
+        channel.close();
+        if (tabs === channel) tabs = null;
+      };
     },
   };
 }

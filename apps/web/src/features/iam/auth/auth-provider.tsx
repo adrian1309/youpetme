@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } fr
 
 import { useApiClient } from '../../../lib/http/api-client-context';
 import { AuthContext, type AuthContextValue } from './auth-state';
-import { createSessionManager, type SessionManager } from './session-manager';
+import { AUTH_CHANNEL_NAME, createSessionManager, type SessionManager } from './session-manager';
 
 /**
  * Authentication state for the web app (ADR-004: React state, no global store). The refresh
@@ -24,6 +24,13 @@ export function AuthProvider({
     void manager.restore();
   }, [manager]);
 
+  // A logout in another tab signs this one out too (L4). Where BroadcastChannel is missing, this
+  // tab simply falls back to visitor on its next refresh.
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return;
+    return manager.connectTabs(new BroadcastChannel(AUTH_CHANNEL_NAME));
+  }, [manager]);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       status: state.status,
@@ -34,6 +41,7 @@ export function AuthProvider({
       signIn: manager.signIn,
       authorized: manager.authorized,
       acknowledgeExpiry: manager.acknowledgeExpiry,
+      signOut: manager.signOut,
     }),
     [state, manager],
   );
