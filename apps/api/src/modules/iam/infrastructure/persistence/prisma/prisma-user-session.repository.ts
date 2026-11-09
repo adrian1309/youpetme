@@ -37,10 +37,11 @@ export class PrismaUserSessionRepository implements UserSessionRepository {
     return count === 1;
   }
 
-  async end(session: UserSession): Promise<void> {
-    await this.prisma.userSession.updateMany({
+  async end(session: UserSession): Promise<boolean> {
+    const { count } = await this.prisma.userSession.updateMany({
       where: { id: session.id, status: 'ACTIVE' },
       data: { status: session.status, updatedAt: session.updatedAt },
     });
+    return count === 1;
   }
 }

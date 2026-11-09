@@ -8,6 +8,9 @@ export interface UserSessionRepository {
    * still ACTIVE (compare-and-set). Returns false when another refresh got there first.
    */
   rotate(rotated: UserSession, expectedHash: string): Promise<boolean>;
-  /** Persists a REVOKED or EXPIRED transition of a session that is still ACTIVE. */
-  end(session: UserSession): Promise<void>;
+  /**
+   * Persists a REVOKED or EXPIRED transition of a session that is still ACTIVE. Returns false
+   * when the session had already ended, so callers can avoid acting on it twice.
+   */
+  end(session: UserSession): Promise<boolean>;
 }

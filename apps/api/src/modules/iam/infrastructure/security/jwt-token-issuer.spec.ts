@@ -99,4 +99,48 @@ describe('JwtTokenIssuer', () => {
       await expect(issuer.verify(await makeToken())).resolves.toBeNull();
     });
   });
+
+  describe('verifyAccessToken', () => {
+    it('returns the user, session and role of a valid access token', async () => {
+      const token = await issuer.issueAccessToken({ ...claims, role: 'USER' });
+
+      await expect(issuer.verifyAccessToken(token)).resolves.toEqual({
+        userId: 'user-1',
+        sessionId: 'session-1',
+        role: 'USER',
+      });
+    });
+
+    it.each([
+      ['a refresh token', () => issuer.issueRefreshToken(claims)],
+      [
+        'an expired access token',
+        () =>
+          jwt.signAsync(
+            { sub: 'u', sid: 's', role: 'USER', exp: Math.floor(Date.now() / 1000) - 60 },
+            { secret: options.accessSecret, algorithm: 'HS256' },
+          ),
+      ],
+      [
+        'a token signed with another secret',
+        () => jwt.signAsync({ sub: 'u', sid: 's', role: 'USER' }, { secret: 'c'.repeat(32) }),
+      ],
+      [
+        'a token without a role',
+        () => jwt.signAsync({ sub: 'u', sid: 's' }, { secret: options.accessSecret }),
+      ],
+      [
+        'an unsigned token (alg none)',
+        () => {
+          const encode = (part: object) => Buffer.from(JSON.stringify(part)).toString('base64url');
+          return Promise.resolve(
+            `${encode({ alg: 'none' })}.${encode({ sub: 'u', sid: 's', role: 'USER' })}.`,
+          );
+        },
+      ],
+      ['garbage', () => Promise.resolve('not-a-jwt')],
+    ])('rejects %s', async (_case, makeToken) => {
+      await expect(issuer.verifyAccessToken(await makeToken())).resolves.toBeNull();
+    });
+  });
 });

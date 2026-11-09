@@ -1,3 +1,4 @@
+import type { SessionRevoked } from './session-revoked.event';
 import type { UserLoggedIn } from './user-logged-in.event';
 
 /** Published after a registration has been committed. Never carries secrets, hashes or tokens. */
@@ -10,4 +11,4 @@ export class UserCreated {
   ) {}
 }
 
-export type DomainEvent = UserCreated | UserLoggedIn;
+export type DomainEvent = UserCreated | UserLoggedIn | SessionRevoked;

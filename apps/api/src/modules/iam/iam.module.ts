@@ -9,6 +9,7 @@ import { APP_CONFIG } from '../../platform/configuration/configuration.tokens';
 import { PrismaService } from '../../platform/database/prisma.service';
 import { LoginUserUseCase } from './application/use-cases/login-user.use-case';
 import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case';
+import { RevokeSessionUseCase } from './application/use-cases/revoke-session.use-case';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
 import type { IamConfig } from './domain/ports/iam-config';
 import type { AccountRegistrationRepository } from './domain/ports/account-registration-repository';
@@ -22,13 +23,16 @@ import { Argon2idPasswordHasher } from './infrastructure/security/argon2id-passw
 import { JwtTokenIssuer } from './infrastructure/security/jwt-token-issuer';
 import { Sha256RefreshTokenHasher } from './infrastructure/security/sha256-refresh-token-hasher';
 import {
+  ACCESS_TOKEN_VERIFIER,
   ACCOUNT_REGISTRATION_REPOSITORY,
   LOGIN_USER_USE_CASE,
   REFRESH_SESSION_USE_CASE,
   REGISTER_USER_USE_CASE,
+  REVOKE_SESSION_USE_CASE,
   USER_REPOSITORY,
   USER_SESSION_REPOSITORY,
 } from './iam.tokens';
+import { AccessTokenGuard } from './presentation/http/access-token.guard';
 import { AuthSessionController } from './presentation/http/auth-session.controller';
 import { IamExceptionFilter } from './presentation/http/iam-exception.filter';
 import { RegisterController } from './presentation/http/register.controller';
@@ -37,6 +41,8 @@ import { TermsVersionController } from './presentation/http/terms-version.contro
 @Module({
   imports: [EventEmitterModule.forRoot()],
   controllers: [RegisterController, AuthSessionController, TermsVersionController],
+  // Other modules protect their endpoints with the same stateless access-token check (ADR-002).
+  exports: [AccessTokenGuard, ACCESS_TOKEN_VERIFIER],
   providers: [
     { provide: APP_FILTER, useClass: IamExceptionFilter },
     {
@@ -115,6 +121,23 @@ import { TermsVersionController } from './presentation/http/terms-version.contro
           { now: () => new Date() },
           iamConfig(config),
         ),
+    },
+    {
+      provide: ACCESS_TOKEN_VERIFIER,
+      inject: [JwtTokenIssuer],
+      useFactory: (tokens: JwtTokenIssuer) => ({
+        verify: (accessToken: string) => tokens.verifyAccessToken(accessToken),
+      }),
+    },
+    AccessTokenGuard,
+    {
+      provide: REVOKE_SESSION_USE_CASE,
+      inject: [USER_SESSION_REPOSITORY, JwtTokenIssuer, NestEventPublisher],
+      useFactory: (
+        sessions: UserSessionRepository,
+        tokens: JwtTokenIssuer,
+        events: NestEventPublisher,
+      ) => new RevokeSessionUseCase(tokens, sessions, events, { now: () => new Date() }),
     },
     {
       provide: REGISTER_USER_USE_CASE,

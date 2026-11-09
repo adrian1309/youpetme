@@ -26,6 +26,7 @@ const PASSWORD = 'my-secure-passphrase';
 const EMAIL = 'john@example.com';
 const LOGIN = '/api/v1/auth/login';
 const REFRESH = '/api/v1/auth/refresh';
+const LOGOUT = '/api/v1/auth/logout';
 
 const credentials: LoginRequest = { email: EMAIL, password: PASSWORD };
 
@@ -392,6 +393,194 @@ describe('POST /api/v1/auth/login and /api/v1/auth/refresh (PostgreSQL)', () => 
     });
   });
 
+  describe('Logout (US-IAM-003, TS-IAM-003)', () => {
+    /** A signed-in device: its access token and its refresh cookie, as a browser would hold them. */
+    async function device() {
+      const response = await login();
+      const refreshToken = tokenOf(refreshCookieOf(response));
+      return {
+        accessToken: (response.body as LoginResponse).authentication.accessToken,
+        refreshToken,
+        cookie: asRequestCookie(refreshCookieOf(response)),
+        sid: jwt.decode<{ sid: string }>(refreshToken).sid,
+      };
+    }
+
+    function logout(accessToken: string | undefined, cookie: string | undefined) {
+      let call = http().post(LOGOUT);
+      if (accessToken !== undefined) call = call.set('Authorization', `Bearer ${accessToken}`);
+      if (cookie !== undefined) call = call.set('Cookie', cookie);
+      return call;
+    }
+
+    function expectCookieCleared(response: request.Response) {
+      const cleared = refreshCookieOf(response);
+      expect(cleared).toMatch(/^refresh_token=;/);
+      expect(cleared).toContain('Expires=Thu, 01 Jan 1970 00:00:00 GMT');
+      expect(cleared).toContain('Path=/api/v1/auth');
+      expect(cleared).toContain('HttpOnly');
+    }
+
+    describe('Scenario 1 — Given an authenticated user, When they log out', () => {
+      it('Then it answers 204 without a body, clears the cookie and revokes the session', async () => {
+        await registerUser();
+        const { accessToken, cookie, sid } = await device();
+
+        const response = await logout(accessToken, cookie).set('Origin', WEB_ORIGIN).expect(204);
+
+        expect(response.text).toBe('');
+        expect(response.headers['cache-control']).toBe('no-store');
+        expectCookieCleared(response);
+        const session = await prisma.userSession.findUniqueOrThrow({ where: { id: sid } });
+        expect(session.status).toBe('REVOKED');
+      });
+
+      it('Then the revoked refresh token can no longer renew the session', async () => {
+        await registerUser();
+        const { accessToken, cookie } = await device();
+        await logout(accessToken, cookie).expect(204);
+
+        const refresh = await http().post(REFRESH).set('Cookie', cookie).expect(401);
+
+        expect((refresh.body as ErrorResponse).code).toBe('SESSION_NOT_RENEWABLE');
+      });
+    });
+
+    describe('Scenario 2 — Given sessions on two devices, When the user logs out on device A', () => {
+      it('Then the session of device B stays ACTIVE and keeps renewing', async () => {
+        await registerUser();
+        const deviceA = await device();
+        const deviceB = await device();
+
+        await logout(deviceA.accessToken, deviceA.cookie).expect(204);
+
+        const sessionB = await prisma.userSession.findUniqueOrThrow({ where: { id: deviceB.sid } });
+        expect(sessionB.status).toBe('ACTIVE');
+        await http().post(REFRESH).set('Cookie', deviceB.cookie).expect(200);
+      });
+    });
+
+    describe('Given nothing left to revoke (L2: idempotent)', () => {
+      it('Then logging out twice answers 204 both times', async () => {
+        await registerUser();
+        const { accessToken, cookie } = await device();
+
+        await logout(accessToken, cookie).expect(204);
+        expectCookieCleared(await logout(accessToken, cookie).expect(204));
+      });
+
+      it.each([
+        ['no refresh cookie', undefined],
+        ['a cookie that is not a valid token', 'refresh_token=garbage'],
+      ])(
+        'Then %s still answers 204 and clears the cookie, revoking nothing',
+        async (_case, cookie) => {
+          await registerUser();
+          const { accessToken } = await device();
+
+          expectCookieCleared(await logout(accessToken, cookie).expect(204));
+          expect(await prisma.userSession.count({ where: { status: 'REVOKED' } })).toBe(0);
+        },
+      );
+    });
+
+    describe('Given no valid access token (TS-IAM-003: 401)', () => {
+      it.each([
+        ['no Authorization header', undefined],
+        ['a malformed token', 'not-a-jwt'],
+        ['an expired access token', 'EXPIRED'],
+        ['a token signed with another secret', 'FOREIGN'],
+        ['the refresh token used as a Bearer token', 'REFRESH'],
+      ])('Then %s gets a 401 and nothing is revoked', async (_case, kind) => {
+        await registerUser();
+        const { cookie, sid, refreshToken } = await device();
+        const claims = { sub: 'x', sid, role: 'USER' };
+        const bearer =
+          kind === 'EXPIRED'
+            ? await jwt.signAsync(
+                { ...claims, exp: Math.floor(Date.now() / 1000) - 60 },
+                { secret: ACCESS_SECRET },
+              )
+            : kind === 'FOREIGN'
+              ? await jwt.signAsync(claims, { secret: 'z'.repeat(40) })
+              : kind === 'REFRESH'
+                ? refreshToken
+                : kind;
+
+        const response = await logout(bearer, cookie).expect(401);
+
+        expect(response.body).toEqual({
+          statusCode: 401,
+          error: 'Unauthorized',
+          message: 'Request could not be processed',
+        });
+        expect(response.headers['set-cookie']).toBeUndefined();
+        const session = await prisma.userSession.findUniqueOrThrow({ where: { id: sid } });
+        expect(session.status).toBe('ACTIVE');
+      });
+
+      it("Then another user's access token cannot close this session (L1)", async () => {
+        await registerUser();
+        const victim = await device();
+        await http()
+          .post('/api/v1/auth/register')
+          .send({
+            firstName: 'Eve',
+            lastName: 'Doe',
+            email: 'eve@example.com',
+            password: PASSWORD,
+            confirmPassword: PASSWORD,
+            termsAccepted: true,
+          })
+          .expect(201);
+        const intruder = await http()
+          .post(LOGIN)
+          .send({ email: 'eve@example.com', password: PASSWORD })
+          .expect(200);
+        const intruderToken = (intruder.body as LoginResponse).authentication.accessToken;
+
+        await logout(intruderToken, victim.cookie).expect(401);
+
+        const session = await prisma.userSession.findUniqueOrThrow({ where: { id: victim.sid } });
+        expect(session.status).toBe('ACTIVE');
+      });
+    });
+
+    describe('Cross-site request protection (ADR-002)', () => {
+      it('rejects another Origin with 403 before anything else, and revokes nothing', async () => {
+        await registerUser();
+        const { accessToken, cookie, sid } = await device();
+
+        const response = await logout(accessToken, cookie)
+          .set('Origin', 'https://evil.example')
+          .expect(403);
+
+        expect(response.headers['set-cookie']).toBeUndefined();
+        const session = await prisma.userSession.findUniqueOrThrow({ where: { id: sid } });
+        expect(session.status).toBe('ACTIVE');
+      });
+
+      it('rejects a text/plain body with 415', async () => {
+        await registerUser();
+        const { accessToken, cookie } = await device();
+
+        await logout(accessToken, cookie).set('Content-Type', 'text/plain').send('x').expect(415);
+      });
+    });
+
+    it('writes no token, cookie or hash to the logs', async () => {
+      await registerUser();
+      const { accessToken, cookie, refreshToken } = await device();
+      await logout(accessToken, cookie).expect(204);
+      await logout('not-a-jwt', cookie).expect(401);
+
+      const session = await prisma.userSession.findFirstOrThrow({ where: { status: 'REVOKED' } });
+      for (const secret of [accessToken, refreshToken, session.refreshTokenHash]) {
+        expect(output).not.toContain(secret);
+      }
+    });
+  });
+
   describe('Cross-site request protection', () => {
     it.each([LOGIN, REFRESH])(
       'rejects another Origin on %s with 403 and sets no cookie',
@@ -459,6 +648,17 @@ describe('POST /api/v1/auth/login and /api/v1/auth/refresh (PostgreSQL)', () => 
       );
       expect(JSON.stringify(loginOperation)).toContain('refresh_token');
       expect(JSON.stringify(refreshOperation)).toContain('refresh_token');
+    });
+
+    it('documents logout as a Bearer-protected endpoint with its responses', () => {
+      const document = buildOpenApiDocument(app);
+
+      const logoutOperation = document.paths[LOGOUT]?.post;
+      expect(Object.keys(logoutOperation!.responses)).toEqual(
+        expect.arrayContaining(['204', '401', '403', '415', '500']),
+      );
+      expect(logoutOperation!.security).toEqual([{ bearer: [] }]);
+      expect(JSON.stringify(logoutOperation)).toContain('refresh_token');
     });
   });
 });
