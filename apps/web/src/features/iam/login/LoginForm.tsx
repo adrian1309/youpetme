@@ -145,12 +145,7 @@ export function LoginForm({ titleId }: { titleId: string }) {
         error={messageFor('password')}
       />
 
-      <Button
-        type="submit"
-        pending={pending}
-        // As in registration: a blur error must not move the button away before the click ends.
-        onMouseDown={(event) => event.preventDefault()}
-      >
+      <Button type="submit" pending={pending}>
         {pending ? t('login.actions.submitting') : t('login.actions.submit')}
       </Button>
       <p role="status" className="sr-only">

@@ -479,10 +479,10 @@ describe('RegisterPage', () => {
       await user.click(field.terms());
       await user.pointer({ keys: '[MouseLeft>]', target: field.submit() });
 
-      // Pressing must not blur the field: its error would move the button away from the pointer
-      // before the release, and the browser would then fire no click. jsdom has no layout, so the
-      // focus is what shows it here.
-      expect(field.terms()).toHaveFocus();
+      // Pressing may blur the box, but its error must not appear before the release: it would move
+      // the button away from the pointer and the browser would fire no click (SCRUM-51). jsdom has
+      // no layout, so the error being absent is what shows it here.
+      expect(field.terms()).not.toHaveAttribute('aria-invalid', 'true');
 
       await user.pointer({ keys: '[/MouseLeft]' });
 
