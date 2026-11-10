@@ -41,8 +41,8 @@ We use **Option 2**.
 
 - `statusCode` and `error` are the HTTP status and its name.
 - `message` is a safe, generic text. The client never shows it directly: user-facing copy comes from the client's own translation files.
-- `details` lists the per-field validation issues. Each one identifies the field and carries one of the stable validation codes below. It is empty or absent when the error is not a validation error.
-- `code` is optional, stable and meant for programs. It is present on business errors.
+- `details` lists the per-field validation issues. Each one has exactly three properties: `field`, `code` (one of the validation codes below) and `message` (an English text for developers, never shown to the user). Errors that are not validation errors carry no `details`.
+- `code` is optional, stable and meant for programs. It appears only on the three business errors listed below. Every other error, such as the `409` of a duplicated email, the `403` of the `Origin` guard or the `415`, has no `code` and is identified by its status.
 
 ### Stable codes
 
@@ -51,7 +51,13 @@ We use **Option 2**.
 | Validation (inside `details`) | `REQUIRED`, `INVALID_FORMAT`, `INVALID_TYPE`, `TOO_SHORT`, `TOO_LONG`, `MISMATCH`, `MUST_BE_TRUE` |
 | Business (`code`) | `INVALID_CREDENTIALS`, `ACCOUNT_NOT_AVAILABLE`, `SESSION_NOT_RENEWABLE` |
 
-The validation codes live in `packages/contracts` (`ValidationErrorCode`), shared by the API and the web client.
+| Business code | Status | Endpoint and case |
+|---|---|---|
+| `INVALID_CREDENTIALS` | `401` | Login: unknown email or wrong password, with exactly the same body in both cases. |
+| `ACCOUNT_NOT_AVAILABLE` | `403` | Login: the account is not `ACTIVE` (returned only if the password is correct). Refresh: the account is not `ACTIVE`. |
+| `SESSION_NOT_RENEWABLE` | `401` | Refresh: no cookie, invalid or expired token, unknown, revoked or expired session, or an already rotated token. |
+
+The codes live in `packages/contracts` (`ValidationErrorCode` and `ErrorCode`), shared by the API and the web client. `ErrorCode` accepts only the three business codes above.
 
 ### Rules
 
@@ -69,8 +75,8 @@ The validation codes live in `packages/contracts` (`ValidationErrorCode`), share
 
 ### Disadvantages
 
-- Every business error needs a code, and the codes must be kept in sync between API and client (mitigated by sharing them through `packages/contracts`).
-- Errors from before this decision that carry no `code` rely on the status fallback.
+- A new business error that the client must tell apart needs a new code, kept in sync between API and client (mitigated by sharing them through `packages/contracts`).
+- Errors without a `code` rely on the status.
 
 ## Rejected Alternatives
 

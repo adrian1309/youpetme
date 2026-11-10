@@ -103,10 +103,10 @@ This reduces the usefulness of a stolen refresh token.
 
 ## Token Design
 
-- Access tokens are JWTs signed with HS256 and valid for 15 minutes.
-- Refresh tokens are JWTs signed with HS256 and valid for 7 days. They are delivered only in the cookie described below.
+- Access tokens are JWTs signed with HS256 and valid for 15 minutes. They carry the user id (`sub`), the session id (`sid`) and the role (`role`).
+- Refresh tokens are JWTs signed with HS256 with a secret different from the access token's, and valid for 7 days. They carry the user id (`sub`), the session id (`sid`) and a unique token id (`jti`). They are delivered only in the cookie described below.
 - The server never stores a refresh token. It stores only its SHA-256 hash, in `UserSession.refreshTokenHash`.
-- Each refresh rotates the token inside the same `UserSession`: the stored hash and `expiresAt` are replaced, so the previous token stops working. The 7 days therefore count from the last refresh (sliding window), and a session unused for 7 days expires.
+- Each refresh rotates the token inside the same `UserSession`: the stored hash and `expiresAt` are replaced, so the previous token stops working. The rotation is a conditional update, so two simultaneous refreshes with the same token cannot both succeed. The 7 days therefore count from the last refresh (sliding window) with no absolute maximum lifetime, and a session unused for 7 days expires. It is marked `EXPIRED` on the first refresh attempt after it lapses.
 - A login creates a new `UserSession`. A refresh never does.
 - A `UserSession` is `ACTIVE`, `REVOKED` or `EXPIRED`. Only an `ACTIVE` session can be refreshed.
 - A normal refresh publishes no domain event.
@@ -120,11 +120,14 @@ The server gives no grace period for a token that has just been rotated (see Cli
 
 ## Cookie and CSRF Policy (Web)
 
-- The refresh cookie is `HttpOnly`, `Secure`, `SameSite=Strict` and has `Path=/api/v1/auth`. `Secure` can be switched off only for local development over HTTP (`COOKIE_SECURE=false`).
+- The refresh cookie is named `refresh_token`, is `HttpOnly`, has `Path=/api/v1/auth` and expires together with the session (`expiresAt`).
+  - `Secure` is on by default (`COOKIE_SECURE`) and mandatory in production: the API refuses to start otherwise. It can be switched off only for local development over HTTP.
+  - `SameSite` is `Strict` by default (`COOKIE_SAMESITE`). `None` is accepted only together with `Secure`.
 - No CSRF token is used. CSRF is mitigated by three measures:
   - `SameSite=Strict` keeps the browser from sending the cookie on cross-site requests.
-  - The authentication endpoints reject with `403` a request whose `Origin` header differs from `WEB_ORIGIN`. A request without `Origin` (curl, tests, non-browser clients) is accepted.
-  - The endpoints require `Content-Type: application/json` and answer `415` otherwise.
+  - The register, login and refresh endpoints (guarded by `TrustedBrowserRequestGuard`) reject with `403` a request whose `Origin` header is present and differs from `WEB_ORIGIN`. A request without `Origin` (curl, tests, non-browser clients) is accepted.
+  - The same endpoints reject with `415` a request whose `Content-Type` is present and is not `application/json` (parameters such as `charset` are ignored). A request without `Content-Type`, such as the body-less refresh, is accepted.
+  - Read-only public endpoints, such as the terms version, are not covered by the guard.
 - In development the web server runs on a fixed port (5173, `strictPort`). Another port would make the `Origin` guard reject the requests.
 
 **Consequence for deployment.** `SameSite=Strict` only sends the cookie when the web application and the API are on the same site. The deployment ADR must put both under the same registrable domain, or revisit `SameSite` and the CSRF protection before going live. Locally it works because both run on `localhost`.
@@ -136,9 +139,17 @@ Because refresh tokens rotate and reuse revokes the session, two refreshes sent 
 - allows a single refresh in flight per tab, shared by every caller, and
 - serialises refreshes across tabs with the Web Locks API (`navigator.locks`).
 
+The web client also broadcasts the logout to the other tabs of the same browser through `BroadcastChannel('youpetme:auth')`. They fall back to the visitor state immediately and stay on their current route. Where `BroadcastChannel` is unavailable, they fall back to visitor state at their next refresh.
+
 **Known limitation.** Where Web Locks are unavailable (very old browsers, or non-secure origins such as HTTP on a host other than `localhost`), the client refreshes without the cross-tab lock. If two tabs refresh at overlapping moments, the second is seen as a reuse, the session is revoked and both tabs fall back to visitor state, so the user signs in again. Production runs on HTTPS, so this is accepted.
 
 Alternatives not adopted: a fallback lock based on `BroadcastChannel` or `localStorage`, and a server-side grace period for just-rotated tokens, which would weaken reuse detection.
+
+## Access Token Guard
+
+Protected endpoints use a **stateless** guard: it verifies the signature and the expiry of the access token and does not query the database. This is consistent with the short lifetime of the access token (15 minutes).
+
+**Consequence.** An access token that was already issued stays valid until it expires, even if its `UserSession` has been revoked (logout, reuse detection, or a password change). Revocation prevents the session from being refreshed, so the exposure lasts at most 15 minutes. If immediate revocation ever becomes a requirement, the guard can additionally check that the session identified by the `sid` claim is `ACTIVE`, at the cost of a database read on every protected request. That change would amend this section.
 
 ## Token Lifetimes
 
@@ -168,6 +179,14 @@ This allows the platform to revoke individual or all sessions.
 ## Logout
 
 Logout will revoke the relevant user session and remove client-side authentication state.
+
+Added 2026-11-10, from the implementation of TS-IAM-003:
+
+- `POST /api/v1/auth/logout` requires a valid access token. The session to revoke is the one identified by the refresh token cookie, and only if it belongs to the same user as the access token. Otherwise the answer is `401` and nothing is revoked. Only the current session is revoked.
+- Logout is idempotent: with no cookie, an invalid cookie, or a session that is already `REVOKED` or `EXPIRED`, it answers `204`, clears the cookie and publishes no event.
+- The client never depends on the server for signing out. It waits for the response for at most 5 seconds, then cancels the request and clears its authentication state anyway.
+- A refresh that finishes after the logout is ignored, so it cannot bring the session back.
+- **Known limitation.** If the request fails because of the network, the cookie and the server-side session stay active. The client shows the visitor state, but reloading the page restores the session through the refresh while the cookie is still valid.
 
 ---
 
@@ -227,3 +246,4 @@ Rejected because token revocation and security become more difficult when tokens
 ## Amendments
 
 - **2026-11-06:** added Token Design, Refresh Token Reuse, Cookie and CSRF Policy and Client-side Refresh Coordination, from the implementation of TS-IAM-002 (login and refresh). The API error format is decided in ADR-017.
+- **2026-11-10:** added Access Token Guard (stateless) and the Logout rules, and the cross-tab logout in Client-side Refresh Coordination, from the implementation of TS-IAM-003.
