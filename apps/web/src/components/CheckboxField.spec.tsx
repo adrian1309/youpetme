@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { expectNoAxeViolations } from '../test/axe';
@@ -63,6 +63,25 @@ describe('CheckboxField', () => {
     await userEvent.click(link);
 
     expect(screen.getByRole('checkbox')).not.toBeChecked();
+  });
+
+  it('reports leaving the box only once a pointer pressed elsewhere is released (SCRUM-51)', async () => {
+    const user = userEvent.setup();
+    const onBlur = vi.fn();
+    render(
+      <>
+        <CheckboxField label={label} onBlur={onBlur} />
+        <button type="button">Otro control</button>
+      </>,
+    );
+    await user.click(screen.getByRole('checkbox'));
+
+    await user.pointer({ keys: '[MouseLeft>]', target: screen.getByRole('button') });
+    expect(onBlur).not.toHaveBeenCalled();
+
+    await user.pointer({ keys: '[/MouseLeft]' });
+
+    await waitFor(() => expect(onBlur).toHaveBeenCalledTimes(1));
   });
 
   it('shows the error and ties it to the checkbox', () => {

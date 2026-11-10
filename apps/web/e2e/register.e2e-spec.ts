@@ -237,6 +237,87 @@ test.describe('US-IAM-001 — Create Account', () => {
   });
 });
 
+/**
+ * A blur error must not move the page between pressing and releasing the pointer: the release
+ * would land on another element and the browser would fire no click (SCRUM-51). The clicks are
+ * real pointer presses, so only a real browser with layout can show it.
+ */
+test.describe('A blur error does not swallow the click that caused it (SCRUM-51)', () => {
+  const mismatch = 'Las contraseñas deben coincidir. Revisa que las dos sean iguales.';
+
+  test.beforeEach(async ({ page }) => {
+    // Given a visitor whose password confirmation does not match and still has the focus
+    await page.goto('/register');
+    const form = registerForm(page);
+    await form.password.fill('my-secure-passphrase');
+    await form.confirmPassword.fill('something-else');
+    await form.confirmPassword.focus();
+  });
+
+  test('a single click ticks the terms box', async ({ page }) => {
+    const form = registerForm(page);
+
+    // When they click the terms box once
+    await form.terms.click();
+
+    // Then the box is ticked and the confirmation shows its error
+    await expect(form.terms).toBeChecked();
+    await expect(form.confirmPassword).toHaveAccessibleDescription(mismatch);
+  });
+
+  test('a single click on the submit button stops the form and focuses the error', async ({
+    page,
+  }) => {
+    const requests = trackRegisterRequests(page);
+    const form = registerForm(page);
+    await form.firstName.fill('John');
+    await form.lastName.fill('Doe');
+    await form.email.fill(newVisitor().email);
+    await form.terms.check();
+    await form.confirmPassword.focus();
+
+    // When they click the submit button once
+    await form.submit.click();
+
+    // Then the click reached the form: it focused the first error instead of leaving the focus
+    // where the press put it
+    await expect(form.confirmPassword).toBeFocused();
+    await expect(form.confirmPassword).toHaveAccessibleDescription(mismatch);
+    expect(requests).toHaveLength(0);
+  });
+
+  test.describe('on a touch screen', () => {
+    // A tap blurs the field on the mousedown that the browser emulates after the touch ends.
+    test.use({ hasTouch: true });
+
+    test('a single tap ticks the terms box', async ({ page }) => {
+      const form = registerForm(page);
+
+      // When they tap the terms box once
+      await form.terms.tap();
+
+      // Then the box is ticked and the confirmation shows its error
+      await expect(form.terms).toBeChecked();
+      await expect(form.confirmPassword).toHaveAccessibleDescription(mismatch);
+    });
+  });
+
+  test('a single click on the show toggle of the confirmation shows it', async ({ page }) => {
+    const form = registerForm(page);
+    await form.password.fill('short');
+    await form.password.focus();
+
+    // When they click the toggle below the password, whose error appears on leaving it
+    await page.getByRole('button', { name: 'Mostrar confirmación de contraseña' }).click();
+
+    // Then the confirmation becomes visible
+    await expect(form.confirmPassword).toHaveAttribute('type', 'text');
+    await expect(form.password).toHaveAccessibleDescription(
+      /La contraseña debe tener al menos 8 caracteres\./,
+    );
+  });
+});
+
 test.describe('Registration from another origin (SCRUM-48)', () => {
   let foreignPage: Server;
 

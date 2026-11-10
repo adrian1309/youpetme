@@ -479,10 +479,10 @@ describe('RegisterPage', () => {
       await user.click(field.terms());
       await user.pointer({ keys: '[MouseLeft>]', target: field.submit() });
 
-      // Pressing must not blur the field: its error would move the button away from the pointer
-      // before the release, and the browser would then fire no click. jsdom has no layout, so the
-      // focus is what shows it here.
-      expect(field.terms()).toHaveFocus();
+      // Pressing may blur the box, but its error must not appear before the release: it would move
+      // the button away from the pointer and the browser would fire no click (SCRUM-51). jsdom has
+      // no layout, so the error being absent is what shows it here.
+      expect(field.terms()).not.toHaveAttribute('aria-invalid', 'true');
 
       await user.pointer({ keys: '[/MouseLeft]' });
 
@@ -537,6 +537,92 @@ describe('RegisterPage', () => {
       expect(errorOf(field.email())).toBe(
         'Escribe un correo válido, por ejemplo nombre@ejemplo.com.',
       );
+    });
+
+    describe('a blur error never moves a control under a click in progress (SCRUM-51)', () => {
+      const mismatch = 'Las contraseñas deben coincidir. Revisa que las dos sean iguales.';
+
+      async function leaveConfirmationWithMismatch(user: ReturnType<typeof userEvent.setup>) {
+        await user.type(field.password(), 'my-secure-passphrase');
+        await user.type(field.confirmPassword(), 'something-else');
+      }
+
+      it('shows the error of the field left only when the pointer is released', async () => {
+        const user = userEvent.setup();
+        renderRegister(vi.fn());
+        await leaveConfirmationWithMismatch(user);
+
+        // jsdom has no layout: an error present while pressing is what would move the box.
+        await user.pointer({ keys: '[MouseLeft>]', target: field.terms() });
+        expect(field.confirmPassword()).not.toHaveAttribute('aria-invalid', 'true');
+
+        await user.pointer({ keys: '[/MouseLeft]' });
+
+        expect(field.terms()).toBeChecked();
+        await waitFor(() => expect(errorOf(field.confirmPassword())).toBe(mismatch));
+      });
+
+      it('keeps the error and the focus that an invalid submission gives the field', async () => {
+        const user = userEvent.setup();
+        const fetchMock = vi.fn();
+        renderRegister(fetchMock);
+        await fillValidForm(user, { confirmPassword: 'something-else' });
+        await user.click(field.confirmPassword());
+
+        await user.click(field.submit());
+        // Let the change waiting for the release run.
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        expect(errorOf(field.confirmPassword())).toBe(mismatch);
+        expect(field.confirmPassword()).toHaveFocus();
+        expect(fetchMock).not.toHaveBeenCalled();
+      });
+
+      it('leaves no stale error after a valid submission', async () => {
+        const user = userEvent.setup();
+        renderRegister(
+          vi.fn().mockResolvedValue(
+            jsonResponse(409, {
+              statusCode: 409,
+              error: 'Conflict',
+              message: 'This email is already in use',
+            }),
+          ),
+        );
+        await fillValidForm(user);
+        await user.click(field.confirmPassword());
+
+        await user.click(field.submit());
+
+        await waitFor(() => expect(field.email()).toHaveFocus());
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(errorOf(field.email())).toBe(
+          'Este correo ya está en uso. Inicia sesión o prueba con otro correo.',
+        );
+        for (const other of [
+          field.firstName(),
+          field.lastName(),
+          field.password(),
+          field.confirmPassword(),
+          field.terms(),
+        ]) {
+          expect(other).not.toHaveAttribute('aria-invalid', 'true');
+        }
+      });
+
+      it('leaves no error behind when a valid submission signs the user in', async () => {
+        const user = userEvent.setup();
+        renderRegister(vi.fn().mockResolvedValue(jsonResponse(201, created)));
+        await fillValidForm(user);
+        await user.click(field.confirmPassword());
+
+        await user.click(field.submit());
+
+        expect(await screen.findByText('home: John')).toBeInTheDocument();
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        expect(screen.getByText('home: John')).toBeInTheDocument();
+        expect(screen.queryByRole('form')).not.toBeInTheDocument();
+      });
     });
 
     it('clears a field error as soon as the user comes back to it', async () => {

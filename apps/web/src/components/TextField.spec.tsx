@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
 
@@ -75,6 +75,28 @@ describe('TextField', () => {
     await userEvent.click(input);
     await userEvent.tab();
     expect(onBlur).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports leaving the field only once a pointer pressed elsewhere is released (SCRUM-51)', async () => {
+    const user = userEvent.setup();
+    const onBlur = vi.fn();
+    render(
+      <>
+        <TextField label="Nombre" onBlur={onBlur} />
+        <button type="button">Otro control</button>
+      </>,
+    );
+    await user.click(screen.getByLabelText('Nombre'));
+
+    // An error shown now would move the control away from the pointer before the release.
+    await user.pointer({ keys: '[MouseLeft>]', target: screen.getByRole('button') });
+    expect(screen.getByLabelText('Nombre')).not.toHaveFocus();
+    expect(onBlur).not.toHaveBeenCalled();
+
+    await user.pointer({ keys: '[/MouseLeft]' });
+
+    await waitFor(() => expect(onBlur).toHaveBeenCalledTimes(1));
+    expect(onBlur.mock.calls[0]?.[0]).toMatchObject({ type: 'blur' });
   });
 
   it('gives each field its own ids', () => {

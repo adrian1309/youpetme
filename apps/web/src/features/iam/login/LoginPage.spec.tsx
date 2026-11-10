@@ -154,6 +154,24 @@ describe('LoginPage (/login, US-IAM-002)', () => {
       expect(fetchMock).not.toHaveBeenCalled();
     });
 
+    it('shows a blur error only once the pointer is released, so the show toggle still gets its click (SCRUM-51)', async () => {
+      const user = userEvent.setup();
+      renderLogin();
+      await user.type(form().email, 'not-an-email');
+
+      // jsdom has no layout: an error present while pressing is what would move the toggle.
+      const toggle = screen.getByRole('button', { name: 'Mostrar contraseña' });
+      await user.pointer({ keys: '[MouseLeft>]', target: toggle });
+      expect(form().email).not.toHaveAttribute('aria-invalid', 'true');
+
+      await user.pointer({ keys: '[/MouseLeft]' });
+
+      expect(form().password).toHaveAttribute('type', 'text');
+      expect(
+        await screen.findByText('Escribe un correo válido, por ejemplo nombre@ejemplo.com.'),
+      ).toBeInTheDocument();
+    });
+
     it('does not apply the password length rule of registration', async () => {
       const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, signedIn));
       renderLogin(fetchMock);

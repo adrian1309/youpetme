@@ -207,13 +207,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
         error={messageFor('termsAccepted')}
       />
 
-      <Button
-        type="submit"
-        pending={pending}
-        // Blurring a field here could show its error and push the button out from under the
-        // pointer before the release, losing the click. Submitting validates every field anyway.
-        onMouseDown={(event) => event.preventDefault()}
-      >
+      <Button type="submit" pending={pending}>
         {pending ? t('register.actions.submitting') : t('register.actions.submit')}
       </Button>
       <p role="status" className="sr-only">
