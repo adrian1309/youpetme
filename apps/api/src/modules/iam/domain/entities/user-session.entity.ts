@@ -67,6 +67,24 @@ export class UserSession {
     return now.getTime() >= this.expiresAt.getTime();
   }
 
+  /**
+   * End of the session's absolute lifetime (SCRUM-54): however often it is refreshed, a session
+   * cannot outlive its creation by more than `maxAgeMs`.
+   */
+  absoluteExpiryAt(maxAgeMs: number): Date {
+    return new Date(this.createdAt.getTime() + maxAgeMs);
+  }
+
+  hasOutlived(now: Date, maxAgeMs: number): boolean {
+    return now.getTime() >= this.absoluteExpiryAt(maxAgeMs).getTime();
+  }
+
+  /** Sliding window of `ttlMs` from `now`, but never beyond the absolute cap. */
+  nextExpiry(now: Date, ttlMs: number, maxAgeMs: number): Date {
+    const sliding = now.getTime() + ttlMs;
+    return new Date(Math.min(sliding, this.absoluteExpiryAt(maxAgeMs).getTime()));
+  }
+
   /** Whether `refreshTokenHash` is the digest of the session's current refresh token. */
   matches(refreshTokenHash: string): boolean {
     return this.refreshTokenHash === refreshTokenHash;

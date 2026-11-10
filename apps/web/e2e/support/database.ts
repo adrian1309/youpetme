@@ -25,6 +25,17 @@ export function expireSessions(email: string): void {
   );
 }
 
+/**
+ * Moves the creation of the user's sessions `days` into the past, as if they had signed in back
+ * then, while their sliding expiry stays in the future (SCRUM-54, absolute session lifetime).
+ */
+export function ageSessions(email: string, days: number): void {
+  psql(
+    `UPDATE user_sessions SET created_at = now() - make_interval(days => :'days'::int) WHERE ${SESSIONS_OF_USER};`,
+    { email, days: String(days) },
+  );
+}
+
 /** The status of each of the user's sessions, oldest first. */
 export function sessionStatuses(email: string): string[] {
   return psql(`SELECT status FROM user_sessions WHERE ${SESSIONS_OF_USER} ORDER BY created_at;`, {

@@ -372,6 +372,48 @@ describe('POST /api/v1/auth/login and /api/v1/auth/refresh (PostgreSQL)', () => 
 
         await expectNotRenewable(await http().post(REFRESH).set('Cookie', asRequestCookie(cookie)));
       });
+
+      describe('absolute session lifetime (SCRUM-54, 30 days by default)', () => {
+        const DAY = 24 * 60 * 60 * 1000;
+
+        async function signedInSessionAged(days: number) {
+          await registerUser();
+          const cookie = refreshCookieOf(await login());
+          const { sid } = jwt.decode<{ sid: string }>(tokenOf(cookie));
+          const createdAt = new Date(Date.now() - days * DAY);
+          // Only the creation moves back: the stored sliding expiry stays in the future.
+          await prisma.userSession.update({ where: { id: sid }, data: { createdAt } });
+          return { cookie, sid, createdAt };
+        }
+
+        it('Then a session older than the cap gets a 401, loses its cookie and is marked EXPIRED', async () => {
+          const { cookie, sid } = await signedInSessionAged(31);
+
+          await expectNotRenewable(
+            await http().post(REFRESH).set('Cookie', asRequestCookie(cookie)),
+          );
+
+          const session = await prisma.userSession.findUniqueOrThrow({ where: { id: sid } });
+          expect(session.status).toBe('EXPIRED');
+        });
+
+        it('Then near the cap a refresh still works, but the new expiry stops at the cap', async () => {
+          const { cookie, sid, createdAt } = await signedInSessionAged(26);
+
+          const response = await http()
+            .post(REFRESH)
+            .set('Cookie', asRequestCookie(cookie))
+            .expect(200);
+
+          const cap = createdAt.getTime() + 30 * DAY;
+          const session = await prisma.userSession.findUniqueOrThrow({ where: { id: sid } });
+          expect(session.status).toBe('ACTIVE');
+          expect(session.expiresAt.getTime()).toBe(cap);
+          const cookieExpiry = /Expires=([^;]+)/.exec(refreshCookieOf(response))![1]!;
+          // Cookie dates have one-second resolution.
+          expect(Math.abs(new Date(cookieExpiry).getTime() - cap)).toBeLessThan(1000);
+        });
+      });
     });
 
     describe('Given an account that is no longer ACTIVE', () => {

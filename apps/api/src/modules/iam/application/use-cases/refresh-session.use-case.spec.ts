@@ -26,12 +26,14 @@ function setup({
   userStatus = 'ACTIVE' as UserStatus,
   sessionStatus = 'ACTIVE' as SessionStatus,
   expiresAt = new Date('2026-11-10T10:00:00.000Z'),
+  createdAt = new Date('2026-11-01T10:00:00.000Z'),
+  clock = now,
 } = {}) {
   const accounts = new InMemoryAccounts();
   const sessions = new InMemorySessions();
   const events = new InMemoryEventPublisher();
   const verifier = new FakeRefreshTokenVerifier();
-  const created = new Date('2026-11-01T10:00:00.000Z');
+  const created = createdAt;
   const user = User.reconstitute({
     id: USER_ID,
     email: 'john@example.com',
@@ -70,7 +72,7 @@ function setup({
     accounts,
     hasher,
     new RotatingFakeTokenIssuer(),
-    new FixedClock(now),
+    new FixedClock(clock),
     TEST_IAM_CONFIG,
   );
   const stored = () => sessions.sessions.get(SESSION_ID)!;
@@ -220,6 +222,53 @@ describe('RefreshSessionUseCase (US-IAM-002)', () => {
         status: 'ACTIVE',
         refreshTokenHash: hasher.hash(CURRENT_TOKEN),
       });
+    });
+  });
+
+  describe('absolute session lifetime (SCRUM-54: 30 days from sign-in, 7-day window)', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const signedIn = new Date('2026-10-01T10:00:00.000Z');
+    const day = (n: number, ms = 0) => new Date(signedIn.getTime() + n * DAY + ms);
+    // A stored expiry still in the future, so only the absolute cap can end the session.
+    const future = day(60);
+
+    it('far from the cap, a refresh extends the session by the 7-day window', async () => {
+      const { useCase, stored } = setup({ createdAt: signedIn, clock: day(10), expiresAt: future });
+
+      const result = await useCase.execute({ refreshToken: CURRENT_TOKEN });
+
+      expect(result.refreshTokenExpiresAt).toEqual(day(17));
+      expect(stored().expiresAt).toEqual(day(17));
+    });
+
+    it('with less than 7 days left, the new expiry stops at the cap', async () => {
+      const { useCase, stored } = setup({ createdAt: signedIn, clock: day(26), expiresAt: future });
+
+      const result = await useCase.execute({ refreshToken: CURRENT_TOKEN });
+
+      expect(result.refreshTokenExpiresAt).toEqual(day(30));
+      expect(stored()).toMatchObject({ status: 'ACTIVE', expiresAt: day(30) });
+    });
+
+    it('just before the cap, it still renews, up to the cap', async () => {
+      const { useCase } = setup({ createdAt: signedIn, clock: day(30, -1), expiresAt: future });
+
+      const result = await useCase.execute({ refreshToken: CURRENT_TOKEN });
+
+      expect(result.refreshTokenExpiresAt).toEqual(day(30));
+    });
+
+    it.each([
+      ['exactly at the cap', day(30)],
+      ['just after the cap', day(30, 1)],
+      ['long after the cap (a session from before the cap existed)', day(40)],
+    ])('%s, it is rejected and the session is marked EXPIRED', async (_case, clock) => {
+      const { useCase, stored } = setup({ createdAt: signedIn, clock, expiresAt: future });
+
+      await expect(useCase.execute({ refreshToken: CURRENT_TOKEN })).rejects.toBeInstanceOf(
+        SessionNotRenewableError,
+      );
+      expect(stored()).toMatchObject({ status: 'EXPIRED', updatedAt: clock });
     });
   });
 });

@@ -11,6 +11,7 @@ import {
 } from './support/accounts.ts';
 import { expectRefreshTokenCookie, refreshTokenCookie } from './support/cookies.ts';
 import {
+  ageSessions,
   expireSessions,
   revokeSessions,
   sessionStatuses,
@@ -310,6 +311,48 @@ test.describe('US-IAM-002 — Login', () => {
     expect(refresh.status()).toBe(401);
     await expectVisitor(page);
     expect(sessionStatuses(visitor.email)).toContain('EXPIRED');
+  });
+
+  test('Scenario 6: a session older than the absolute cap (30 days) leaves the user as a visitor', async ({
+    page,
+    request,
+  }) => {
+    // Given a user who signed in 31 days ago and has kept the session alive since (SCRUM-54)
+    const visitor = await registeredVisitor(request);
+    await logIn(page, visitor);
+    ageSessions(visitor.email, 31);
+
+    // When the app tries to renew the session
+    const refresh = await reloadAndRefresh(page);
+
+    // Then the user is a visitor, the cookie is gone and the session is marked EXPIRED
+    expect(refresh.status()).toBe(401);
+    expect(await refresh.json()).toMatchObject({ code: 'SESSION_NOT_RENEWABLE' });
+    await expectVisitor(page);
+    expect(await refreshTokenCookie(page.context())).toBeUndefined();
+    expect(sessionStatuses(visitor.email)).toContain('EXPIRED');
+  });
+
+  test('Scenario 5: near the absolute cap the session renews, but its cookie expires at the cap', async ({
+    page,
+    request,
+  }) => {
+    // Given a user who signed in 26 days ago (4 days left before the 30-day cap)
+    const visitor = await registeredVisitor(request);
+    await logIn(page, visitor);
+    ageSessions(visitor.email, 26);
+    const DAY = 24 * 60 * 60 * 1000;
+
+    // When the app renews the session
+    const refresh = await reloadAndRefresh(page);
+
+    // Then the user stays signed in, and the new cookie lasts until the cap, not 7 more days
+    expect(refresh.status()).toBe(200);
+    await expectSignedIn(page, visitor);
+    const expiresInDays =
+      ((await refreshTokenCookie(page.context()))!.expires * 1000 - Date.now()) / DAY;
+    expect(expiresInDays).toBeGreaterThan(3.9);
+    expect(expiresInDays).toBeLessThan(4.1);
   });
 });
 
