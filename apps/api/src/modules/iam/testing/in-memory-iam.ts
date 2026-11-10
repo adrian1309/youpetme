@@ -189,4 +189,5 @@ export class SequentialIdGenerator implements IdGenerator {
 export const TEST_IAM_CONFIG: IamConfig = {
   termsVersion: '2026-01',
   refreshTokenTtlMs: 7 * 24 * 60 * 60 * 1000,
+  sessionMaxAgeMs: 30 * 24 * 60 * 60 * 1000,
 };

@@ -24,6 +24,7 @@ describe('loadAppConfig', () => {
         refreshSecret: 'b'.repeat(32),
         accessTtlMs: 15 * 60 * 1000,
         refreshTtlMs: 7 * 24 * 60 * 60 * 1000,
+        sessionMaxAgeMs: 30 * 24 * 60 * 60 * 1000,
       },
       termsVersion: '2026-01',
       refreshCookie: { secure: false, sameSite: 'Strict' },
@@ -67,6 +68,46 @@ describe('loadAppConfig', () => {
     expect(() => loadAppConfig({ ...validEnv, JWT_REFRESH_EXPIRATION: 'soon' })).toThrow(
       'JWT_REFRESH_EXPIRATION',
     );
+  });
+
+  describe('SESSION_ABSOLUTE_EXPIRATION (SCRUM-54)', () => {
+    const DAY = 24 * 60 * 60 * 1000;
+
+    it('defaults the absolute session lifetime to 30 days', () => {
+      expect(loadAppConfig(validEnv).auth.sessionMaxAgeMs).toBe(30 * DAY);
+    });
+
+    it('takes it from the environment', () => {
+      const config = loadAppConfig({ ...validEnv, SESSION_ABSOLUTE_EXPIRATION: '14d' });
+
+      expect(config.auth.sessionMaxAgeMs).toBe(14 * DAY);
+    });
+
+    it('rejects an invalid duration, naming the variable', () => {
+      expect(() => loadAppConfig({ ...validEnv, SESSION_ABSOLUTE_EXPIRATION: 'a month' })).toThrow(
+        'SESSION_ABSOLUTE_EXPIRATION',
+      );
+    });
+
+    it('rejects a cap shorter than the refresh window, which would cancel it out', () => {
+      expect(() =>
+        loadAppConfig({
+          ...validEnv,
+          JWT_REFRESH_EXPIRATION: '7d',
+          SESSION_ABSOLUTE_EXPIRATION: '6d',
+        }),
+      ).toThrow('SESSION_ABSOLUTE_EXPIRATION');
+    });
+
+    it('accepts a cap equal to the refresh window', () => {
+      const config = loadAppConfig({
+        ...validEnv,
+        JWT_REFRESH_EXPIRATION: '7d',
+        SESSION_ABSOLUTE_EXPIRATION: '7d',
+      });
+
+      expect(config.auth.sessionMaxAgeMs).toBe(7 * DAY);
+    });
   });
 
   it('defaults the cookie to Secure + Strict when not configured', () => {

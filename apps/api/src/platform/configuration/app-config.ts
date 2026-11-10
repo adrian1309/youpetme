@@ -11,6 +11,8 @@ export interface AppConfig {
     refreshSecret: string;
     accessTtlMs: number;
     refreshTtlMs: number;
+    /** Absolute lifetime of a session from its creation (SCRUM-54), SESSION_ABSOLUTE_EXPIRATION. */
+    sessionMaxAgeMs: number;
   };
   termsVersion: string;
   refreshCookie: {
@@ -42,6 +44,8 @@ const envSchema = z
     JWT_REFRESH_SECRET: z.string().min(MIN_SECRET_LENGTH),
     JWT_ACCESS_EXPIRATION: duration,
     JWT_REFRESH_EXPIRATION: duration,
+    // However often a session is refreshed, it ends this long after sign-in (SCRUM-54).
+    SESSION_ABSOLUTE_EXPIRATION: z.string().default('30d').pipe(duration),
     TERMS_VERSION: z.string().min(1),
     COOKIE_SECURE: z
       .enum(['true', 'false'])
@@ -80,6 +84,11 @@ const envSchema = z
       });
     }
   })
+  // A cap shorter than the refresh window would cancel the sliding window out.
+  .refine((env) => env.SESSION_ABSOLUTE_EXPIRATION >= env.JWT_REFRESH_EXPIRATION, {
+    path: ['SESSION_ABSOLUTE_EXPIRATION'],
+    message: 'must be at least JWT_REFRESH_EXPIRATION',
+  })
   // A refresh token signed with the access secret could be replayed as an access token.
   .refine((env) => env.JWT_ACCESS_SECRET !== env.JWT_REFRESH_SECRET, {
     path: ['JWT_REFRESH_SECRET'],
@@ -109,6 +118,7 @@ export function loadAppConfig(env: Record<string, string | undefined>): AppConfi
       refreshSecret: values.JWT_REFRESH_SECRET,
       accessTtlMs: values.JWT_ACCESS_EXPIRATION,
       refreshTtlMs: values.JWT_REFRESH_EXPIRATION,
+      sessionMaxAgeMs: values.SESSION_ABSOLUTE_EXPIRATION,
     },
     termsVersion: values.TERMS_VERSION,
     refreshCookie: { secure: values.COOKIE_SECURE, sameSite: values.COOKIE_SAMESITE },

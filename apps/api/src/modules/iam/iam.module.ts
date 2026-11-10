@@ -165,5 +165,9 @@ import { TermsVersionController } from './presentation/http/terms-version.contro
 export class IamModule {}
 
 function iamConfig(config: AppConfig): IamConfig {
-  return { termsVersion: config.termsVersion, refreshTokenTtlMs: config.auth.refreshTtlMs };
+  return {
+    termsVersion: config.termsVersion,
+    refreshTokenTtlMs: config.auth.refreshTtlMs,
+    sessionMaxAgeMs: config.auth.sessionMaxAgeMs,
+  };
 }

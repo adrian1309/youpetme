@@ -93,3 +93,39 @@ describe('UserSession lifecycle (ADR-002, Domain Model)', () => {
     expect(active.expire(now).isActive()).toBe(false);
   });
 });
+
+describe('UserSession absolute lifetime (SCRUM-54)', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  const TTL = 7 * DAY;
+  const MAX_AGE = 30 * DAY;
+  const createdAt = new Date('2026-10-01T00:00:00.000Z');
+  const at = (days: number, ms = 0) => new Date(createdAt.getTime() + days * DAY + ms);
+  const session = UserSession.reconstitute({
+    id: 's-1',
+    userId: 'u-1',
+    refreshTokenHash: 'hash',
+    status: 'ACTIVE',
+    expiresAt: at(7),
+    createdAt,
+    updatedAt: createdAt,
+  });
+
+  it('ends its absolute lifetime at createdAt plus the maximum age', () => {
+    expect(session.absoluteExpiryAt(MAX_AGE)).toEqual(at(30));
+  });
+
+  it('has outlived its maximum age from that instant onwards, not before', () => {
+    expect(session.hasOutlived(at(30, -1), MAX_AGE)).toBe(false);
+    expect(session.hasOutlived(at(30), MAX_AGE)).toBe(true);
+    expect(session.hasOutlived(at(30, 1), MAX_AGE)).toBe(true);
+  });
+
+  it('extends the next expiry by the refresh window while the cap is far away', () => {
+    expect(session.nextExpiry(at(10), TTL, MAX_AGE)).toEqual(at(17));
+  });
+
+  it('never extends the next expiry beyond the absolute cap', () => {
+    expect(session.nextExpiry(at(26), TTL, MAX_AGE)).toEqual(at(30));
+    expect(session.nextExpiry(at(30, -1), TTL, MAX_AGE)).toEqual(at(30));
+  });
+});

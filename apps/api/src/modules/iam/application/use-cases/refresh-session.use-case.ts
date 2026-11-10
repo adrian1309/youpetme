@@ -43,7 +43,12 @@ export class RefreshSessionUseCase {
     }
 
     const now = this.clock.now();
-    if (claims.expired || session.isExpiredAt(now)) {
+    // Past its sliding expiry or its absolute lifetime (SCRUM-54): the session ends here.
+    if (
+      claims.expired ||
+      session.isExpiredAt(now) ||
+      session.hasOutlived(now, this.config.sessionMaxAgeMs)
+    ) {
       await this.sessions.end(session.expire(now));
       throw new SessionNotRenewableError();
     }
@@ -71,7 +76,11 @@ export class RefreshSessionUseCase {
       sessionId: session.id,
       role: user.role,
     });
-    const expiresAt = new Date(now.getTime() + this.config.refreshTokenTtlMs);
+    const expiresAt = session.nextExpiry(
+      now,
+      this.config.refreshTokenTtlMs,
+      this.config.sessionMaxAgeMs,
+    );
     const rotated = session.rotate(this.refreshTokenHasher.hash(refreshToken), now, expiresAt);
 
     // Compare-and-set: if another request rotated this token first, this one is a reuse too.
