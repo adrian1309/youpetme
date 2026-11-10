@@ -86,10 +86,10 @@ Igual que en TS-IAM-001, el refresh token **no** viaja en el cuerpo: el servidor
 |---|---|---|
 | `400 Bad Request` | Datos ausentes o con formato inválido. | Error estructurado por campo. |
 | `401 Unauthorized` | Email no encontrado, o contraseña incorrecta. | Mensaje de negocio genérico ("credenciales inválidas"), **sin revelar** si el email existe o no — para no facilitar enumeración de cuentas. |
-| `403 Forbidden` | La cuenta existe pero su `status` no es `ACTIVE` (p. ej. `SUSPENDED`). | Mensaje de negocio sin detalle interno del motivo exacto. |
+| `403 Forbidden` | La cuenta existe pero su `status` no es `ACTIVE` (p. ej. `SUSPENDED`). Solo se devuelve si la contraseña es correcta, para no revelar qué emails existen. | Mensaje de negocio sin detalle interno del motivo exacto. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
-Cada error de negocio incluye además un campo `code` estable (ADR-017): `INVALID_CREDENTIALS` en el `401` y `ACCOUNT_NOT_AVAILABLE` en el `403`. El cliente distingue los casos por `code`, no por el texto del mensaje, y así no confunde este `403` con el de la guarda de `Origin`.
+Cada error de negocio incluye además un campo `code` estable (ADR-017): `INVALID_CREDENTIALS` en el `401` y `ACCOUNT_NOT_AVAILABLE` en el `403`. El cliente distingue los casos por `code`, no por el texto del mensaje, y así no confunde este `403` con el de la guarda de `Origin`, que no lleva `code`. Tampoco lo llevan el `415`, el `400` (los códigos de validación van dentro de `details`) ni el `500`.
 
 ### `POST /auth/refresh`
 
@@ -127,8 +127,8 @@ Sin body. El refresh token se lee de la cookie `HttpOnly` y `Secure`; el cliente
 
 | Código | Caso | Respuesta esperada |
 |---|---|---|
-| `401 Unauthorized` | Cookie ausente, refresh token inválido, caducado o ya rotado, o `UserSession` no activa (`REVOKED`/`EXPIRED`). | Error genérico, sin detalle del motivo. El cliente pasa a estado no autenticado. |
-| `403 Forbidden` | La cuenta del usuario no está `ACTIVE`. | Mensaje de negocio sin detalle interno. |
+| `401 Unauthorized` | Cookie ausente, refresh token inválido, caducado o ya rotado, o `UserSession` no activa (`REVOKED`/`EXPIRED`). | Error genérico, sin detalle del motivo. El servidor borra además la cookie y el cliente pasa a estado no autenticado. |
+| `403 Forbidden` | La cuenta del usuario no está `ACTIVE`. | Mensaje de negocio sin detalle interno. No borra la cookie ni revoca la sesión. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
 Los errores del refresh llevan un campo `code` estable (ADR-017): `SESSION_NOT_RENEWABLE` en el `401` y `ACCOUNT_NOT_AVAILABLE` en el `403`.
