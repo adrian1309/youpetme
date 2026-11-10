@@ -356,6 +356,47 @@ test.describe('US-IAM-002 — Login', () => {
   });
 });
 
+test.describe('A blur error does not swallow the click that caused it (SCRUM-51)', () => {
+  const invalidEmail = 'Escribe un correo válido, por ejemplo nombre@ejemplo.com.';
+
+  test.beforeEach(async ({ page }) => {
+    // Given a visitor whose email is not valid and still has the focus
+    await page.goto('/login');
+    const form = loginForm(page);
+    await form.email.fill('not-an-email');
+    await form.email.focus();
+  });
+
+  test('a single click on the password show toggle shows it, below an email error', async ({
+    page,
+  }) => {
+    const form = loginForm(page);
+
+    // When they click the password show toggle once
+    await page.getByRole('button', { name: 'Mostrar contraseña' }).click();
+
+    // Then the password becomes visible and the email shows its error
+    await expect(form.password).toHaveAttribute('type', 'text');
+    await expect(form.email).toHaveAccessibleDescription(invalidEmail);
+  });
+
+  test.describe('on a touch screen', () => {
+    // A tap blurs the field on the mousedown that the browser emulates after the touch ends.
+    test.use({ hasTouch: true });
+
+    test('a single tap on the password show toggle shows it', async ({ page }) => {
+      const form = loginForm(page);
+
+      // When they tap the password show toggle once
+      await page.getByRole('button', { name: 'Mostrar contraseña' }).tap();
+
+      // Then the password becomes visible and the email shows its error
+      await expect(form.password).toHaveAttribute('type', 'text');
+      await expect(form.email).toHaveAccessibleDescription(invalidEmail);
+    });
+  });
+});
+
 test.describe('Session cookie and secrets (ADR-002, TS-IAM-002)', () => {
   test('the refresh token is an HttpOnly, SameSite=Strict cookie scoped to /api/v1/auth, also after a rotation', async ({
     page,

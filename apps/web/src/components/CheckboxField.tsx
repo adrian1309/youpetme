@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { describedBy, useFieldIds } from './field-ids';
 import { FieldMessages } from './FieldMessages';
+import { afterPointerRelease } from './pointer-release';
 
 interface CheckboxFieldProps extends Omit<ComponentProps<'input'>, 'id' | 'type'> {
   id?: string;
@@ -11,7 +12,14 @@ interface CheckboxFieldProps extends Omit<ComponentProps<'input'>, 'id' | 'type'
 }
 
 /** Native checkbox: keyboard, focus and screen-reader behaviour come from the platform. */
-export function CheckboxField({ id, label, error, className, ...inputProps }: CheckboxFieldProps) {
+export function CheckboxField({
+  id,
+  label,
+  error,
+  className,
+  onBlur,
+  ...inputProps
+}: CheckboxFieldProps) {
   const ids = useFieldIds(id);
 
   return (
@@ -21,6 +29,8 @@ export function CheckboxField({ id, label, error, className, ...inputProps }: Ch
           {...inputProps}
           type="checkbox"
           id={ids.inputId}
+          // A blur error must not move the control being clicked before the release (SCRUM-51).
+          onBlur={onBlur && ((event) => afterPointerRelease(() => onBlur(event)))}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(ids, { error })}
           className={`mt-0.5 size-6 shrink-0 accent-brand-primary ${className ?? ''}`}

@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { describedBy, useFieldIds } from './field-ids';
 import { FieldMessages } from './FieldMessages';
+import { afterPointerRelease } from './pointer-release';
 
 export interface TextFieldProps extends Omit<ComponentProps<'input'>, 'id'> {
   id?: string;
@@ -24,6 +25,7 @@ export function TextField({
   error,
   endAdornment,
   className,
+  onBlur,
   ...inputProps
 }: TextFieldProps) {
   const ids = useFieldIds(id);
@@ -37,6 +39,8 @@ export function TextField({
         <input
           {...inputProps}
           id={ids.inputId}
+          // A blur error must not move the control being clicked before the release (SCRUM-51).
+          onBlur={onBlur && ((event) => afterPointerRelease(() => onBlur(event)))}
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy(ids, { hint, error })}
           className={`block min-h-11 w-full rounded-control border bg-surface px-3 py-2 text-base text-text ${
