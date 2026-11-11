@@ -166,7 +166,7 @@ The registration form requires first name, last name, email, password and passwo
 
 ### Validation timing
 
-- Validate a field on `blur` (when the user leaves it), not on every `onChange` keystroke — per-keystroke validation shows errors while the user is still typing, which reads as overly aggressive. Once an error is shown, clear it as soon as the user re-focuses the field, so a stale error is not shown while they are actively correcting it.
+- Validate a field on `blur` (when the user leaves it), not on every `onChange` keystroke — per-keystroke validation shows errors while the user is still typing, which reads as overly aggressive. Once an error is shown, clear it as soon as the user re-focuses the field, so a stale error is not shown while they are actively correcting it. If the field is left by pressing the pointer or tapping another control, its error is shown once the pointer is released and the click has been delivered (at most one second later), so the layout never moves under a click in progress.
 - A full-form validation also runs on submit, to catch anything not yet touched (e.g. a field the user skipped entirely).
 - Error messages follow a consistent structure: what is wrong, and how to fix it (e.g. "Password must be at least 8 characters" rather than "Invalid password"). Tone is helpful, not blaming ("must be", not "you entered").
 
