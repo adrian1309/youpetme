@@ -104,9 +104,9 @@ This reduces the usefulness of a stolen refresh token.
 ## Token Design
 
 - Access tokens are JWTs signed with HS256 and valid for 15 minutes. They carry the user id (`sub`), the session id (`sid`) and the role (`role`).
-- Refresh tokens are JWTs signed with HS256 with a secret different from the access token's, and valid for 7 days. They carry the user id (`sub`), the session id (`sid`) and a unique token id (`jti`). They are delivered only in the cookie described below.
+- Refresh tokens are JWTs signed with HS256 with a secret different from the access token's, and valid for 7 days. They carry the user id (`sub`), the session id (`sid`) and a unique token id (`jti`). They are delivered only in the cookie described below. The token's own `exp` is always 7 days; the session's `expiresAt`, which may be earlier because of the absolute lifetime, is what decides whether it can be refreshed.
 - The server never stores a refresh token. It stores only its SHA-256 hash, in `UserSession.refreshTokenHash`.
-- Each refresh rotates the token inside the same `UserSession`: the stored hash and `expiresAt` are replaced, so the previous token stops working. The rotation is a conditional update, so two simultaneous refreshes with the same token cannot both succeed. The 7 days therefore count from the last refresh (sliding window) with no absolute maximum lifetime, and a session unused for 7 days expires. It is marked `EXPIRED` on the first refresh attempt after it lapses.
+- Each refresh rotates the token inside the same `UserSession`: the stored hash and `expiresAt` are replaced, so the previous token stops working. The rotation is a conditional update, so two simultaneous refreshes with the same token cannot both succeed. The 7 days therefore count from the last refresh (sliding window), but never beyond the session's absolute lifetime: `expiresAt = min(now + JWT_REFRESH_EXPIRATION, createdAt + SESSION_ABSOLUTE_EXPIRATION)`. `createdAt` never changes on rotation, so the absolute lifetime counts from sign-in. A session unused for 7 days, or older than its absolute lifetime, expires. It is marked `EXPIRED` on the first refresh attempt after it lapses.
 - A login creates a new `UserSession`. A refresh never does.
 - A `UserSession` is `ACTIVE`, `REVOKED` or `EXPIRED`. Only an `ACTIVE` session can be refreshed.
 - A normal refresh publishes no domain event.
@@ -117,6 +117,8 @@ This reduces the usefulness of a stolen refresh token.
 If a refresh token that was already rotated is presented, the server answers `401` and revokes the `UserSession`. Reuse is treated as a possible theft: neither the legitimate holder nor the attacker keeps access, and the user signs in again. A refresh against a `REVOKED` or `EXPIRED` session is also rejected with `401`.
 
 The server gives no grace period for a token that has just been rotated (see Client-side Refresh Coordination).
+
+The expiry of the session, including its absolute lifetime, is checked before reuse detection and before the account status. Two consequences are accepted: a rotated token presented after the session has lapsed marks it `EXPIRED`, not `REVOKED`, and a suspended account with a lapsed session receives `401` instead of `403`. In both cases the session ends anyway.
 
 ## Cookie and CSRF Policy (Web)
 
@@ -149,12 +151,13 @@ Alternatives not adopted: a fallback lock based on `BroadcastChannel` or `localS
 
 Protected endpoints use a **stateless** guard: it verifies the signature and the expiry of the access token and does not query the database. This is consistent with the short lifetime of the access token (15 minutes).
 
-**Consequence.** An access token that was already issued stays valid until it expires, even if its `UserSession` has been revoked (logout, reuse detection, or a password change). Revocation prevents the session from being refreshed, so the exposure lasts at most 15 minutes. If immediate revocation ever becomes a requirement, the guard can additionally check that the session identified by the `sid` claim is `ACTIVE`, at the cost of a database read on every protected request. That change would amend this section.
+**Consequence.** An access token that was already issued stays valid until it expires, even if its `UserSession` has been revoked (logout, reuse detection, or a password change). Revocation, or reaching the session's absolute lifetime, prevents the session from being refreshed, so the exposure lasts at most 15 minutes. If immediate revocation ever becomes a requirement, the guard can additionally check that the session identified by the `sid` claim is `ACTIVE`, at the cost of a database read on every protected request. That change would amend this section.
 
 ## Token Lifetimes
 
 - **Access token:** 15 minutes (`JWT_ACCESS_EXPIRATION=15m`). Short enough that a stolen access token is of little use.
-- **Refresh token:** 7 days (`JWT_REFRESH_EXPIRATION=7d`). Each rotation issues a new refresh token with a new 7-day lifetime, so an actively used session stays signed in, and an unused one expires after a week.
+- **Refresh token:** 7 days (`JWT_REFRESH_EXPIRATION=7d`). Each rotation issues a new refresh token with a new lifetime of up to 7 days, so an actively used session stays signed in until its absolute lifetime ends, and an unused one expires after a week.
+- **Absolute session lifetime:** 30 days (`SESSION_ABSOLUTE_EXPIRATION=30d`, the default when the variable is not set). However often it is refreshed, a session ends this long after sign-in, counted from `UserSession.createdAt`, which rotation never changes; no migration is needed, and sessions older than the cap end at their next refresh. Each refresh sets `expiresAt = min(now + JWT_REFRESH_EXPIRATION, createdAt + SESSION_ABSOLUTE_EXPIRATION)`, and the cookie expires at the same time. A refresh past the cap is rejected with `401` `SESSION_NOT_RENEWABLE`, the cookie is cleared and the session is marked `EXPIRED`. The value is validated at startup: it uses the same format as the other durations (`15m`, `2h`, `7d`) and must be at least `JWT_REFRESH_EXPIRATION`, otherwise the API refuses to start, since a shorter cap would cancel the sliding window.
 
 These values are the MVP defaults, chosen as a balance between convenience and security. They live in configuration, not in code, so they can be tuned without a code change. A longer-lived "remember me" session is future functionality and is not part of the MVP.
 
@@ -247,3 +250,4 @@ Rejected because token revocation and security become more difficult when tokens
 
 - **2026-11-06:** added Token Design, Refresh Token Reuse, Cookie and CSRF Policy and Client-side Refresh Coordination, from the implementation of TS-IAM-002 (login and refresh). The API error format is decided in ADR-017.
 - **2026-11-10:** added Access Token Guard (stateless) and the Logout rules, and the cross-tab logout in Client-side Refresh Coordination, from the implementation of TS-IAM-003.
+- **2026-11-11:** added the absolute session lifetime (`SESSION_ABSOLUTE_EXPIRATION`, 30 days) to Token Design, Token Lifetimes, Refresh Token Reuse and Access Token Guard, from SCRUM-54.
