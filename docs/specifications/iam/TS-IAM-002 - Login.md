@@ -119,15 +119,15 @@ Sin body. El refresh token se lee de la cookie `HttpOnly` y `Secure`; el cliente
 ```
 
 - El objeto `user` tiene la misma forma que en el login. Lo necesita el cliente para recuperar los datos del usuario al recargar la página, porque el access token vive solo en memoria.
-- Se emite un nuevo access token (15 minutos) y un nuevo refresh token (7 días), entregado de nuevo solo en cookie `Set-Cookie`.
+- Se emite un nuevo access token (15 minutos) y un nuevo refresh token, entregado de nuevo solo en cookie `Set-Cookie`. La sesión y la cookie caducan en `min(ahora + JWT_REFRESH_EXPIRATION, createdAt + SESSION_ABSOLUTE_EXPIRATION)`: 7 días desde el último uso, pero nunca más de 30 días desde el inicio de sesión (ADR-002).
 - El refresh token anterior queda invalidado: se actualiza el hash almacenado en la `UserSession` y `expiresAt` pasa a reflejar la nueva caducidad.
-- Los valores de caducidad provienen de configuración (`JWT_ACCESS_EXPIRATION`, `JWT_REFRESH_EXPIRATION`).
+- Los valores de caducidad provienen de configuración (`JWT_ACCESS_EXPIRATION`, `JWT_REFRESH_EXPIRATION`, `SESSION_ABSOLUTE_EXPIRATION`).
 
 #### Errores esperados
 
 | Código | Caso | Respuesta esperada |
 |---|---|---|
-| `401 Unauthorized` | Cookie ausente, refresh token inválido, caducado o ya rotado, o `UserSession` no activa (`REVOKED`/`EXPIRED`). | Error genérico, sin detalle del motivo. El servidor borra además la cookie y el cliente pasa a estado no autenticado. |
+| `401 Unauthorized` | Cookie ausente, refresh token inválido, caducado o ya rotado, `UserSession` no activa (`REVOKED`/`EXPIRED`), o `UserSession` que ha superado su vida máxima (`SESSION_ABSOLUTE_EXPIRATION` desde su creación). Una sesión caducada, por la ventana o por el tope, queda marcada `EXPIRED`. | Error genérico, sin detalle del motivo. El servidor borra además la cookie y el cliente pasa a estado no autenticado. |
 | `403 Forbidden` | La cuenta del usuario no está `ACTIVE`. | Mensaje de negocio sin detalle interno. No borra la cookie ni revoca la sesión. |
 | `500 Internal Server Error` | Error inesperado. | Error genérico; no revelar detalles internos. |
 
@@ -142,7 +142,7 @@ Si se presenta un refresh token que ya fue rotado (reutilización), se rechaza c
 
 ## Modelo de datos
 
-No se introduce ninguna entidad nueva. Se reutilizan `User` y `UserSession` (Domain Model), y se crea una nueva fila de `UserSession` por cada login exitoso (consistente con "a user may have multiple active sessions", ADR-002). El refresh actualiza el `refreshTokenHash` y `expiresAt` de la misma `UserSession`, sin crear una nueva.
+No se introduce ninguna entidad nueva. Se reutilizan `User` y `UserSession` (Domain Model), y se crea una nueva fila de `UserSession` por cada login exitoso (consistente con "a user may have multiple active sessions", ADR-002). El refresh actualiza el `refreshTokenHash` y `expiresAt` de la misma `UserSession`, sin crear una nueva. `createdAt` no cambia nunca y marca el inicio de la vida máxima de la sesión; no requiere migración.
 
 ## Reglas de seguridad
 
@@ -174,13 +174,14 @@ Al completar correctamente el login se publicará el evento `UserLoggedIn`, con 
 - Verificación de contraseña contra el hash almacenado (casos correcto/incorrecto).
 - Rechazo cuando `status` no es `ACTIVE`.
 - Mensaje de error idéntico para email inexistente vs contraseña incorrecta.
-- Refresh: rotación del token, rechazo de token caducado, ya rotado o de sesión revocada, y revocación de la sesión ante reutilización.
+- Refresh: rotación del token, rechazo de token caducado, ya rotado o de sesión revocada, y revocación de la sesión ante reutilización; tope absoluto: rechazo y marca `EXPIRED` al superarlo, y caducidad limitada al tope cerca de él.
 
 ### Integration tests
 - Endpoint `POST /api/v1/auth/login` con PostgreSQL (Testcontainers) y Prisma.
 - Creación de `UserSession` tras login exitoso.
 - El refresh token llega solo en la cookie `HttpOnly` y no en el cuerpo de la respuesta.
 - Endpoint `POST /api/v1/auth/refresh`: devuelve un nuevo access token y una nueva cookie, y el refresh token anterior deja de funcionar.
+- Una sesión más antigua que el tope recibe `401` `SESSION_NOT_RENEWABLE`, pierde la cookie y queda `EXPIRED`; cerca del tope, `expiresAt` y la cookie caducan en el tope.
 
 ### End-to-end tests
 Se implementan en una subtarea aparte de SCRUM-6.
@@ -199,6 +200,7 @@ Se implementan en una subtarea aparte de SCRUM-6.
 - [ ] Se publica `UserLoggedIn` sin datos sensibles tras un login exitoso.
 - [ ] `POST /api/v1/auth/refresh` renueva el access token y rota el refresh token; un refresh token ya rotado, caducado o de una sesión revocada es rechazado.
 - [ ] Recargar la página con sesión activa no obliga a volver a iniciar sesión.
+- [ ] Ninguna sesión puede renovarse más allá de `SESSION_ABSOLUTE_EXPIRATION` desde el inicio de sesión.
 - [ ] Las pruebas unitarias, de integración y E2E definidas pasan.
 - [ ] No aparecen contraseñas, hashes ni tokens en interfaz, consola o registros accesibles.
 

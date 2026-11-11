@@ -55,7 +55,7 @@ We use **Option 2**.
 |---|---|---|
 | `INVALID_CREDENTIALS` | `401` | Login: unknown email or wrong password, with exactly the same body in both cases. |
 | `ACCOUNT_NOT_AVAILABLE` | `403` | Login: the account is not `ACTIVE` (returned only if the password is correct). Refresh: the account is not `ACTIVE`. |
-| `SESSION_NOT_RENEWABLE` | `401` | Refresh: no cookie, invalid or expired token, unknown, revoked or expired session, or an already rotated token. |
+| `SESSION_NOT_RENEWABLE` | `401` | Refresh: no cookie, invalid or expired token, unknown, revoked or expired session, a session past its absolute lifetime, or an already rotated token. |
 
 The codes live in `packages/contracts` (`ValidationErrorCode` and `ErrorCode`), shared by the API and the web client. `ErrorCode` accepts only the three business codes above.
 
