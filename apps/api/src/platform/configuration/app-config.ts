@@ -19,7 +19,20 @@ export interface AppConfig {
     secure: boolean;
     sameSite: 'Strict' | 'Lax' | 'None';
   };
+  /** How transactional emails leave the API (ADR-014); only Resend in production. */
+  email: EmailDeliveryConfig;
+  passwordReset: {
+    /** Lifetime of a password reset link (TS-IAM-004), PASSWORD_RESET_EXPIRATION. */
+    ttlMs: number;
+  };
 }
+
+export type EmailDeliveryConfig =
+  | { delivery: 'resend'; resendApiKey: string; from: string }
+  /** Development: prints each email to the API log instead of sending it. */
+  | { delivery: 'console' }
+  /** Automated tests: writes each email as a JSON file into `outboxDir`. */
+  | { delivery: 'file'; outboxDir: string };
 
 const MIN_SECRET_LENGTH = 32;
 const PLACEHOLDER_PREFIX = 'change-me';
@@ -52,14 +65,44 @@ const envSchema = z
       .default('true')
       .transform((value) => value === 'true'),
     COOKIE_SAMESITE: z.enum(['Strict', 'Lax', 'None']).default('Strict'),
+    // ADR-014: console in development, file in automated tests, Resend in production.
+    EMAIL_DELIVERY: z.enum(['resend', 'console', 'file']).default('console'),
+    RESEND_API_KEY: z.string().min(1).optional(),
+    EMAIL_FROM: z.string().min(1).optional(),
+    EMAIL_OUTBOX_DIR: z.string().min(1).optional(),
+    PASSWORD_RESET_EXPIRATION: z.string().default('2h').pipe(duration),
   })
   .refine((env) => env.COOKIE_SAMESITE !== 'None' || env.COOKIE_SECURE, {
     path: ['COOKIE_SAMESITE'],
     message: 'SameSite=None requires COOKIE_SECURE=true',
   })
+  .superRefine((env, ctx) => {
+    const required = {
+      resend: ['RESEND_API_KEY', 'EMAIL_FROM'],
+      file: ['EMAIL_OUTBOX_DIR'],
+      console: [],
+    } as const;
+    for (const name of required[env.EMAIL_DELIVERY]) {
+      if (env[name] === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          path: [name],
+          message: `is required when EMAIL_DELIVERY=${env.EMAIL_DELIVERY}`,
+        });
+      }
+    }
+  })
   // Outside local development the values shipped in .env.example must not be usable (ARCH-001).
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;
+    // Printed or captured emails carry live reset links: production only ever sends them.
+    if (env.EMAIL_DELIVERY !== 'resend') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['EMAIL_DELIVERY'],
+        message: 'must be resend in production',
+      });
+    }
     for (const name of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'] as const) {
       if (env[name].startsWith(PLACEHOLDER_PREFIX)) {
         ctx.addIssue({
@@ -122,5 +165,19 @@ export function loadAppConfig(env: Record<string, string | undefined>): AppConfi
     },
     termsVersion: values.TERMS_VERSION,
     refreshCookie: { secure: values.COOKIE_SECURE, sameSite: values.COOKIE_SAMESITE },
+    email: emailDelivery(values),
+    passwordReset: { ttlMs: values.PASSWORD_RESET_EXPIRATION },
   };
+}
+
+/** The refinements above guarantee the variables each mode needs. */
+function emailDelivery(values: z.infer<typeof envSchema>): EmailDeliveryConfig {
+  switch (values.EMAIL_DELIVERY) {
+    case 'resend':
+      return { delivery: 'resend', resendApiKey: values.RESEND_API_KEY!, from: values.EMAIL_FROM! };
+    case 'file':
+      return { delivery: 'file', outboxDir: values.EMAIL_OUTBOX_DIR! };
+    case 'console':
+      return { delivery: 'console' };
+  }
 }

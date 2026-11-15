@@ -2,3 +2,4 @@
 export type Role = 'USER' | 'ADMIN';
 export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETED';
 export type SessionStatus = 'ACTIVE' | 'REVOKED' | 'EXPIRED';
+export type PasswordResetTokenStatus = 'ACTIVE' | 'USED' | 'EXPIRED' | 'SUPERSEDED';

@@ -20,7 +20,12 @@ export interface ErrorDetail {
  * others with the same status (for example a 403 for an unavailable account versus a 403 for a
  * rejected Origin). Absent when the status alone is enough.
  */
-export type ErrorCode = 'INVALID_CREDENTIALS' | 'ACCOUNT_NOT_AVAILABLE' | 'SESSION_NOT_RENEWABLE';
+export type ErrorCode =
+  | 'INVALID_CREDENTIALS'
+  | 'ACCOUNT_NOT_AVAILABLE'
+  | 'SESSION_NOT_RENEWABLE'
+  /** Password reset link unknown, used, expired or superseded, or its account not ACTIVE. */
+  | 'RESET_TOKEN_INVALID';
 
 /** Error body returned by every endpoint; never contains internal details. */
 export interface ErrorResponse {

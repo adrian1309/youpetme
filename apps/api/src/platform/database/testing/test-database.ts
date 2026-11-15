@@ -13,15 +13,21 @@ export interface TestDatabase {
   stop(): Promise<void>;
 }
 
+/** Upper bound only: a warm Docker starts the container in seconds. */
+const STARTUP_TIMEOUT_MS = 300_000;
+
 /**
  * Integration tests run against a real, isolated PostgreSQL started by Testcontainers (ARCH-002),
  * with the committed migrations applied; never against a development or production database.
  * The image matches infra/docker/compose.yaml.
  */
 export async function startTestDatabase(): Promise<TestDatabase> {
+  // A cold Docker took about 150 s to report PostgreSQL healthy; the default is 120 s.
   const container: StartedPostgreSqlContainer = await new PostgreSqlContainer(
     'postgres:18.6-alpine',
-  ).start();
+  )
+    .withStartupTimeout(STARTUP_TIMEOUT_MS)
+    .start();
   const connectionUri = container.getConnectionUri();
 
   // Run from apps/api (the cwd of `pnpm test:integration`) so prisma.config.ts is picked up.
@@ -39,7 +45,7 @@ export async function startTestDatabase(): Promise<TestDatabase> {
     connectionUri,
     async reset() {
       await prisma.$executeRawUnsafe(
-        'TRUNCATE TABLE "user_sessions", "user_profiles", "users" RESTART IDENTITY CASCADE',
+        'TRUNCATE TABLE "password_reset_tokens", "user_sessions", "user_profiles", "users" RESTART IDENTITY CASCADE',
       );
     },
     async stop() {

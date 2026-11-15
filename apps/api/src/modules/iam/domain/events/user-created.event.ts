@@ -1,3 +1,4 @@
+import type { PasswordReset } from './password-reset.event';
 import type { SessionRevoked } from './session-revoked.event';
 import type { UserLoggedIn } from './user-logged-in.event';
 
@@ -11,4 +12,4 @@ export class UserCreated {
   ) {}
 }
 
-export type DomainEvent = UserCreated | UserLoggedIn | SessionRevoked;
+export type DomainEvent = UserCreated | UserLoggedIn | SessionRevoked | PasswordReset;

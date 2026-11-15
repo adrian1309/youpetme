@@ -17,4 +17,15 @@ export const PasswordPolicy = {
     }
     return [];
   },
+
+  /** The confirmation only guards against typos: it is checked here and never persisted. */
+  validateConfirmation(password: string, confirmPassword: string): ValidationIssue[] {
+    if (confirmPassword.length === 0) {
+      return [{ field: 'confirmPassword', code: 'REQUIRED' }];
+    }
+    if (confirmPassword !== password) {
+      return [{ field: 'confirmPassword', code: 'MISMATCH' }];
+    }
+    return [];
+  },
 } as const;
