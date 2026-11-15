@@ -5,7 +5,8 @@
 module.exports = {
   testEnvironment: 'node',
   // Starting a PostgreSQL container and applying migrations takes a while on a cold machine.
-  testTimeout: 120000,
+  // Above the container's 300 s startup timeout (test-database.ts), so the hook waits for it.
+  testTimeout: 360000,
   // One PostgreSQL container at a time: starting several in parallel made suites time out on
   // slower machines.
   maxWorkers: 1,
