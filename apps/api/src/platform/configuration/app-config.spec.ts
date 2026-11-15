@@ -28,6 +28,8 @@ describe('loadAppConfig', () => {
       },
       termsVersion: '2026-01',
       refreshCookie: { secure: false, sameSite: 'Strict' },
+      email: { delivery: 'console' },
+      passwordReset: { ttlMs: 2 * 60 * 60 * 1000 },
     });
   });
 
@@ -141,8 +143,72 @@ describe('loadAppConfig', () => {
     expect(attempt).not.toThrow(validEnv.JWT_ACCESS_SECRET);
   });
 
+  describe('email delivery and password reset (TS-IAM-004, ADR-014)', () => {
+    const resend = {
+      ...validEnv,
+      EMAIL_DELIVERY: 'resend',
+      RESEND_API_KEY: 're_test_0123456789',
+      EMAIL_FROM: 'YouPetMe <no-reply@example.com>',
+    };
+
+    it('takes the reset link lifetime from PASSWORD_RESET_EXPIRATION', () => {
+      expect(
+        loadAppConfig({ ...validEnv, PASSWORD_RESET_EXPIRATION: '30m' }).passwordReset.ttlMs,
+      ).toBe(30 * 60 * 1000);
+    });
+
+    it('rejects an invalid PASSWORD_RESET_EXPIRATION, naming the variable', () => {
+      expect(() => loadAppConfig({ ...validEnv, PASSWORD_RESET_EXPIRATION: 'soon' })).toThrow(
+        'PASSWORD_RESET_EXPIRATION',
+      );
+    });
+
+    it('configures Resend with its key and sender', () => {
+      expect(loadAppConfig(resend).email).toEqual({
+        delivery: 'resend',
+        resendApiKey: 're_test_0123456789',
+        from: 'YouPetMe <no-reply@example.com>',
+      });
+    });
+
+    it.each(['RESEND_API_KEY', 'EMAIL_FROM'])(
+      'requires %s when delivering through Resend, without echoing the key',
+      (name) => {
+        const env: Record<string, string | undefined> = { ...resend };
+        delete env[name];
+
+        const attempt = () => loadAppConfig(env);
+        expect(attempt).toThrow(name);
+        expect(attempt).not.toThrow('re_test_0123456789');
+      },
+    );
+
+    it('writes emails to EMAIL_OUTBOX_DIR in file mode, and requires it', () => {
+      expect(
+        loadAppConfig({ ...validEnv, EMAIL_DELIVERY: 'file', EMAIL_OUTBOX_DIR: '/tmp/outbox' })
+          .email,
+      ).toEqual({ delivery: 'file', outboxDir: '/tmp/outbox' });
+      expect(() => loadAppConfig({ ...validEnv, EMAIL_DELIVERY: 'file' })).toThrow(
+        'EMAIL_OUTBOX_DIR',
+      );
+    });
+
+    it('rejects an unknown EMAIL_DELIVERY', () => {
+      expect(() => loadAppConfig({ ...validEnv, EMAIL_DELIVERY: 'smtp' })).toThrow(
+        'EMAIL_DELIVERY',
+      );
+    });
+  });
+
   describe('in production', () => {
-    const production = { ...validEnv, NODE_ENV: 'production', COOKIE_SECURE: 'true' };
+    const production = {
+      ...validEnv,
+      NODE_ENV: 'production',
+      COOKIE_SECURE: 'true',
+      EMAIL_DELIVERY: 'resend',
+      RESEND_API_KEY: 're_live_0123456789',
+      EMAIL_FROM: 'YouPetMe <no-reply@example.com>',
+    };
 
     it('accepts a real configuration', () => {
       expect(() => loadAppConfig(production)).not.toThrow();
@@ -174,6 +240,19 @@ describe('loadAppConfig', () => {
         loadAppConfig({ ...production, TERMS_VERSION: 'example-version-replace-me' }),
       ).toThrow('TERMS_VERSION');
     });
+
+    it.each(['console', 'file', undefined])(
+      'never captures or prints emails (EMAIL_DELIVERY=%s): only Resend delivers',
+      (delivery) => {
+        expect(() =>
+          loadAppConfig({
+            ...production,
+            EMAIL_DELIVERY: delivery,
+            EMAIL_OUTBOX_DIR: '/tmp/outbox',
+          }),
+        ).toThrow('EMAIL_DELIVERY');
+      },
+    );
 
     it('keeps the same values valid for local development', () => {
       expect(() =>

@@ -13,6 +13,7 @@ import type { Response } from 'express';
 import { AccountNotAvailableError } from '../../domain/errors/account-not-available.error';
 import { EmailAlreadyRegisteredError } from '../../domain/errors/email-already-registered.error';
 import { InvalidCredentialsError } from '../../domain/errors/invalid-credentials.error';
+import { ResetTokenInvalidError } from '../../domain/errors/reset-token-invalid.error';
 import { SessionOwnershipMismatchError } from '../../domain/errors/session-ownership-mismatch.error';
 import { SessionNotRenewableError } from '../../domain/errors/session-not-renewable.error';
 import {
@@ -105,6 +106,18 @@ export class IamExceptionFilter implements ExceptionFilter {
           error: 'Unauthorized',
           message: 'The session could not be renewed',
           code: 'SESSION_NOT_RENEWABLE',
+        },
+      };
+    }
+    if (exception instanceof ResetTokenInvalidError) {
+      // One body for every reason: unknown, used, expired or superseded link, or account gone.
+      return {
+        status: 400,
+        body: {
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'This reset link is no longer valid',
+          code: 'RESET_TOKEN_INVALID',
         },
       };
     }

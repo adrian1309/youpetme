@@ -18,6 +18,13 @@ import type {
 import type { UserAccount, UserRepository } from '../domain/ports/user-repository';
 import type { UserSessionRepository } from '../domain/ports/user-session-repository';
 import type { UserSession } from '../domain/entities/user-session.entity';
+import { PasswordResetToken } from '../domain/entities/password-reset-token.entity';
+import type { BackgroundTasks } from '../domain/ports/background-tasks';
+import type {
+  CompletePasswordReset,
+  PasswordResetTokenRepository,
+} from '../domain/ports/password-reset-token-repository';
+import type { ResetTokenGenerator } from '../domain/ports/reset-token-generator';
 
 /** Records the order of side effects so tests can assert "event after persistence". */
 export class CallLog {
@@ -190,4 +197,97 @@ export const TEST_IAM_CONFIG: IamConfig = {
   termsVersion: '2026-01',
   refreshTokenTtlMs: 7 * 24 * 60 * 60 * 1000,
   sessionMaxAgeMs: 30 * 24 * 60 * 60 * 1000,
+  passwordResetTtlMs: 2 * 60 * 60 * 1000,
+  passwordResetCooldownMs: 60 * 1000,
+  resetPasswordUrl: 'http://localhost:5173/reset-password',
 };
+
+/**
+ * Behaves like the Prisma adapter, including the session revocation and the new password of a
+ * completed reset, so use-case tests can observe the outcome.
+ */
+export class InMemoryPasswordResetTokens implements PasswordResetTokenRepository {
+  readonly tokens = new Map<string, PasswordResetToken>();
+  /** New password hash per user id, as stored by completeReset. */
+  readonly passwordHashes = new Map<string, string>();
+
+  constructor(
+    private readonly sessions: InMemorySessions = new InMemorySessions(),
+    private readonly log: CallLog = new CallLog(),
+    private readonly now: () => Date = () => new Date(),
+  ) {}
+
+  findByHash(tokenHash: string): Promise<PasswordResetToken | null> {
+    return Promise.resolve(
+      [...this.tokens.values()].find((t) => t.tokenHash === tokenHash) ?? null,
+    );
+  }
+
+  latestIssuedAt(userId: string): Promise<Date | null> {
+    const times = [...this.tokens.values()]
+      .filter((t) => t.userId === userId)
+      .map((t) => t.createdAt.getTime());
+    return Promise.resolve(times.length > 0 ? new Date(Math.max(...times)) : null);
+  }
+
+  issue(token: PasswordResetToken): Promise<void> {
+    this.log.entries.push('issueResetToken');
+    this.supersedeActiveOf(token.userId);
+    this.tokens.set(token.id, token);
+    return Promise.resolve();
+  }
+
+  expire(token: PasswordResetToken): Promise<void> {
+    if (this.tokens.get(token.id)?.status === 'ACTIVE') this.tokens.set(token.id, token);
+    return Promise.resolve();
+  }
+
+  completeReset({ token, passwordHash }: CompletePasswordReset): Promise<boolean> {
+    this.log.entries.push('completeReset');
+    if (this.tokens.get(token.id)?.status !== 'ACTIVE') return Promise.resolve(false);
+    this.supersedeActiveOf(token.userId);
+    this.tokens.set(token.id, token);
+    this.passwordHashes.set(token.userId, passwordHash);
+    for (const session of this.sessions.sessions.values()) {
+      if (session.userId === token.userId && session.isActive()) {
+        this.sessions.sessions.set(session.id, session.revoke(this.now()));
+      }
+    }
+    return Promise.resolve(true);
+  }
+
+  private supersedeActiveOf(userId: string): void {
+    for (const stored of this.tokens.values()) {
+      if (stored.userId === userId && stored.status === 'ACTIVE') {
+        this.tokens.set(
+          stored.id,
+          PasswordResetToken.reconstitute({ ...stored, status: 'SUPERSEDED' }),
+        );
+      }
+    }
+  }
+}
+
+/** Hands out `reset-token-1`, `reset-token-2`… */
+export class SequentialResetTokenGenerator implements ResetTokenGenerator {
+  private counter = 0;
+
+  generate(): string {
+    this.counter += 1;
+    return `reset-token-${this.counter}`;
+  }
+}
+
+/** Holds detached tasks so a test can run them when it chooses, as after a response. */
+export class ManualBackgroundTasks implements BackgroundTasks {
+  readonly pending: { description: string; task: () => Promise<void> }[] = [];
+
+  run(description: string, task: () => Promise<void>): void {
+    this.pending.push({ description, task });
+  }
+
+  async runAll(): Promise<void> {
+    const tasks = this.pending.splice(0);
+    for (const { task } of tasks) await task();
+  }
+}

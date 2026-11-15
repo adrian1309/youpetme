@@ -7,7 +7,17 @@ import { EventEmitter2, EventEmitterModule } from '@nestjs/event-emitter';
 import type { AppConfig } from '../../platform/configuration/app-config';
 import { APP_CONFIG } from '../../platform/configuration/configuration.tokens';
 import { PrismaService } from '../../platform/database/prisma.service';
+import type { EmailSender } from '../notifications/domain/ports/email-sender';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { EMAIL_SENDER } from '../notifications/notifications.tokens';
 import { LoginUserUseCase } from './application/use-cases/login-user.use-case';
+import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset.use-case';
+import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
+import type { PasswordResetTokenRepository } from './domain/ports/password-reset-token-repository';
+import { PrismaPasswordResetTokenRepository } from './infrastructure/persistence/prisma/prisma-password-reset-token.repository';
+import { RandomResetTokenGenerator } from './infrastructure/security/random-reset-token-generator';
+import { DetachedBackgroundTasks } from './infrastructure/tasks/detached-background-tasks';
+import { PasswordResetController } from './presentation/http/password-reset.controller';
 import { RefreshSessionUseCase } from './application/use-cases/refresh-session.use-case';
 import { RevokeSessionUseCase } from './application/use-cases/revoke-session.use-case';
 import { RegisterUserUseCase } from './application/use-cases/register-user.use-case';
@@ -26,8 +36,11 @@ import {
   ACCESS_TOKEN_VERIFIER,
   ACCOUNT_REGISTRATION_REPOSITORY,
   LOGIN_USER_USE_CASE,
+  PASSWORD_RESET_TOKEN_REPOSITORY,
   REFRESH_SESSION_USE_CASE,
   REGISTER_USER_USE_CASE,
+  REQUEST_PASSWORD_RESET_USE_CASE,
+  RESET_PASSWORD_USE_CASE,
   REVOKE_SESSION_USE_CASE,
   USER_REPOSITORY,
   USER_SESSION_REPOSITORY,
@@ -39,8 +52,13 @@ import { RegisterController } from './presentation/http/register.controller';
 import { TermsVersionController } from './presentation/http/terms-version.controller';
 
 @Module({
-  imports: [EventEmitterModule.forRoot()],
-  controllers: [RegisterController, AuthSessionController, TermsVersionController],
+  imports: [EventEmitterModule.forRoot(), NotificationsModule],
+  controllers: [
+    RegisterController,
+    AuthSessionController,
+    PasswordResetController,
+    TermsVersionController,
+  ],
   // Other modules protect their endpoints with the same stateless access-token check (ADR-002).
   exports: [AccessTokenGuard, ACCESS_TOKEN_VERIFIER],
   providers: [
@@ -140,6 +158,55 @@ import { TermsVersionController } from './presentation/http/terms-version.contro
       ) => new RevokeSessionUseCase(tokens, sessions, events, { now: () => new Date() }),
     },
     {
+      provide: PASSWORD_RESET_TOKEN_REPOSITORY,
+      inject: [PrismaService],
+      useFactory: (prisma: PrismaService) => new PrismaPasswordResetTokenRepository(prisma),
+    },
+    {
+      provide: REQUEST_PASSWORD_RESET_USE_CASE,
+      inject: [USER_REPOSITORY, PASSWORD_RESET_TOKEN_REPOSITORY, EMAIL_SENDER, APP_CONFIG],
+      useFactory: (
+        users: UserRepository,
+        resetTokens: PasswordResetTokenRepository,
+        emails: EmailSender,
+        config: AppConfig,
+      ) =>
+        new RequestPasswordResetUseCase(
+          users,
+          resetTokens,
+          new RandomResetTokenGenerator(),
+          new Sha256RefreshTokenHasher(),
+          emails,
+          new DetachedBackgroundTasks(new Logger('BackgroundTasks')),
+          { now: () => new Date() },
+          { next: () => randomUUID() },
+          iamConfig(config),
+        ),
+    },
+    {
+      provide: RESET_PASSWORD_USE_CASE,
+      inject: [
+        USER_REPOSITORY,
+        PASSWORD_RESET_TOKEN_REPOSITORY,
+        Argon2idPasswordHasher,
+        NestEventPublisher,
+      ],
+      useFactory: (
+        users: UserRepository,
+        resetTokens: PasswordResetTokenRepository,
+        passwordHasher: Argon2idPasswordHasher,
+        events: NestEventPublisher,
+      ) =>
+        new ResetPasswordUseCase(
+          users,
+          resetTokens,
+          new Sha256RefreshTokenHasher(),
+          passwordHasher,
+          events,
+          { now: () => new Date() },
+        ),
+    },
+    {
       provide: REGISTER_USER_USE_CASE,
       inject: [USER_REPOSITORY, ACCOUNT_REGISTRATION_REPOSITORY, APP_CONFIG, EventEmitter2],
       useFactory: (
@@ -164,10 +231,16 @@ import { TermsVersionController } from './presentation/http/terms-version.contro
 })
 export class IamModule {}
 
+/** At most one reset email a minute per account (TS-IAM-004). */
+const PASSWORD_RESET_COOLDOWN_MS = 60 * 1000;
+
 function iamConfig(config: AppConfig): IamConfig {
   return {
     termsVersion: config.termsVersion,
     refreshTokenTtlMs: config.auth.refreshTtlMs,
     sessionMaxAgeMs: config.auth.sessionMaxAgeMs,
+    passwordResetTtlMs: config.passwordReset.ttlMs,
+    passwordResetCooldownMs: PASSWORD_RESET_COOLDOWN_MS,
+    resetPasswordUrl: `${config.webOrigin}/reset-password`,
   };
 }

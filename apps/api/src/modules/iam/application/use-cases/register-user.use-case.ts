@@ -107,13 +107,8 @@ export class RegisterUserUseCase {
       ...UserProfile.validateNames(command.firstName, command.lastName),
       ...Email.validate(command.email),
       ...PasswordPolicy.validate(command.password),
+      ...PasswordPolicy.validateConfirmation(command.password, command.confirmPassword),
     ];
-
-    if (command.confirmPassword.length === 0) {
-      issues.push({ field: 'confirmPassword', code: 'REQUIRED' });
-    } else if (command.confirmPassword !== command.password) {
-      issues.push({ field: 'confirmPassword', code: 'MISMATCH' });
-    }
 
     if (command.termsAccepted !== true) {
       issues.push({ field: 'termsAccepted', code: 'MUST_BE_TRUE' });

@@ -29,3 +29,21 @@ describe('PasswordPolicy (ADR-002)', () => {
     expect(PasswordPolicy.validate('alllowercaseletters')).toEqual([]);
   });
 });
+
+describe('PasswordPolicy.validateConfirmation (TS-IAM-001, TS-IAM-004)', () => {
+  it('requires the confirmation', () => {
+    expect(PasswordPolicy.validateConfirmation('my-passphrase', '')).toEqual([
+      { field: 'confirmPassword', code: 'REQUIRED' },
+    ]);
+  });
+
+  it('reports a confirmation that differs as MISMATCH', () => {
+    expect(PasswordPolicy.validateConfirmation('my-passphrase', 'my-passphrasE')).toEqual([
+      { field: 'confirmPassword', code: 'MISMATCH' },
+    ]);
+  });
+
+  it('accepts an identical confirmation', () => {
+    expect(PasswordPolicy.validateConfirmation('my-passphrase', 'my-passphrase')).toEqual([]);
+  });
+});
