@@ -99,3 +99,75 @@ model PasswordResetToken {
   @@index([userId])
   @@map("password_reset_tokens")
 }
+
+// Animals persistence model (Domain Model — Animals domain, Taxonomy).
+enum Species {
+  DOG
+  CAT
+  OTHER
+}
+
+enum AnimalSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+enum AgeGroup {
+  PUPPY_KITTEN
+  YOUNG
+  ADULT
+  SENIOR
+}
+
+enum Temperament {
+  CALM
+  PLAYFUL
+  ENERGETIC
+  SHY
+  AFFECTIONATE
+  INDEPENDENT
+}
+
+enum AnimalStatus {
+  AVAILABLE
+  RESERVED
+  ADOPTED
+}
+
+// MVP: exactly one row, "YouPetMe", inserted by the animals migration.
+model Shelter {
+  id          String   @id @db.Uuid
+  name        String
+  description String
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  animals Animal[]
+
+  @@map("shelters")
+}
+
+model Animal {
+  id                         String        @id @db.Uuid
+  shelterId                  String        @map("shelter_id") @db.Uuid
+  name                       String
+  species                    Species
+  size                       AnimalSize
+  ageGroup                   AgeGroup      @map("age_group")
+  breed                      String?
+  temperament                Temperament[]
+  compatibleWithChildren     Boolean?      @map("compatible_with_children")
+  compatibleWithOtherAnimals Boolean?      @map("compatible_with_other_animals")
+  careNotes                  String?       @map("care_notes")
+  // References only (https URLs in the MVP); the domain knows nothing about where they live.
+  photoUrls                  String[]      @map("photo_urls")
+  status                     AnimalStatus
+  createdAt                  DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt                  DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  shelter Shelter @relation(fields: [shelterId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@map("animals")
+}

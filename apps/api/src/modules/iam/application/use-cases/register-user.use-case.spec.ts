@@ -81,6 +81,7 @@ describe('RegisterUserUseCase', () => {
         lastName: 'Doe',
         email: 'john@example.com',
         status: 'ACTIVE',
+        role: 'USER',
       });
       expect(result.accessToken).toBe(`access:${user.id}:${session.id}`);
       expect(result.refreshToken).toBe(`refresh:${user.id}:${session.id}`);

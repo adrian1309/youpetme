@@ -45,7 +45,8 @@ export async function startTestDatabase(): Promise<TestDatabase> {
     connectionUri,
     async reset() {
       await prisma.$executeRawUnsafe(
-        'TRUNCATE TABLE "password_reset_tokens", "user_sessions", "user_profiles", "users" RESTART IDENTITY CASCADE',
+        // "shelters" is kept: its single MVP row comes from a migration.
+        'TRUNCATE TABLE "animals", "password_reset_tokens", "user_sessions", "user_profiles", "users" RESTART IDENTITY CASCADE',
       );
     },
     async stop() {

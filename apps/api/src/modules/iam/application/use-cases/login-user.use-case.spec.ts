@@ -104,6 +104,7 @@ describe('LoginUserUseCase (US-IAM-002)', () => {
         lastName: 'Doe',
         email: 'john@example.com',
         status: 'ACTIVE',
+        role: 'USER',
       });
       expect(result.accessToken).toBe(`access:${USER_ID}:${session!.id}`);
       expect(result.refreshToken).toBe(`refresh:${USER_ID}:${session!.id}`);

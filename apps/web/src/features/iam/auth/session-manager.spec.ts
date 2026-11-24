@@ -16,7 +16,14 @@ const API = 'http://api.test';
 
 function refreshed(accessToken: string, firstName = 'John'): RefreshResponse {
   return {
-    user: { id: 'u-1', firstName, lastName: 'Doe', email: 'john@example.com', status: 'ACTIVE' },
+    user: {
+      id: 'u-1',
+      firstName,
+      lastName: 'Doe',
+      email: 'john@example.com',
+      status: 'ACTIVE',
+      role: 'USER',
+    },
     authentication: { accessToken },
   };
 }

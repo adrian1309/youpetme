@@ -95,6 +95,7 @@ export class RefreshSessionUseCase {
         lastName: account.lastName,
         email: user.email,
         status: user.status,
+        role: user.role,
       },
       accessToken,
       refreshToken,
