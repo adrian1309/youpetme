@@ -30,9 +30,14 @@ export function AppHeader() {
   return (
     <header className="border-b border-border-input bg-surface-muted">
       <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-4 py-3">
-        <Link to="/" className="text-xl font-bold text-brand-primary">
-          {APP_NAME}
-        </Link>
+        <div className="flex flex-wrap items-center gap-6">
+          <Link to="/" className="text-xl font-bold text-brand-primary">
+            {APP_NAME}
+          </Link>
+          <Link to="/animals" className="font-medium text-brand-primary underline">
+            {t('header.catalogue')}
+          </Link>
+        </div>
         {session ? (
           <div className="flex flex-wrap items-center gap-4">
             <p className="text-base text-text">

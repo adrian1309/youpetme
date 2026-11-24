@@ -7,6 +7,8 @@ export interface AuthUser {
   firstName: string;
   lastName: string;
   email: string;
+  /** For route guards only (UX): the API enforces authorization itself. */
+  role: 'USER' | 'ADMIN';
 }
 
 export interface AuthSession {

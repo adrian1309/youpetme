@@ -12,6 +12,11 @@ export function suspendAccount(email: string): void {
   psql(`UPDATE users SET status = 'SUSPENDED' WHERE email = :'email';`, { email });
 }
 
+/** ADMIN accounts are never created by registration; the seed script does this in real life. */
+export function promoteToAdmin(email: string): void {
+  psql(`UPDATE users SET role = 'ADMIN' WHERE email = :'email';`, { email });
+}
+
 /** What logout or a password change will do (TS-IAM-003, TS-IAM-004). */
 export function revokeSessions(email: string): void {
   psql(`UPDATE user_sessions SET status = 'REVOKED' WHERE ${SESSIONS_OF_USER};`, { email });

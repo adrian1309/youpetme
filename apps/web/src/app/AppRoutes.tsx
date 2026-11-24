@@ -1,6 +1,10 @@
 import { Route, Routes } from 'react-router';
 
 import { PlaceholderPage } from '../components/PlaceholderPage';
+import { CataloguePage } from '../features/animals/catalogue/CataloguePage';
+import { AnimalDetailPage } from '../features/animals/detail/AnimalDetailPage';
+import { RegisterAnimalPage } from '../features/animals/register/RegisterAnimalPage';
+import { RequireAdmin } from '../features/animals/register/RequireAdmin';
 import { HomePage } from '../features/iam/home/HomePage';
 import { LoginPage } from '../features/iam/login/LoginPage';
 import { PrivacyPage } from '../features/iam/legal/PrivacyPage';
@@ -21,6 +25,16 @@ export function AppRoutes() {
         <Route path="login" element={<LoginPage />} />
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />
+        <Route path="animals" element={<CataloguePage />} />
+        <Route path="animals/:id" element={<AnimalDetailPage />} />
+        <Route
+          path="admin/animals/new"
+          element={
+            <RequireAdmin>
+              <RegisterAnimalPage />
+            </RequireAdmin>
+          }
+        />
         <Route
           path="*"
           element={<PlaceholderPage titleKey="notFound.title" bodyKey="notFound.body" />}

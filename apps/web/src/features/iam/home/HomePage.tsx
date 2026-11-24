@@ -14,13 +14,21 @@ export function HomePage() {
     <div className="mx-auto w-full max-w-xl px-4 py-8">
       <PageTitle />
       {isAuthenticated ? (
-        <h1 className="text-3xl font-bold text-text">
-          {t(accountCreated ? 'home.accountCreated' : 'home.signedIn')}
-        </h1>
+        <>
+          <h1 className="mb-6 text-3xl font-bold text-text">
+            {t(accountCreated ? 'home.accountCreated' : 'home.signedIn')}
+          </h1>
+          <Link to="/animals" className="font-medium text-brand-primary underline">
+            {t('home.catalogue')}
+          </Link>
+        </>
       ) : (
         <>
           <h1 className="mb-6 text-3xl font-bold text-text">{APP_NAME}</h1>
           <p className="flex flex-wrap gap-6">
+            <Link to="/animals" className="font-medium text-brand-primary underline">
+              {t('home.visitor.catalogue')}
+            </Link>
             <Link to="/register" className="font-medium text-brand-primary underline">
               {t('home.visitor.register')}
             </Link>

@@ -119,12 +119,12 @@ export function createSessionManager({
   async function requestRefresh(): Promise<RefreshOutcome> {
     try {
       const response = await client.post<RefreshResponse>(REFRESH_PATH);
-      const { id, firstName, lastName, email } = response.user;
+      const { id, firstName, lastName, email, role } = response.user;
       return {
         kind: 'renewed',
         session: {
           accessToken: response.authentication.accessToken,
-          user: { id, firstName, lastName, email },
+          user: { id, firstName, lastName, email, role },
         },
       };
     } catch (error) {
