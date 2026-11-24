@@ -38,7 +38,7 @@ const notRenewable = () =>
 
 const signedIn: AuthSession = {
   accessToken: 'old-token',
-  user: { id: 'u-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+  user: { id: 'u-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', role: 'USER' },
 };
 
 /** A fetch that answers each call with the next response factory. */
@@ -90,7 +90,13 @@ describe('SessionManager (TS-IAM-002, ADR-002)', () => {
         status: 'authenticated',
         session: {
           accessToken: 'new-token',
-          user: { id: 'u-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+          user: {
+            id: 'u-1',
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            role: 'USER',
+          },
         },
         expired: false,
       });

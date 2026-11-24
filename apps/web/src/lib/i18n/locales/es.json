@@ -187,16 +187,19 @@
   },
   "header": {
     "signOut": "Cerrar sesión",
-    "signingOut": "Cerrando sesión…"
+    "signingOut": "Cerrando sesión…",
+    "catalogue": "Animales"
   },
   "home": {
     "greeting": "Hola, {{name}}",
     "accountCreated": "Tu cuenta está creada.",
     "visitor": {
       "register": "Crear cuenta",
-      "login": "Iniciar sesión"
+      "login": "Iniciar sesión",
+      "catalogue": "Ver animales en adopción"
     },
-    "signedIn": "Has iniciado sesión."
+    "signedIn": "Has iniciado sesión.",
+    "catalogue": "Ver animales en adopción"
   },
   "configuration": {
     "error": {
@@ -335,5 +338,149 @@
   },
   "session": {
     "restoring": "Recuperando tu sesión…"
+  },
+  "animals": {
+    "species": {
+      "DOG": "Perro",
+      "CAT": "Gato",
+      "OTHER": "Otro"
+    },
+    "size": {
+      "SMALL": "Pequeño",
+      "MEDIUM": "Mediano",
+      "LARGE": "Grande"
+    },
+    "ageGroup": {
+      "PUPPY_KITTEN": "Cachorro",
+      "YOUNG": "Joven",
+      "ADULT": "Adulto",
+      "SENIOR": "Senior"
+    },
+    "temperament": {
+      "CALM": "Tranquilo",
+      "PLAYFUL": "Juguetón",
+      "ENERGETIC": "Enérgico",
+      "SHY": "Tímido",
+      "AFFECTIONATE": "Cariñoso",
+      "INDEPENDENT": "Independiente"
+    },
+    "compatibility": {
+      "children": {
+        "true": "Bien con niños",
+        "false": "Mejor sin niños",
+        "null": "Con niños: no se sabe"
+      },
+      "otherAnimals": {
+        "true": "Bien con otros animales",
+        "false": "Mejor sin otros animales",
+        "null": "Con otros animales: no se sabe"
+      }
+    },
+    "status": {
+      "AVAILABLE": "Disponible",
+      "RESERVED": "Reservado",
+      "ADOPTED": "Adoptado"
+    },
+    "catalogue": {
+      "title": "Animales en adopción",
+      "filters": {
+        "legend": "Filtrar",
+        "species": "Especie",
+        "size": "Tamaño",
+        "ageGroup": "Edad",
+        "any": "Todos",
+        "compatibleWithChildren": "Bien con niños",
+        "compatibleWithOtherAnimals": "Bien con otros animales"
+      },
+      "results": "{{count}} animales",
+      "results_one": "{{count}} animal",
+      "results_other": "{{count}} animales",
+      "loading": "Cargando animales…",
+      "error": "No hemos podido cargar los animales. Vuelve a intentarlo en unos minutos.",
+      "empty": {
+        "title": "Ningún animal encaja con estos filtros",
+        "body": "Prueba a quitar algún filtro para ver más animales.",
+        "clear": "Quitar filtros"
+      },
+      "pagination": {
+        "label": "Páginas",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "page": "Página {{page}} de {{pages}}"
+      },
+      "viewDetail": "Ver ficha de {{name}}",
+      "addAnimal": "Registrar animal"
+    },
+    "detail": {
+      "loading": "Cargando la ficha…",
+      "error": "No hemos podido cargar la ficha. Vuelve a intentarlo en unos minutos.",
+      "notFound": {
+        "title": "Este animal no existe",
+        "body": "Puede que la dirección esté mal o que la ficha ya no exista."
+      },
+      "notAvailable": "Este animal ya no está disponible para adopción ({{status}}).",
+      "photo": "Foto {{index}} de {{name}}",
+      "characteristics": "Características",
+      "breed": "Raza",
+      "temperament": "Carácter",
+      "compatibility": "Convivencia",
+      "careNotes": "Salud y cuidados",
+      "back": "Volver al catálogo"
+    },
+    "register": {
+      "title": "Registrar un animal",
+      "fields": {
+        "name": {
+          "label": "Nombre"
+        },
+        "species": {
+          "label": "Especie"
+        },
+        "size": {
+          "label": "Tamaño"
+        },
+        "ageGroup": {
+          "label": "Edad"
+        },
+        "choose": "Elige una opción",
+        "photoUrl": {
+          "label": "URL de la foto",
+          "hint": "Dirección https de una imagen ya publicada"
+        },
+        "breed": {
+          "label": "Raza (opcional)"
+        },
+        "temperament": {
+          "legend": "Carácter (opcional)"
+        },
+        "compatibleWithChildren": {
+          "label": "¿Se lleva bien con niños?"
+        },
+        "compatibleWithOtherAnimals": {
+          "label": "¿Se lleva bien con otros animales?"
+        },
+        "compatibility": {
+          "unknown": "No se sabe",
+          "yes": "Sí",
+          "no": "No"
+        },
+        "careNotes": {
+          "label": "Salud y cuidados (opcional)"
+        }
+      },
+      "errors": {
+        "required": "Este campo es obligatorio.",
+        "choose": "Elige una opción.",
+        "tooLong": "Es demasiado largo (máximo {{max}} caracteres).",
+        "photoUrl": "Escribe una dirección https válida, por ejemplo https://ejemplo.com/foto.jpg.",
+        "invalid": "Revisa este campo.",
+        "forbidden": "Solo un administrador puede registrar animales.",
+        "generic": "No hemos podido registrar el animal. Vuelve a intentarlo en unos minutos."
+      },
+      "actions": {
+        "submit": "Registrar animal",
+        "submitting": "Registrando…"
+      }
+    }
   }
 }

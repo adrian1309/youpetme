@@ -10,7 +10,13 @@ import { AppRoutes } from './AppRoutes';
 
 const session = {
   accessToken: 'access-token-value',
-  user: { id: 'u-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+  user: {
+    id: 'u-1',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    role: 'USER' as const,
+  },
 };
 
 function SignedIn({ children }: { children: ReactNode }) {
@@ -340,7 +346,13 @@ describe('AppRoutes', () => {
 
   describe('session restoration on start-up (US-IAM-002, scenarios 5 and 6)', () => {
     const refreshed = {
-      user: { id: 'u-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+      user: {
+        id: 'u-1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        role: 'USER' as const,
+      },
       authentication: { accessToken: 'restored-token' },
     };
 
@@ -431,6 +443,37 @@ describe('AppRoutes', () => {
       expect(
         await screen.findByRole('heading', { level: 1, name: 'Iniciar sesión' }),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe('catalogue links (SCRUM-12)', () => {
+    it('offers the catalogue from the home and the header to a visitor', () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
+
+      expect(screen.getByRole('link', { name: 'Ver animales en adopción' })).toHaveAttribute(
+        'href',
+        '/animals',
+      );
+      expect(
+        within(screen.getByRole('banner')).getByRole('link', { name: 'Animales' }),
+      ).toHaveAttribute('href', '/animals');
+    });
+
+    it('offers the catalogue from the home and the header once signed in', async () => {
+      renderWithProviders(
+        <SignedIn>
+          <AppRoutes />
+        </SignedIn>,
+        { initialEntries: ['/'] },
+      );
+
+      expect(await screen.findByRole('link', { name: 'Ver animales en adopción' })).toHaveAttribute(
+        'href',
+        '/animals',
+      );
+      expect(
+        within(screen.getByRole('banner')).getByRole('link', { name: 'Animales' }),
+      ).toHaveAttribute('href', '/animals');
     });
   });
 });
