@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { Link, Navigate } from 'react-router';
+import { Link, Navigate, useLocation } from 'react-router';
 
+import { Notice } from '../../../components/Notice';
 import { PageTitle } from '../../../components/PageTitle';
 import { useAuth } from '../auth/auth-state';
 import { LoginForm } from './LoginForm';
@@ -11,6 +12,10 @@ const TITLE_ID = 'login-title';
 export function LoginPage() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  // Set by /reset-password after a successful reset (TS-IAM-004, D9).
+  const passwordReset =
+    (location.state as { passwordReset?: unknown } | null)?.passwordReset === true;
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -22,6 +27,11 @@ export function LoginPage() {
       <h1 id={TITLE_ID} className="mb-6 text-3xl font-bold text-text">
         {t('login.title')}
       </h1>
+      {passwordReset ? (
+        <div className="mb-6">
+          <Notice focusOnMount>{t('login.passwordReset')}</Notice>
+        </div>
+      ) : null}
       <LoginForm titleId={TITLE_ID} />
       <p className="mt-6 text-base text-text">
         <Link to="/forgot-password" className="font-medium text-brand-primary underline">

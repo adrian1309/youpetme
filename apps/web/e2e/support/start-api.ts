@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { removePostgres, startPostgres } from './compose.ts';
 import { API_ENV } from './env.ts';
+import { resetOutbox } from './outbox-dir.ts';
 
 /**
  * Playwright's second webServer: a fresh database with the committed migrations, then the built
@@ -24,6 +25,8 @@ function removePostgresQuietly(): void {
 try {
   // A forcibly killed run may have left its database behind.
   removePostgres();
+  // Emails of an earlier run must not be picked up by this one.
+  resetOutbox();
   startPostgres();
   execFileSync(
     process.execPath,

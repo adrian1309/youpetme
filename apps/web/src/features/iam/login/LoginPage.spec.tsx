@@ -64,6 +64,22 @@ describe('LoginPage (/login, US-IAM-002)', () => {
     await expectNoAxeViolations(container, { page: true });
   });
 
+  it('confirms a password just reset, and only then (TS-IAM-004, D9)', async () => {
+    const { unmount } = renderWithProviders(<AppRoutes />, {
+      initialEntries: [{ pathname: '/login', state: { passwordReset: true } }],
+    });
+
+    const notice = screen.getByText('Tu contraseña se ha actualizado. Inicia sesión con la nueva.');
+    expect(notice).toBeVisible();
+    expect(notice.closest('[role="status"]')).not.toBeNull();
+    unmount();
+
+    renderLogin();
+    expect(
+      screen.queryByText('Tu contraseña se ha actualizado. Inicia sesión con la nueva.'),
+    ).not.toBeInTheDocument();
+  });
+
   describe('Scenario 1 — Given an ACTIVE account, When the right credentials are sent', () => {
     it('Then it signs in, lands on the authenticated home and greets the user', async () => {
       const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, signedIn));
