@@ -42,22 +42,23 @@ We use **Option 2**.
 - `statusCode` and `error` are the HTTP status and its name.
 - `message` is a safe, generic text. The client never shows it directly: user-facing copy comes from the client's own translation files.
 - `details` lists the per-field validation issues. Each one has exactly three properties: `field`, `code` (one of the validation codes below) and `message` (an English text for developers, never shown to the user). Errors that are not validation errors carry no `details`.
-- `code` is optional, stable and meant for programs. It appears only on the three business errors listed below. Every other error, such as the `409` of a duplicated email, the `403` of the `Origin` guard or the `415`, has no `code` and is identified by its status.
+- `code` is optional, stable and meant for programs. It appears only on the four business errors listed below. Every other error, such as the `409` of a duplicated email, the `403` of the `Origin` guard or the `415`, has no `code` and is identified by its status.
 
 ### Stable codes
 
 | Kind | Codes |
 |---|---|
 | Validation (inside `details`) | `REQUIRED`, `INVALID_FORMAT`, `INVALID_TYPE`, `TOO_SHORT`, `TOO_LONG`, `MISMATCH`, `MUST_BE_TRUE` |
-| Business (`code`) | `INVALID_CREDENTIALS`, `ACCOUNT_NOT_AVAILABLE`, `SESSION_NOT_RENEWABLE` |
+| Business (`code`) | `INVALID_CREDENTIALS`, `ACCOUNT_NOT_AVAILABLE`, `SESSION_NOT_RENEWABLE`, `RESET_TOKEN_INVALID` |
 
 | Business code | Status | Endpoint and case |
 |---|---|---|
 | `INVALID_CREDENTIALS` | `401` | Login: unknown email or wrong password, with exactly the same body in both cases. |
 | `ACCOUNT_NOT_AVAILABLE` | `403` | Login: the account is not `ACTIVE` (returned only if the password is correct). Refresh: the account is not `ACTIVE`. |
 | `SESSION_NOT_RENEWABLE` | `401` | Refresh: no cookie, invalid or expired token, unknown, revoked or expired session, a session past its absolute lifetime, or an already rotated token. |
+| `RESET_TOKEN_INVALID` | `400` | Password reset confirm: unknown, used, expired or superseded link, or account not `ACTIVE`. |
 
-The codes live in `packages/contracts` (`ValidationErrorCode` and `ErrorCode`), shared by the API and the web client. `ErrorCode` accepts only the three business codes above.
+The codes live in `packages/contracts` (`ValidationErrorCode` and `ErrorCode`), shared by the API and the web client. `ErrorCode` accepts only the four business codes above.
 
 ### Rules
 
@@ -89,4 +90,5 @@ Rejected because of the `403` ambiguity above and because it ties client behavio
 - ARCH-002 — Application Stack (Validation and HTTP errors)
 - TS-IAM-001 — User Registration
 - TS-IAM-002 — Login
+- TS-IAM-004 — Password Recovery
 - ADR-002 — Authentication Strategy

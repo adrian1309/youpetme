@@ -162,7 +162,7 @@ pnpm build              # build de producción
 
 Los scripts de cada workspace se ejecutan con `pnpm --filter <nombre> <script>` (workspaces: `@youpetme/web`, `@youpetme/api`, `@youpetme/contracts`, `@youpetme/config`).
 
-Aún no disponibles: Testcontainers para los tests de integración y los scripts de Prisma (se añaden con la primera historia de persistencia). No asumir que existe ningún otro script sin comprobar `package.json`/`turbo.json` primero.
+Los tests de integración usan Testcontainers (necesita Docker), y la API tiene scripts de Prisma (`prisma:migrate`, `prisma:deploy`). No asumir que existe ningún script que no figure aquí sin comprobar `package.json`/`turbo.json` primero.
 
 ### Testing manual de la API
 

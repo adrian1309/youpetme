@@ -36,7 +36,7 @@ We will use **Option 1 — in-process dispatch after commit**, behind an `EventP
 - Use cases call the port only after the transaction has committed; events are never published for a rolled-back operation.
 - Handlers are isolated: a handler failure is logged and never fails or rolls back the originating request.
 - Events never carry secrets, tokens, hashes or passwords (as already required by each specification).
-- Events must not be used for flows that must not be lost. In particular, sending the password-reset email in TS-IAM-004 is a direct call through the `EmailSender` port (ADR-014), not an event consumer.
+- Events must not be used for flows that must not be lost. In particular, sending the password-reset email in TS-IAM-004 is a direct call through the `EmailSender` port (ADR-014), not an event consumer. It runs after the response through a `BackgroundTasks` port, so response times do not reveal whether an account exists; a failure is logged and the user can request a new link.
 
 This is the simplest option that satisfies the current specifications and does not change if a different delivery mechanism is adopted later, because only the port's adapter would be replaced.
 
