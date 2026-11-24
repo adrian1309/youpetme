@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderResult } from '@testing-library/react';
-import type { ReactElement } from 'react';
+import type { ComponentProps, ReactElement } from 'react';
 import { MemoryRouter } from 'react-router';
 
 import { AuthProvider } from '../features/iam/auth/auth-provider';
@@ -21,7 +21,8 @@ export function jsonResponse(status: number, body: unknown): Response {
 interface Options {
   /** The fake fetch behind the API client. */
   fetch?: typeof fetch;
-  initialEntries?: string[];
+  /** Paths, or locations with history state (e.g. after a reload). */
+  initialEntries?: ComponentProps<typeof MemoryRouter>['initialEntries'];
   /**
    * `visitor` (default) starts signed out with no start-up refresh; `restore` starts like the
    * real app, restoring the session through the fake fetch.

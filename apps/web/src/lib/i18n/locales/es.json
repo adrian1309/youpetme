@@ -111,6 +111,78 @@
       "network": "No hemos podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
       "reviewFields": "Revisa los datos del formulario e inténtalo de nuevo.",
       "generic": "No hemos podido iniciar sesión. Inténtalo de nuevo."
+    },
+    "passwordReset": "Tu contraseña se ha actualizado. Inicia sesión con la nueva."
+  },
+  "forgotPassword": {
+    "title": "Recupera tu contraseña",
+    "intro": "Escribe el email de tu cuenta y te enviaremos un enlace para crear una contraseña nueva.",
+    "fields": {
+      "email": {
+        "label": "Correo electrónico"
+      }
+    },
+    "actions": {
+      "submit": "Enviar enlace",
+      "submitting": "Enviando enlace…"
+    },
+    "sent": "Si hay una cuenta con ese email, te hemos enviado un enlace. Caduca en 2 horas. Si no lo ves en unos minutos, revisa la carpeta de spam o vuelve a intentarlo.",
+    "backToLogin": "Volver a iniciar sesión",
+    "errors": {
+      "email": {
+        "required": "Escribe tu correo electrónico.",
+        "invalid": "Escribe un correo válido, por ejemplo nombre@ejemplo.com.",
+        "tooLong": "El correo debe tener {{emailMax}} caracteres como máximo."
+      },
+      "requestRejected": "No hemos podido enviar tu solicitud. Recarga la página e inténtalo de nuevo.",
+      "server": "Algo ha fallado por nuestra parte. Inténtalo de nuevo en unos minutos.",
+      "network": "No hemos podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+      "reviewFields": "Revisa los datos del formulario e inténtalo de nuevo.",
+      "generic": "No hemos podido enviar el enlace. Inténtalo de nuevo."
+    }
+  },
+  "resetPassword": {
+    "title": "Crea una contraseña nueva",
+    "intro": "Elige una contraseña nueva para tu cuenta. Después tendrás que iniciar sesión con ella.",
+    "fields": {
+      "password": {
+        "label": "Nueva contraseña",
+        "requirement": "Al menos {{min}} caracteres",
+        "met": "cumplido",
+        "pending": "pendiente",
+        "show": "Mostrar contraseña",
+        "hide": "Ocultar contraseña"
+      },
+      "confirmPassword": {
+        "label": "Confirmar contraseña",
+        "show": "Mostrar confirmación de contraseña",
+        "hide": "Ocultar confirmación de contraseña"
+      }
+    },
+    "actions": {
+      "submit": "Guardar contraseña",
+      "submitting": "Guardando contraseña…"
+    },
+    "invalidLink": {
+      "title": "Este enlace ya no es válido",
+      "body": "Puede haber caducado o haberse usado ya.",
+      "requestNew": "Pedir un enlace nuevo"
+    },
+    "errors": {
+      "password": {
+        "required": "Escribe una contraseña nueva.",
+        "tooShort": "La contraseña debe tener al menos {{min}} caracteres.",
+        "tooLong": "La contraseña debe tener {{max}} caracteres como máximo."
+      },
+      "confirmPassword": {
+        "required": "Repite la contraseña para confirmarla.",
+        "mismatch": "Las contraseñas deben coincidir. Revisa que las dos sean iguales."
+      },
+      "requestRejected": "No hemos podido enviar tu solicitud. Recarga la página e inténtalo de nuevo.",
+      "server": "Algo ha fallado por nuestra parte. Inténtalo de nuevo en unos minutos.",
+      "network": "No hemos podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
+      "reviewFields": "Revisa los datos del formulario e inténtalo de nuevo.",
+      "generic": "No hemos podido guardar la contraseña. Inténtalo de nuevo."
     }
   },
   "header": {
@@ -137,9 +209,6 @@
     "body": "No hemos encontrado la página que buscas. Revisa la dirección o vuelve al inicio."
   },
   "placeholder": {
-    "forgotPassword": {
-      "title": "Recuperar contraseña"
-    },
     "body": "Esta página estará disponible pronto.",
     "back": "Volver al inicio"
   },

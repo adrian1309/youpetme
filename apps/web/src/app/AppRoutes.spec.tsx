@@ -197,24 +197,17 @@ describe('AppRoutes', () => {
     });
   });
 
-  describe('provisional page that the password recovery story will replace', () => {
-    it('/forgot-password shows a titled placeholder with a way back', async () => {
-      renderWithProviders(<AppRoutes />, { initialEntries: ['/forgot-password'] });
+  describe('password recovery (TS-IAM-004)', () => {
+    it.each([
+      ['/forgot-password', 'Recupera tu contraseña'],
+      ['/reset-password?token=some-token', 'Crea una contraseña nueva'],
+    ])('%s shows its form inside the page layout', (path, title) => {
+      renderWithProviders(<AppRoutes />, { initialEntries: [path] });
 
-      expect(
-        screen.getByRole('heading', { level: 1, name: 'Recuperar contraseña' }),
-      ).toBeInTheDocument();
-      expect(screen.getByText('Esta página estará disponible pronto.')).toBeVisible();
-      expect(screen.getByRole('link', { name: 'Volver al inicio' })).toHaveAttribute('href', '/');
-      await waitFor(() => expect(document.title).toBe('Recuperar contraseña · YouPetMe'));
-    });
-
-    it('has no accessibility violations as a whole page', async () => {
-      const { container } = renderWithProviders(<AppRoutes />, {
-        initialEntries: ['/forgot-password'],
-      });
-
-      await expectNoAxeViolations(container, { page: true });
+      expect(screen.getByRole('main')).toContainElement(
+        screen.getByRole('heading', { level: 1, name: title }),
+      );
+      expect(screen.getByRole('main')).toContainElement(screen.getByRole('form'));
     });
   });
 

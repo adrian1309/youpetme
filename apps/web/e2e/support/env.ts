@@ -1,3 +1,6 @@
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 /**
  * The whole E2E environment, passed explicitly so nothing comes from the development .env
  * (ARCH-002: E2E tests never target a development database). Every value is fictitious and only
@@ -18,6 +21,13 @@ const POSTGRES_PORT = '5433';
 
 export const POSTGRES_ENV = { POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, POSTGRES_PORT };
 
+/**
+ * Where the API writes the emails it would send (EMAIL_DELIVERY=file, ADR-014), so a test can
+ * read the password reset link. Emptied when the stack starts and removed when it stops. The API
+ * refuses this delivery mode in production.
+ */
+export const EMAIL_OUTBOX_DIR = join(tmpdir(), 'youpetme-e2e-outbox');
+
 export const API_ENV = {
   // Not `production`: app-config.ts rejects COOKIE_SECURE=false there, and the readiness URL below
   // is only served outside production.
@@ -33,6 +43,8 @@ export const API_ENV = {
   // The stack runs over http://localhost.
   COOKIE_SECURE: 'false',
   COOKIE_SAMESITE: 'Strict',
+  EMAIL_DELIVERY: 'file',
+  EMAIL_OUTBOX_DIR,
 };
 
 /** There is no health endpoint yet; Swagger UI answers once the API is listening. */
