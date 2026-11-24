@@ -160,7 +160,7 @@ pnpm build              # production build
 
 Per-workspace scripts can be run with `pnpm --filter <name> <script>` (workspaces: `@youpetme/web`, `@youpetme/api`, `@youpetme/contracts`, `@youpetme/config`).
 
-Not yet available: Testcontainers for integration tests, and Prisma scripts (added with the first persistence story). Do not assume any other script exists without checking `package.json`/`turbo.json` first.
+Integration tests use Testcontainers (needs Docker), and the API has Prisma scripts (`prisma:migrate`, `prisma:deploy`). Do not assume any script not listed here exists without checking `package.json`/`turbo.json` first.
 
 ### Manual API testing
 

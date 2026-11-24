@@ -127,7 +127,7 @@ The expiry of the session, including its absolute lifetime, is checked before re
   - `SameSite` is `Strict` by default (`COOKIE_SAMESITE`). `None` is accepted only together with `Secure`.
 - No CSRF token is used. CSRF is mitigated by three measures:
   - `SameSite=Strict` keeps the browser from sending the cookie on cross-site requests.
-  - The register, login and refresh endpoints (guarded by `TrustedBrowserRequestGuard`) reject with `403` a request whose `Origin` header is present and differs from `WEB_ORIGIN`. A request without `Origin` (curl, tests, non-browser clients) is accepted.
+  - The register, login, refresh, logout and password-reset endpoints (guarded by `TrustedBrowserRequestGuard`) reject with `403` a request whose `Origin` header is present and differs from `WEB_ORIGIN`. A request without `Origin` (curl, tests, non-browser clients) is accepted.
   - The same endpoints reject with `415` a request whose `Content-Type` is present and is not `application/json` (parameters such as `charset` are ignored). A request without `Content-Type`, such as the body-less refresh, is accepted.
   - Read-only public endpoints, such as the terms version, are not covered by the guard.
 - In development the web server runs on a fixed port (5173, `strictPort`). Another port would make the `Origin` guard reject the requests.
@@ -195,7 +195,7 @@ Added 2026-11-10, from the implementation of TS-IAM-003:
 
 ## Password Changes
 
-Changing a password will revoke existing sessions to reduce the risk of unauthorized access.
+A password reset (TS-IAM-004) sets every `ACTIVE` `UserSession` of the user to `REVOKED` in the same transaction that stores the new password. Access tokens already issued stay valid until they expire (Access Token Guard). The user is not signed in automatically.
 
 ---
 
@@ -251,3 +251,4 @@ Rejected because token revocation and security become more difficult when tokens
 - **2026-11-06:** added Token Design, Refresh Token Reuse, Cookie and CSRF Policy and Client-side Refresh Coordination, from the implementation of TS-IAM-002 (login and refresh). The API error format is decided in ADR-017.
 - **2026-11-10:** added Access Token Guard (stateless) and the Logout rules, and the cross-tab logout in Client-side Refresh Coordination, from the implementation of TS-IAM-003.
 - **2026-11-11:** added the absolute session lifetime (`SESSION_ABSOLUTE_EXPIRATION`, 30 days) to Token Design, Token Lifetimes, Refresh Token Reuse and Access Token Guard, from SCRUM-54.
+- **2026-11-24:** guard coverage extended to logout and password reset, and the password reset rule added to Password Changes, from the implementation of TS-IAM-004.

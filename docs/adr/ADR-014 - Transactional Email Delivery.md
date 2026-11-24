@@ -34,11 +34,11 @@ Running or configuring a self-managed SMTP relay, avoiding any third-party email
 
 We will use:
 
-**Option 1 — Resend**, accessed behind a new application-level port (e.g. `EmailSender`), following the same hexagonal pattern already used for persistence, AI, and media storage. `Notifications` (already anticipated as a cross-cutting module, ARCH-001) owns this port and its Resend-backed infrastructure adapter; IAM's `RequestPasswordReset`/`ResetPassword` use cases depend only on the port, never on Resend directly.
+**Option 1 — Resend**, called over its REST API with `fetch` (no SDK) and accessed behind a new application-level port (e.g. `EmailSender`), following the same hexagonal pattern already used for persistence, AI, and media storage. `Notifications` (already anticipated as a cross-cutting module, ARCH-001) owns this port and its Resend-backed infrastructure adapter; IAM's `RequestPasswordReset`/`ResetPassword` use cases depend only on the port, never on Resend directly.
 
 **Local development and automated tests do not call Resend.** A different infrastructure adapter implementing the same `EmailSender` port is used instead:
 - **Local development**: a console/log adapter that prints the email content (including the reset link) instead of sending it, so the flow is testable without any account or network call.
-- **Integration/E2E tests**: a fake/in-memory adapter, or a local SMTP catcher (e.g. Mailpit) if testing actual email formatting/delivery mechanics is later judged necessary — not required for the MVP's test scope.
+- **Integration/E2E tests**: a fake/in-memory adapter, or a local SMTP catcher (e.g. Mailpit) if testing actual email formatting/delivery mechanics is later judged necessary — not required for the MVP's test scope. Integration tests use the in-memory adapter. E2E tests use a file adapter (`EMAIL_DELIVERY=file`) that writes each email as a JSON file, so the test can read the reset link. The configuration rejects any delivery other than `resend` when `NODE_ENV=production`.
 
 ## Consequences
 
@@ -46,7 +46,7 @@ We will use:
 
 - Unblocks TS-IAM-004 with a concrete, low-friction provider; free tier is more than sufficient for a TFM-scale MVP.
 - The `EmailSender` port keeps IAM's use cases free of any dependency on Resend specifically, consistent with AGENTS.md's dependency direction rule and this project's established pattern for external providers.
-- React Email's fit with the existing React/TypeScript stack (ADR-007) avoids introducing a second templating technology just for emails.
+- The MVP sends plain text plus minimal HTML, so no templating technology is added just for emails. React Email, which would fit the React/TypeScript stack (ADR-007), is not adopted for now.
 - Avoids AWS account setup and its sandbox-mode approval friction (Option 3), consistent with this project's existing preference against a full cloud provider (ARCH-002 — Deployment candidates).
 - Local development and tests never depend on a real email account or network access, keeping the developer loop fast and CI reliable.
 
