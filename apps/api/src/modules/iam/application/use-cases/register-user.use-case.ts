@@ -95,6 +95,7 @@ export class RegisterUserUseCase {
         lastName: profile.lastName,
         email: user.email,
         status: user.status,
+        role: user.role,
       },
       accessToken,
       refreshToken,

@@ -129,7 +129,14 @@ describe('POST /api/v1/auth/login and /api/v1/auth/refresh (PostgreSQL)', () => 
 
         const body = response.body as LoginResponse;
         expect(body).toEqual({
-          user: { id: userId, firstName: 'John', lastName: 'Doe', email: EMAIL, status: 'ACTIVE' },
+          user: {
+            id: userId,
+            firstName: 'John',
+            lastName: 'Doe',
+            email: EMAIL,
+            status: 'ACTIVE',
+            role: 'USER',
+          },
           authentication: { accessToken: expect.any(String) },
         });
         expect(JSON.stringify(body)).not.toMatch(/refresh|hash|password/i);
@@ -271,7 +278,14 @@ describe('POST /api/v1/auth/login and /api/v1/auth/refresh (PostgreSQL)', () => 
 
         const body = response.body as RefreshResponse;
         expect(body).toEqual({
-          user: { id: userId, firstName: 'John', lastName: 'Doe', email: EMAIL, status: 'ACTIVE' },
+          user: {
+            id: userId,
+            firstName: 'John',
+            lastName: 'Doe',
+            email: EMAIL,
+            status: 'ACTIVE',
+            role: 'USER',
+          },
           authentication: { accessToken: expect.any(String) },
         });
         expect(response.headers['cache-control']).toBe('no-store');

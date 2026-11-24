@@ -21,6 +21,7 @@ const refreshed: RefreshResponse = {
     lastName: 'Doe',
     email: 'john@example.com',
     status: 'ACTIVE',
+    role: 'USER',
   },
   authentication: { accessToken: 'restored-token' },
 };

@@ -102,6 +102,7 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
         lastName: 'Doe',
         email: 'john@example.com',
         status: 'ACTIVE',
+        role: 'USER',
       });
       expect(Object.keys(body)).toEqual(['user', 'authentication']);
       expect(Object.keys(body.authentication)).toEqual(['accessToken']);

@@ -29,6 +29,8 @@ export interface RegisterResponse {
     lastName: string;
     email: string;
     status: 'ACTIVE';
+    /** Always USER: ADMIN accounts are never created by registration. */
+    role: 'USER' | 'ADMIN';
   };
   authentication: {
     accessToken: string;

@@ -17,6 +17,7 @@ const signedIn: LoginResponse = {
     lastName: 'Ruiz',
     email: 'ana@example.com',
     status: 'ACTIVE',
+    role: 'USER',
   },
   authentication: { accessToken: 'access-token-value' },
 };

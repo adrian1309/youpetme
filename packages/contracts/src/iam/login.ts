@@ -12,6 +12,8 @@ export interface AuthenticatedUser {
   lastName: string;
   email: string;
   status: 'ACTIVE';
+  /** For the client's route guards only; the API enforces authorization on its own. */
+  role: 'USER' | 'ADMIN';
 }
 
 /** 200 body. The refresh token is only ever delivered as an HttpOnly cookie. */
