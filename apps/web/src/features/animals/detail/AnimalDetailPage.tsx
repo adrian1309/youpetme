@@ -7,6 +7,7 @@ import { Alert } from '../../../components/Alert';
 import { PageTitle } from '../../../components/PageTitle';
 import { useApiClient } from '../../../lib/http/api-client-context';
 import { ApiError } from '../../../lib/http/api-error';
+import { AdoptionRequestSection } from '../../adoptions/request/AdoptionRequestSection';
 import { ANIMALS_PATH, Tag } from '../animal-tags';
 
 /** `/animals/:id`: public detail of an animal, in any status (SCRUM-13). */
@@ -85,6 +86,8 @@ function AnimalDetailView({ animal }: { animal: AnimalDetail }) {
           </span>
         </p>
       ) : null}
+
+      <AdoptionRequestSection animal={animal} />
 
       <ul className="grid gap-4 sm:grid-cols-2">
         {animal.photoUrls.map((url, index) => (

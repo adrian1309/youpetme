@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router';
 
 import { PlaceholderPage } from '../components/PlaceholderPage';
+import { AdoptionRequestsPage } from '../features/adoptions/admin/AdoptionRequestsPage';
 import { CataloguePage } from '../features/animals/catalogue/CataloguePage';
 import { AnimalDetailPage } from '../features/animals/detail/AnimalDetailPage';
 import { RegisterAnimalPage } from '../features/animals/register/RegisterAnimalPage';
@@ -32,6 +33,14 @@ export function AppRoutes() {
           element={
             <RequireAdmin>
               <RegisterAnimalPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="admin/adoption-requests"
+          element={
+            <RequireAdmin>
+              <AdoptionRequestsPage />
             </RequireAdmin>
           }
         />
