@@ -25,7 +25,11 @@ export type ErrorCode =
   | 'ACCOUNT_NOT_AVAILABLE'
   | 'SESSION_NOT_RENEWABLE'
   /** Password reset link unknown, used, expired or superseded, or its account not ACTIVE. */
-  | 'RESET_TOKEN_INVALID';
+  | 'RESET_TOKEN_INVALID'
+  /** 409: the animal is not AVAILABLE (creating or approving an adoption request). */
+  | 'ANIMAL_NOT_AVAILABLE'
+  /** 409: the user already has a PENDING or APPROVED request for this animal. */
+  | 'ADOPTION_REQUEST_ACTIVE';
 
 /** Error body returned by every endpoint; never contains internal details. */
 export interface ErrorResponse {
