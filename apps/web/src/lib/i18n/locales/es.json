@@ -188,7 +188,8 @@
   "header": {
     "signOut": "Cerrar sesión",
     "signingOut": "Cerrando sesión…",
-    "catalogue": "Animales"
+    "catalogue": "Animales",
+    "adoptionRequests": "Solicitudes"
   },
   "home": {
     "greeting": "Hola, {{name}}",
@@ -480,6 +481,80 @@
       "actions": {
         "submit": "Registrar animal",
         "submitting": "Registrando…"
+      }
+    }
+  },
+  "adoptions": {
+    "request": {
+      "open": "Solicitar adopción",
+      "title": "Solicitar la adopción de {{name}}",
+      "message": {
+        "label": "Mensaje para el refugio (opcional)",
+        "hint": "Cuéntanos por qué quieres adoptar y cómo es tu casa. Hasta {{max}} caracteres."
+      },
+      "submit": "Enviar solicitud",
+      "submitting": "Enviando solicitud…",
+      "cancel": "Cancelar",
+      "sent": "Hemos recibido tu solicitud para adoptar a {{name}}. El refugio la revisará y se pondrá en contacto contigo.",
+      "errors": {
+        "active": "Ya tienes una solicitud activa para este animal.",
+        "tooLong": "El mensaje puede tener como máximo {{max}} caracteres.",
+        "generic": "No hemos podido enviar la solicitud. Vuelve a intentarlo en unos minutos."
+      },
+      "adminLink": "Ver las solicitudes de adopción de {{name}}"
+    },
+    "status": {
+      "PENDING": "Pendiente",
+      "APPROVED": "Aprobada",
+      "REJECTED": "Rechazada",
+      "COMPLETED": "Completada",
+      "CANCELLED": "Cancelada"
+    },
+    "admin": {
+      "title": "Solicitudes de adopción",
+      "filters": {
+        "status": "Estado",
+        "any": "Todos"
+      },
+      "animalFilter": "Solo se muestran las solicitudes de un animal.",
+      "showAll": "Ver todas las solicitudes",
+      "loading": "Cargando las solicitudes…",
+      "error": "No hemos podido cargar las solicitudes. Vuelve a intentarlo en unos minutos.",
+      "empty": "No hay solicitudes con estos filtros.",
+      "results_one": "{{count}} solicitud",
+      "results_other": "{{count}} solicitudes",
+      "item": {
+        "title": "Solicitud para {{name}}",
+        "applicant": "Solicitante",
+        "createdAt": "Enviada el {{date}}",
+        "decidedAt": "Decidida el {{date}}",
+        "status": "Estado: {{status}}",
+        "noMessage": "Sin mensaje.",
+        "animalStatus": "Animal: {{status}}"
+      },
+      "actions": {
+        "approve": "Aprobar",
+        "reject": "Rechazar",
+        "complete": "Completar adopción",
+        "cancel": "Cancelar aprobación",
+        "label": "{{action}} la solicitud de {{applicant}} para {{name}}"
+      },
+      "done": {
+        "approve": "Solicitud aprobada. {{name}} queda reservado.",
+        "reject": "Solicitud rechazada. {{name}} sigue disponible.",
+        "complete": "Adopción completada. {{name}} ya está adoptado.",
+        "cancel": "Aprobación cancelada. {{name}} vuelve a estar disponible."
+      },
+      "errors": {
+        "notAvailable": "No se puede aprobar: el animal ya no está disponible. Hemos actualizado la lista.",
+        "changed": "Esta solicitud ha cambiado mientras tanto. Hemos actualizado la lista.",
+        "generic": "No hemos podido completar la acción. Vuelve a intentarlo en unos minutos."
+      },
+      "pagination": {
+        "label": "Páginas de solicitudes",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "page": "Página {{page}} de {{pages}}"
       }
     }
   }

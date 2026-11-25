@@ -26,7 +26,7 @@ const LOGIN_PATH = '/api/v1/auth/login';
 /** Fields in the order they appear on the page, which is the order focus moves through errors. */
 const FIELD_ORDER: LoginField[] = ['email', 'password'];
 
-export function LoginForm({ titleId }: { titleId: string }) {
+export function LoginForm({ titleId, redirectTo = '/' }: { titleId: string; redirectTo?: string }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { signIn } = useAuth();
@@ -99,7 +99,7 @@ export function LoginForm({ titleId }: { titleId: string }) {
         accessToken: response.authentication.accessToken,
         user: { id, firstName, lastName, email, role },
       });
-      void navigate('/', { replace: true });
+      void navigate(redirectTo, { replace: true });
     } catch (error) {
       const mapped = mapLoginError(error);
       for (const [name, key] of Object.entries(mapped.fieldErrors)) {

@@ -116,6 +116,37 @@ describe('LoginPage (/login, US-IAM-002)', () => {
     });
   });
 
+  describe('return to the page that sent the user to log in (SCRUM-14)', () => {
+    const fromAnimal = [{ pathname: '/login', state: { from: '/animals/a-1' } }];
+
+    it('goes back to that page after signing in', async () => {
+      const fetchMock = vi.fn<typeof fetch>(async (input) =>
+        String(input).endsWith('/api/v1/auth/login')
+          ? jsonResponse(200, signedIn)
+          : jsonResponse(404, { statusCode: 404, error: 'Not Found', message: 'x' }),
+      );
+      renderWithProviders(<AppRoutes />, { initialEntries: fromAnimal, fetch: fetchMock });
+
+      await fillAndSubmit();
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Este animal no existe' }),
+      ).toBeInTheDocument();
+      expect(String(fetchMock.mock.calls[1]![0])).toContain('/api/v1/animals/a-1');
+    });
+
+    it('ignores a target that is not a path of this app', async () => {
+      renderWithProviders(<AppRoutes />, {
+        initialEntries: [{ pathname: '/login', state: { from: '//evil.example' } }],
+        fetch: vi.fn().mockResolvedValue(jsonResponse(200, signedIn)),
+      });
+
+      await fillAndSubmit();
+
+      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+    });
+  });
+
   describe('Scenario 2 — Given wrong credentials', () => {
     it('Then it shows the same generic message for an unknown email and a wrong password', async () => {
       const invalid = () =>

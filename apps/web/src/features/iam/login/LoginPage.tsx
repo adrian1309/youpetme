@@ -5,10 +5,14 @@ import { Notice } from '../../../components/Notice';
 import { PageTitle } from '../../../components/PageTitle';
 import { useAuth } from '../auth/auth-state';
 import { LoginForm } from './LoginForm';
+import { returnPath } from './return-path';
 
 const TITLE_ID = 'login-title';
 
-/** `/login` (TS-IAM-002). Someone already signed in goes to the home instead. */
+/**
+ * `/login` (TS-IAM-002). Someone already signed in goes to the home instead, or back to the page
+ * that sent them here (`state.from`).
+ */
 export function LoginPage() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
@@ -17,8 +21,10 @@ export function LoginPage() {
   const passwordReset =
     (location.state as { passwordReset?: unknown } | null)?.passwordReset === true;
 
+  const target = returnPath(location.state);
+
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={target} replace />;
   }
 
   return (
@@ -32,7 +38,7 @@ export function LoginPage() {
           <Notice focusOnMount>{t('login.passwordReset')}</Notice>
         </div>
       ) : null}
-      <LoginForm titleId={TITLE_ID} />
+      <LoginForm titleId={TITLE_ID} redirectTo={target} />
       <p className="mt-6 text-base text-text">
         <Link to="/forgot-password" className="font-medium text-brand-primary underline">
           {t('login.forgotPassword')}

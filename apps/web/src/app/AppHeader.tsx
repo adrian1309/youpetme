@@ -37,6 +37,14 @@ export function AppHeader() {
           <Link to="/animals" className="font-medium text-brand-primary underline">
             {t('header.catalogue')}
           </Link>
+          {session?.user.role === 'ADMIN' ? (
+            <Link
+              to="/admin/adoption-requests"
+              className="font-medium text-brand-primary underline"
+            >
+              {t('header.adoptionRequests')}
+            </Link>
+          ) : null}
         </div>
         {session ? (
           <div className="flex flex-wrap items-center gap-4">
