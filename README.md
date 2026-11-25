@@ -4,7 +4,7 @@ YouPetMe is a web-based animal adoption platform that connects potential adopter
 
 ## Project status
 
-The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined. The monorepo skeleton (workspaces, tooling and CI) is in place; feature implementation has not started yet.
+The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined. The monorepo skeleton (workspaces, tooling and CI) is in place, and the first features are implemented: registration, login, logout, password recovery and the animal catalogue.
 
 ## Product vision
 
@@ -33,7 +33,7 @@ YouPetMe is designed as a TypeScript monorepo managed with pnpm workspaces and T
 | API documentation | OpenAPI and Swagger |
 | Authentication | Short-lived JWT access tokens and rotating refresh tokens |
 
-The API is organised by business module. The initial module is Identity and Access Management (IAM).
+The API is organised by business module. The modules implemented so far are Identity and Access Management (IAM) and Animals.
 
 ## Intended repository structure
 
@@ -88,7 +88,11 @@ The authoritative documents for the current foundation are:
 - ADR-012 — Security Approach.
 - ADR-013 — Development Methodology: SDD, BDD and TDD.
 - ADR-014 — Transactional Email Delivery.
+- ADR-015 — Local Object Storage for Development.
+- ADR-016 — Domain Event Delivery.
+- ADR-017 — API Error Format.
 - TS-IAM-001 — User Registration.
+- TS-ANIMALS-001 — Animal Catalogue.
 
 ## Getting Started
 
@@ -109,7 +113,9 @@ The authoritative documents for the current foundation are:
    docker compose --env-file .env -f infra/docker/compose.yaml up -d
    ```
 
-5. `pnpm dev` — starts the web client (Vite, http://localhost:5173) and the API (http://localhost:3000/api/v1 by default, `API_PORT`). See AGENTS.md — Common commands for the remaining scripts.
+5. Apply the database migrations: `pnpm --filter @youpetme/api prisma:deploy`.
+6. Create the first administrator: set `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_FIRST_NAME` and `ADMIN_LAST_NAME` in `.env`, then run `pnpm --filter @youpetme/api seed:admin` (safe to repeat; it does nothing if the email already exists).
+7. `pnpm dev` — starts the web client (Vite, http://localhost:5173) and the API (http://localhost:3000/api/v1 by default, `API_PORT`). See AGENTS.md — Common commands for the remaining scripts.
 
 ### End-to-end tests
 
@@ -127,7 +133,7 @@ pnpm test:e2e
 
 The command builds the apps and starts and removes its own PostgreSQL (Compose project `youpetme-e2e`, port 5433); the development database is not touched and does not use `.env`. Locally it runs Chromium; CI also runs WebKit.
 
-Not yet part of the setup, added with the stories that need them: Prisma migrations and seed data (first persistence story) and S3-compatible object storage in `infra/docker` (SeaweedFS per ADR-015, pending presigned-upload verification; MinIO's community edition is no longer maintained).
+Not yet part of the setup: S3-compatible object storage in `infra/docker` (SeaweedFS per ADR-015, pending presigned-upload verification; MinIO's community edition is no longer maintained). In the MVP, animal photos are https URLs entered by the administrator, so no storage service is needed.
 
 ### Before running anything setup-related
 
