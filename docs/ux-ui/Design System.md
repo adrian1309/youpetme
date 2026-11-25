@@ -197,7 +197,7 @@ The registration form requires first name, last name, email, password and passwo
 
 Animal characteristics should be concise, scannable and meaningful for adoption decisions. Use badges or tags for species, size, age group, temperament, compatibility with children or other animals, and health or care considerations where appropriate.
 
-Each tag must have understandable text. Icons can reinforce meaning but must not replace it. Information that requires nuance must appear with an explanation rather than relying on an ambiguous label.
+Each tag must have understandable text. Icons can reinforce meaning but must not replace it. Information that requires nuance must appear with an explanation rather than relying on an ambiguous label. Unknown compatibility is shown explicitly (for example, "Con niños: no se sabe") in the animal detail and omitted from catalogue cards, so that "unknown" is never read as "no".
 
 ## Feedback, empty and error states
 

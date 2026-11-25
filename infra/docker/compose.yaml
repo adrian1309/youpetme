@@ -2,8 +2,7 @@
 # Usage from the repository root:
 #   docker compose --env-file .env -f infra/docker/compose.yaml up -d
 #
-# S3-compatible object storage (MinIO in ARCH-002) is pending a decision: MinIO's
-# community edition no longer publishes Docker images. Added once that is resolved.
+# S3-compatible object storage (SeaweedFS, ADR-015) is not part of the stack yet: it is added when photo upload is implemented. In the MVP, photos are external https URLs.
 
 name: youpetme
 

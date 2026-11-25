@@ -118,12 +118,14 @@ Database migrations are committed to source control. Manual schema changes are p
 
 Animal photos (and any future media, such as shelter or store images) are stored as binary objects in **S3-compatible object storage**, not in PostgreSQL. Only object references are persisted in the relational database.
 
+**MVP status:** for the MVP, animal photos are not uploaded. The ADMIN enters the https URL of an image that is already hosted elsewhere (1 to 5 per animal; the web form sends one), and the API validates and stores only that URL. The upload flow described below (signed upload URLs, SeaweedFS locally per ADR-015) is deferred, not cancelled; when it is implemented, the stored value becomes an object storage reference and the domain does not change.
+
 - **Local development:** SeaweedFS running in Docker, alongside PostgreSQL, orchestrated through `infra/docker` (ADR-015). It replaces MinIO, whose community edition is no longer maintained; SeaweedFS must first pass the presigned-upload verification described in ADR-015.
 - **Deployed environments:** a managed S3-compatible provider (for example AWS S3 or Cloudflare R2). The exact provider is an infrastructure/deployment decision and may be finalized in a dedicated ADR when deployment is addressed.
-- **Domain boundary:** the `Animal` entity stores photo references (object keys or URLs) only. It has no knowledge of the storage provider, upload mechanism or bucket configuration — those belong to infrastructure, consistent with the hexagonal boundary already defined for persistence.
+- **Domain boundary:** the `Animal` entity stores photo references only (in the MVP, external https URLs; later, object keys or URLs from object storage). It has no knowledge of the storage provider, upload mechanism or bucket configuration — those belong to infrastructure, consistent with the hexagonal boundary already defined for persistence.
 - **Upload flow:** the API issues short-lived, signed upload URLs. The web client uploads the binary directly to object storage; the raw file is not proxied through NestJS. The API only receives and validates the resulting object reference before associating it with the `Animal` record.
 - **Delivery:** images are served either directly from the object storage provider or through a CDN in front of it. This is not required for the MVP and can be introduced later without changing the domain model.
-- **Validation:** allowed file types, maximum size and image count per animal are enforced by application-layer validation before a signed upload URL is issued.
+- **Validation:** allowed file types, maximum size and image count per animal are enforced by application-layer validation before a signed upload URL is issued. In the MVP (URLs only), the API checks that each URL is https, at most 2048 characters long, and that there are between 1 and 5 per animal; the database enforces the count with a CHECK constraint.
 
 This keeps photo storage swappable behind a port, mirroring the `UserRepository` / `PrismaUserRepository` pattern already used for persistence in ARCH-001.
 
@@ -204,6 +206,7 @@ No deployment/hosting decision has been made; this is a working note of candidat
 - ADR-009 — Styling and Accessible Component Foundation
 - ADR-014 — Transactional Email Delivery
 - ADR-015 — Local Object Storage for Development
+- TS-ANIMALS-001 — Animal Catalogue
 - Vite documentation: https://vite.dev/guide/
 - React Router documentation: https://reactrouter.com/
 - TanStack Query documentation: https://tanstack.com/query/latest/docs/framework/react/overview
