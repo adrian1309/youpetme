@@ -198,3 +198,27 @@ describe('createApiClient — cancellation', () => {
     await expect(pending).rejects.toBeInstanceOf(NetworkError);
   });
 });
+
+describe('createApiClient — bodiless PUT (Diango welcome, SCRUM-17)', () => {
+  it('PUTs with the bearer token and accepts an empty 204', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    const client = createApiClient({ baseUrl: 'http://localhost:3000', fetch: fetchMock });
+
+    await expect(
+      client.put('/api/v1/users/me/welcome-seen', { accessToken: 'token' }),
+    ).resolves.toBeUndefined();
+
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe('http://localhost:3000/api/v1/users/me/welcome-seen');
+    expect(init).toMatchObject({ method: 'PUT', credentials: 'include' });
+    expect(init.body).toBeUndefined();
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer token');
+  });
+
+  it('throws ApiError on an error status', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 401 }));
+    const client = createApiClient({ baseUrl: 'http://localhost:3000', fetch: fetchMock });
+
+    await expect(client.put('/api/v1/users/me/welcome-seen')).rejects.toBeInstanceOf(ApiError);
+  });
+});

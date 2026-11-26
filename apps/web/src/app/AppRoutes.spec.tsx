@@ -7,6 +7,7 @@ import { ApiError } from '../lib/http/api-error';
 import { expectNoAxeViolations } from '../test/axe';
 import { jsonResponse, renderWithProviders } from '../test/render-with-providers';
 import { AppRoutes } from './AppRoutes';
+import { DIANGO_WELCOME_SEEN_KEY } from '../lib/storage/diango-welcome';
 
 const session = {
   accessToken: 'access-token-value',
@@ -16,6 +17,7 @@ const session = {
     lastName: 'Doe',
     email: 'john@example.com',
     role: 'USER' as const,
+    hasSeenWelcome: true,
   },
 };
 
@@ -42,6 +44,8 @@ describe('AppRoutes', () => {
     });
 
     it('has a header, a main landmark and a skip link as the first stop', async () => {
+      // A returning visitor: on a first visit Diango's welcome takes the focus (SCRUM-17).
+      window.localStorage.setItem(DIANGO_WELCOME_SEEN_KEY, 'true');
       const user = userEvent.setup();
       renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
 
@@ -53,6 +57,7 @@ describe('AppRoutes', () => {
       expect(skip).toHaveAttribute('href', '#main');
       await user.keyboard('{Enter}');
       expect(screen.getByRole('main')).toHaveAttribute('id', 'main');
+      window.localStorage.clear();
     });
 
     it('has no accessibility violations as a whole page', async () => {

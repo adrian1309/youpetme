@@ -23,6 +23,15 @@ export function newVisitor() {
 
 export type Visitor = ReturnType<typeof newVisitor>;
 
+/**
+ * Accounts start as having seen Diango's welcome (SCRUM-17), like the returning guest of the
+ * Playwright storageState, so the welcome never covers a journey that is not about it.
+ */
 export function registerBody(visitor: Visitor) {
-  return { ...visitor, confirmPassword: visitor.password, termsAccepted: true };
+  return {
+    ...visitor,
+    confirmPassword: visitor.password,
+    termsAccepted: true,
+    hasSeenWelcome: true,
+  };
 }

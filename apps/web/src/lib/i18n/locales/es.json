@@ -557,5 +557,31 @@
         "page": "Página {{page}} de {{pages}}"
       }
     }
+  },
+  "assistant": {
+    "welcome": {
+      "title": "¡Hola! Soy Diango",
+      "text": "Te ayudo a conocer YouPetMe, a entender cómo funciona la adopción y a encontrar animales del catálogo. Cuando quieras, búscame abajo a la derecha.",
+      "close": "Entendido"
+    },
+    "launcher": {
+      "open": "Abrir el chat de Diango",
+      "close": "Cerrar el chat de Diango"
+    },
+    "chat": {
+      "close": "Cerrar",
+      "conversation": "Conversación con Diango",
+      "greeting": "¡Hola! ¿En qué te ayudo? Puedes preguntarme por la adopción o por los animales disponibles.",
+      "you": "Tú:",
+      "diango": "Diango:",
+      "typing": "Diango está escribiendo…",
+      "retry": "Reintentar",
+      "inputLabel": "Escribe tu pregunta",
+      "send": "Enviar"
+    },
+    "errors": {
+      "unavailable": "Diango no está disponible ahora. Inténtalo de nuevo en un momento.",
+      "rateLimited": "Has enviado muchos mensajes seguidos. Espera un momento y vuelve a intentarlo."
+    }
   }
 }

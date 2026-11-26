@@ -1,6 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
 
-import { API_ENV, API_READY_URL, API_URL, WEB_ORIGIN } from './support/env.ts';
+import {
+  API_ENV,
+  API_READY_URL,
+  API_URL,
+  DIANGO_WELCOME_SEEN_KEY,
+  WEB_ORIGIN,
+} from './support/env.ts';
 
 const isCI = Boolean(process.env.CI);
 
@@ -20,7 +26,18 @@ export default defineConfig({
   // Argon2id is CPU-heavy and the API runs on the same runner as the browsers.
   workers: isCI ? 2 : undefined,
   reporter: isCI ? [['list'], ['html', { open: 'never' }]] : 'list',
-  use: { baseURL: WEB_ORIGIN, trace: 'retain-on-failure' },
+  use: {
+    baseURL: WEB_ORIGIN,
+    trace: 'retain-on-failure',
+    // Every journey starts as a returning guest, so Diango's first-visit welcome (SCRUM-17) does
+    // not cover the page; assistant.e2e-spec.ts starts without it.
+    storageState: {
+      cookies: [],
+      origins: [
+        { origin: WEB_ORIGIN, localStorage: [{ name: DIANGO_WELCOME_SEEN_KEY, value: 'true' }] },
+      ],
+    },
+  },
   // Locally Chromium is enough for a fast loop; CI also covers Safari's engine.
   projects: isCI ? [chromium, webkit] : [chromium],
   globalTeardown: './support/global-teardown.ts',
