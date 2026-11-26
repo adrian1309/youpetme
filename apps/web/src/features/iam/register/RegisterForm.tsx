@@ -108,9 +108,9 @@ export function RegisterForm({ titleId }: { titleId: string }) {
     try {
       const response = await mutation.mutateAsync(values);
       const { accessToken } = response.authentication;
-      const { id, firstName, lastName, email, role } = response.user;
+      const { id, firstName, lastName, email, role, hasSeenWelcome } = response.user;
       signIn(
-        { accessToken, user: { id, firstName, lastName, email, role } },
+        { accessToken, user: { id, firstName, lastName, email, role, hasSeenWelcome } },
         { accountCreated: true },
       );
       void navigate('/', { replace: true });

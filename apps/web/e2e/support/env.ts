@@ -45,7 +45,12 @@ export const API_ENV = {
   COOKIE_SAMESITE: 'Strict',
   EMAIL_DELIVERY: 'file',
   EMAIL_OUTBOX_DIR,
+  // Predictable answers and no network (ADR-011); the API refuses the fake provider in production.
+  AI_PROVIDER: 'fake',
 };
+
+/** localStorage mark of a guest who already closed Diango's welcome (ADR-011). */
+export const DIANGO_WELCOME_SEEN_KEY = 'youpetme:diango-welcome-seen';
 
 /** There is no health endpoint yet; Swagger UI answers once the API is listening. */
 export const API_READY_URL = `${API_URL}/api/v1/docs`;

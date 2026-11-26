@@ -19,6 +19,8 @@ export interface ApiClient {
   get<TResponse>(path: string, options?: RequestOptions): Promise<TResponse>;
   /** Without `body`, nothing is sent and no Content-Type is set (e.g. the refresh request). */
   post<TResponse>(path: string, body?: unknown, options?: RequestOptions): Promise<TResponse>;
+  /** Bodiless PUT for idempotent commands answered with 204 (no response body expected). */
+  put(path: string, options?: RequestOptions): Promise<void>;
 }
 
 function headersFor(options: RequestOptions, json: boolean): Record<string, string> {
@@ -45,7 +47,11 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
   const origin = baseUrl.replace(/\/+$/, '');
   const doFetch = fetchImpl ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
 
-  async function send<TResponse>(path: string, init: RequestInit): Promise<TResponse> {
+  async function send<TResponse>(
+    path: string,
+    init: RequestInit,
+    expectBody = true,
+  ): Promise<TResponse> {
     let response: Response;
     try {
       response = await doFetch(`${origin}${path}`, { ...init, credentials: 'include' });
@@ -57,7 +63,7 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
     if (!response.ok) {
       throw new ApiError(response.status, payload as ErrorResponse | undefined);
     }
-    if (payload === undefined) {
+    if (payload === undefined && expectBody) {
       throw new ApiError(response.status);
     }
     return payload as TResponse;
@@ -83,6 +89,17 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
         ...(hasBody ? { body: JSON.stringify(body) } : {}),
         ...(options.signal ? { signal: options.signal } : {}),
       });
+    },
+    async put(path: string, options: RequestOptions = {}): Promise<void> {
+      await send<unknown>(
+        path,
+        {
+          method: 'PUT',
+          headers: headersFor(options, false),
+          ...(options.signal ? { signal: options.signal } : {}),
+        },
+        false,
+      );
     },
   };
 }

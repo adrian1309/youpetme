@@ -11,7 +11,14 @@ import { createSessionManager } from './session-manager';
 
 const session: AuthSession = {
   accessToken: 'access-token-value',
-  user: { id: 'u-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', role: 'USER' },
+  user: {
+    id: 'u-1',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    role: 'USER',
+    hasSeenWelcome: true,
+  },
 };
 
 const refreshed: RefreshResponse = {
@@ -77,6 +84,7 @@ describe('AuthProvider (ADR-002: access token in memory only)', () => {
           lastName: 'Doe',
           email: 'john@example.com',
           role: 'USER',
+          hasSeenWelcome: true,
         },
       });
     });

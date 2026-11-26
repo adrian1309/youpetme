@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate } from 'react-router';
 
+import { Diango } from '../features/assistant/Diango';
 import { useAuth } from '../features/iam/auth/auth-state';
 import { AppHeader } from './AppHeader';
 
@@ -39,6 +40,8 @@ export function AppLayout() {
           <Outlet />
         )}
       </main>
+      {/* On every page, outside the main landmark; it waits for the session restore (SCRUM-17). */}
+      <Diango />
     </>
   );
 }

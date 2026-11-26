@@ -35,3 +35,25 @@
     outline-offset: 2px;
   }
 }
+
+/* Diango's tail wag (Design System — AI-assisted experiences); still for prefers-reduced-motion. */
+@keyframes diango-wag {
+  from {
+    transform: rotate(-14deg);
+  }
+  to {
+    transform: rotate(18deg);
+  }
+}
+
+.diango-tail {
+  transform-box: fill-box;
+  transform-origin: left bottom;
+  animation: diango-wag 0.5s ease-in-out infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .diango-tail {
+    animation: none;
+  }
+}

@@ -93,11 +93,11 @@ export function LoginForm({ titleId, redirectTo = '/' }: { titleId: string; redi
     setFormError(null);
     try {
       const response = await mutation.mutateAsync(values);
-      const { id, firstName, lastName, email, role } = response.user;
+      const { id, firstName, lastName, email, role, hasSeenWelcome } = response.user;
       // The access token stays in memory; the refresh token is an HttpOnly cookie (ADR-002).
       signIn({
         accessToken: response.authentication.accessToken,
-        user: { id, firstName, lastName, email, role },
+        user: { id, firstName, lastName, email, role, hasSeenWelcome },
       });
       void navigate(redirectTo, { replace: true });
     } catch (error) {

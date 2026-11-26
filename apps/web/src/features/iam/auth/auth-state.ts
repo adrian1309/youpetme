@@ -9,6 +9,8 @@ export interface AuthUser {
   email: string;
   /** For route guards only (UX): the API enforces authorization itself. */
   role: 'USER' | 'ADMIN';
+  /** Diango's welcome was already shown to this account (ADR-011, SCRUM-17). */
+  hasSeenWelcome: boolean;
 }
 
 export interface AuthSession {
