@@ -157,7 +157,7 @@ La ruta pública `/login` incluirá un formulario para `email` y `password`, con
 - Validará los datos antes de enviar.
 - Deshabilitará o protegerá el envío repetido mientras la petición esté en curso.
 - Mostrará el error `401`/`403` de forma genérica y segura, sin distinguir el motivo exacto.
-- Tras una respuesta exitosa, guardará el access token solo en memoria (ADR-002) y redirigirá al área autenticada: la home `/` en estado autenticado.
+- Tras una respuesta exitosa, guardará el access token solo en memoria (ADR-002) y redirigirá a la ruta indicada en `location.state.from` por la página que envió al usuario a iniciar sesión (por ejemplo, la ficha de un animal), o a la home `/` en estado autenticado si no hay ninguna. Solo se aceptan rutas propias de la aplicación que empiecen por una única `/`, de modo que el login no puede usarse para redirigir a otro sitio.
 - Al arrancar la aplicación o recargar la página, intentará restaurar la sesión llamando a `POST /api/v1/auth/refresh`; si responde `401`, el usuario queda como visitante sin mostrar error.
 - Si la renovación falla por red o por un `5xx`, al arrancar el usuario queda como visitante sin mostrar error. En una petición ya autenticada se conserva la sesión y el error llega a quien hizo la petición.
 - Ante un `401` en una petición autenticada, intentará un único refresh y reintentará la petición una vez; si el refresh falla, limpiará el estado de autenticación y redirigirá a `/login`. Peticiones concurrentes comparten un único refresh en curso.
