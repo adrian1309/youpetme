@@ -134,6 +134,8 @@ Navigation must expose the current location and remain usable by keyboard and as
 
 AI-related UI must distinguish clearly between factual platform information and generated recommendations or explanations.
 
+In the MVP, Diango's welcome is a dialog with a single speech bubble and an "Entendido" button; focus moves to the button and Escape closes it. The chat is a non-modal panel opened from a fixed button at the bottom right, with the conversation as a live log, a "Diango está escribiendo…" status and a recoverable error with "Reintentar". The tail-wag animation is CSS and is disabled under `prefers-reduced-motion`.
+
 **Mascot:** for the MVP, the AI Assistant is represented by a mascot character: **Diango**, a black Labrador. On a user's first visit, Diango appears centred on screen with a single speech-bubble welcome message, distinct from its regular chatbot presence; once dismissed, Diango moves to its normal always-available position, guides a short personality-matching flow, and remains visible on screen so the user can ask questions at any point (consistent with the AI Assistant functionality in Functional Map). The mascot includes a tail-wagging animation while displaying its speech bubbles, reinforcing the "Animal first" and "Trust and safety" principles above. Diango's underlying behaviour (tool use against the live catalogue, session-only memory for the MVP) is defined in ADR-011. A future option to choose between different mascot animals/breeds is tracked in Functional Map — AI Assistant.
 
 ## Component states

@@ -4,7 +4,7 @@ YouPetMe is a web-based animal adoption platform that connects potential adopter
 
 ## Project status
 
-The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined. The monorepo skeleton (workspaces, tooling and CI) is in place, and the first features are implemented: registration, login, logout, password recovery and the animal catalogue.
+The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined. The monorepo skeleton (workspaces, tooling and CI) is in place, and the first features are implemented: registration, login, logout, password recovery, the animal catalogue, adoption requests and Diango, the AI assistant.
 
 ## Product vision
 
@@ -33,7 +33,7 @@ YouPetMe is designed as a TypeScript monorepo managed with pnpm workspaces and T
 | API documentation | OpenAPI and Swagger |
 | Authentication | Short-lived JWT access tokens and rotating refresh tokens |
 
-The API is organised by business module. The modules implemented so far are Identity and Access Management (IAM) and Animals.
+The API is organised by business module. The modules implemented so far are Identity and Access Management (IAM), Animals, Adoptions and AI (Diango).
 
 ## Intended repository structure
 
@@ -93,6 +93,8 @@ The authoritative documents for the current foundation are:
 - ADR-017 — API Error Format.
 - TS-IAM-001 — User Registration.
 - TS-ANIMALS-001 — Animal Catalogue.
+- TS-ADOPTION-001 — Adoption Requests.
+- TS-AI-001 — Diango Assistant.
 
 ## Getting Started
 

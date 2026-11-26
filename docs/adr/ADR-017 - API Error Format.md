@@ -43,6 +43,7 @@ We use **Option 2**.
 - `message` is a safe, generic text. The client never shows it directly: user-facing copy comes from the client's own translation files.
 - `details` lists the per-field validation issues. Each one has exactly three properties: `field`, `code` (one of the validation codes below) and `message` (an English text for developers, never shown to the user). Errors that are not validation errors carry no `details`.
 - `code` is optional, stable and meant for programs. It appears only on the business errors listed below. Every other error, such as the `409` of a duplicated email, the `409` of an adoption request action that is not allowed from its current status or whose request or animal changed meanwhile, the `403` of the `Origin` guard or the `415`, has no `code` and is identified by its status.
+- The assistant answers `429` (rate limit, with `Retry-After`) and `503` (AI provider unavailable) in the generic shape without a `code`; the client tells them apart by `statusCode`.
 
 ### Stable codes
 

@@ -153,6 +153,8 @@ Protected endpoints use a **stateless** guard: it verifies the signature and the
 
 **Consequence.** An access token that was already issued stays valid until it expires, even if its `UserSession` has been revoked (logout, reuse detection, or a password change). Revocation, or reaching the session's absolute lifetime, prevents the session from being refreshed, so the exposure lasts at most 15 minutes. If immediate revocation ever becomes a requirement, the guard can additionally check that the session identified by the `sid` claim is `ACTIVE`, at the cost of a database read on every protected request. That change would amend this section.
 
+`OptionalAccessTokenGuard` serves public endpoints that also accept signed-in users (Diango's chat). A request without `Authorization` goes through as a visitor. A token that is sent but invalid or expired gets `401`, like `AccessTokenGuard`, so the client renews it instead of silently losing the user's context.
+
 ## Token Lifetimes
 
 - **Access token:** 15 minutes (`JWT_ACCESS_EXPIRATION=15m`). Short enough that a stolen access token is of little use.
@@ -252,3 +254,4 @@ Rejected because token revocation and security become more difficult when tokens
 - **2026-11-10:** added Access Token Guard (stateless) and the Logout rules, and the cross-tab logout in Client-side Refresh Coordination, from the implementation of TS-IAM-003.
 - **2026-11-11:** added the absolute session lifetime (`SESSION_ABSOLUTE_EXPIRATION`, 30 days) to Token Design, Token Lifetimes, Refresh Token Reuse and Access Token Guard, from SCRUM-54.
 - **2026-11-24:** guard coverage extended to logout and password reset, and the password reset rule added to Password Changes, from the implementation of TS-IAM-004.
+- **2026-11-26:** added `OptionalAccessTokenGuard` to Access Token Guard, from the implementation of TS-AI-001.
