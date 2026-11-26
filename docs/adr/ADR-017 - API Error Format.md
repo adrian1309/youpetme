@@ -42,14 +42,14 @@ We use **Option 2**.
 - `statusCode` and `error` are the HTTP status and its name.
 - `message` is a safe, generic text. The client never shows it directly: user-facing copy comes from the client's own translation files.
 - `details` lists the per-field validation issues. Each one has exactly three properties: `field`, `code` (one of the validation codes below) and `message` (an English text for developers, never shown to the user). Errors that are not validation errors carry no `details`.
-- `code` is optional, stable and meant for programs. It appears only on the four business errors listed below. Every other error, such as the `409` of a duplicated email, the `403` of the `Origin` guard or the `415`, has no `code` and is identified by its status.
+- `code` is optional, stable and meant for programs. It appears only on the business errors listed below. Every other error, such as the `409` of a duplicated email, the `409` of an adoption request action that is not allowed from its current status or whose request or animal changed meanwhile, the `403` of the `Origin` guard or the `415`, has no `code` and is identified by its status.
 
 ### Stable codes
 
 | Kind | Codes |
 |---|---|
 | Validation (inside `details`) | `REQUIRED`, `INVALID_FORMAT`, `INVALID_TYPE`, `TOO_SHORT`, `TOO_LONG`, `MISMATCH`, `MUST_BE_TRUE` |
-| Business (`code`) | `INVALID_CREDENTIALS`, `ACCOUNT_NOT_AVAILABLE`, `SESSION_NOT_RENEWABLE`, `RESET_TOKEN_INVALID` |
+| Business (`code`) | `INVALID_CREDENTIALS`, `ACCOUNT_NOT_AVAILABLE`, `SESSION_NOT_RENEWABLE`, `RESET_TOKEN_INVALID`, `ANIMAL_NOT_AVAILABLE`, `ADOPTION_REQUEST_ACTIVE` |
 
 | Business code | Status | Endpoint and case |
 |---|---|---|
@@ -57,8 +57,10 @@ We use **Option 2**.
 | `ACCOUNT_NOT_AVAILABLE` | `403` | Login: the account is not `ACTIVE` (returned only if the password is correct). Refresh: the account is not `ACTIVE`. |
 | `SESSION_NOT_RENEWABLE` | `401` | Refresh: no cookie, invalid or expired token, unknown, revoked or expired session, a session past its absolute lifetime, or an already rotated token. |
 | `RESET_TOKEN_INVALID` | `400` | Password reset confirm: unknown, used, expired or superseded link, or account not `ACTIVE`. |
+| `ANIMAL_NOT_AVAILABLE` | `409` | Adoption request create: the animal is not `AVAILABLE`. Approve: the animal is no longer `AVAILABLE` (for example, already reserved by another request). |
+| `ADOPTION_REQUEST_ACTIVE` | `409` | Adoption request create: the user already has a `PENDING` or `APPROVED` request for that animal. |
 
-The codes live in `packages/contracts` (`ValidationErrorCode` and `ErrorCode`), shared by the API and the web client. `ErrorCode` accepts only the four business codes above.
+The codes live in `packages/contracts` (`ValidationErrorCode` and `ErrorCode`), shared by the API and the web client. `ErrorCode` accepts only the business codes above.
 
 ### Rules
 

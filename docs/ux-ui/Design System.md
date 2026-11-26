@@ -199,6 +199,12 @@ Animal characteristics should be concise, scannable and meaningful for adoption 
 
 Each tag must have understandable text. Icons can reinforce meaning but must not replace it. Information that requires nuance must appear with an explanation rather than relying on an ambiguous label. Unknown compatibility is shown explicitly (for example, "Con niños: no se sabe") in the animal detail and omitted from catalogue cards, so that "unknown" is never read as "no".
 
+## Adoption request patterns
+
+The "Solicitar adopción" action is shown only for an `AVAILABLE` animal. It opens an inline form with an optional message (up to 1000 characters, with a visible hint) and "Enviar solicitud" / "Cancelar". Success is confirmed with a Notice that receives focus; a duplicate request is reported with an Alert ("Ya tienes una solicitud activa para este animal."). A visitor who presses the action is taken to the login page and returned to the animal page after signing in.
+
+In the admin requests list, each request is a card showing the animal, the applicant (name and email), the message, the dates and the status as text. Only the actions valid for its status are shown as buttons, and each accessible name includes the applicant and the animal. Every action ends with a Notice (success) or an Alert (conflict or error) that receives focus.
+
 ## Feedback, empty and error states
 
 Every relevant view must define:

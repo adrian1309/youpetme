@@ -85,7 +85,7 @@ Roles and profiles must not be treated as the same concept.
 
 ### MVP roles
 
-A user has exactly one `role` (`User.role`). Every account created through registration is `USER`; `ADMIN` accounts are not created through the public registration flow (how the first admin is provisioned is a technical decision for the implementation, e.g. a seed). Only `USER` and `ADMIN` are implemented for the MVP. `SHELTER_MANAGER`, `STORE_MANAGER` and `VETERINARY_MANAGER` remain documented future roles: the MVP's own shelter is managed as `ADMIN`, and Store/Veterinary are out of scope entirely per the MVP document. These roles must not be added to the enum until the corresponding functionality is actually being implemented, to avoid unused authorization values.
+A user has exactly one `role` (`User.role`). Every account created through registration is `USER`; `ADMIN` accounts are not created through the public registration flow (the first admin is provisioned with the `seed:admin` script, reading `ADMIN_EMAIL` and `ADMIN_PASSWORD` from the environment; credentials are never in the repository). Only `USER` and `ADMIN` are implemented for the MVP. `SHELTER_MANAGER`, `STORE_MANAGER` and `VETERINARY_MANAGER` remain documented future roles: the MVP's own shelter is managed as `ADMIN`, and Store/Veterinary are out of scope entirely per the MVP document. These roles must not be added to the enum until the corresponding functionality is actually being implemented, to avoid unused authorization values.
 
 ### Unauthenticated access ("guest" / "visitor")
 
@@ -166,7 +166,8 @@ Conceptual attributes:
 - tokenHash (hash of the reset token sent to the user; the plaintext token is never persisted, mirroring `UserSession.refreshTokenHash`)
 - status: `ACTIVE`, `USED`, `EXPIRED`, `SUPERSEDED` (replaced by a newer link for the same user)
 - expiresAt
-- createdAt
+- usedAt (set when the token is consumed)
+- createdAt, updatedAt
 
 A password reset revokes all of the user's existing `UserSession`s once completed, consistent with ADR-002's "Password Changes" rule.
 
@@ -205,6 +206,8 @@ Conceptual attributes:
 - description
 - createdAt, updatedAt
 
+The row is inserted by the animals migration with a fixed id, so the API always knows it.
+
 ### Animal
 
 Conceptual attributes:
@@ -212,14 +215,14 @@ Conceptual attributes:
 - id
 - shelterId (references `Shelter`; always the single MVP shelter for now)
 - name
-- species (e.g. dog, cat — exact enum to be finalized in Technical Design, not open-ended free text)
+- species (see Taxonomy below)
 - breed (optional)
 - size (e.g. small / medium / large)
 - ageGroup (e.g. puppy / young / adult / senior)
 - temperament (tags — see Design System, Animal information patterns, for the badge/tag display convention this maps to)
 - compatibility (flags — e.g. compatible with children, compatible with other animals)
 - careNotes (health or care considerations, free text)
-- photos (object storage references only — see ARCH-002, Media storage; the domain has no knowledge of the storage provider)
+- photos (references only; the domain has no knowledge of where they are stored. MVP: 1 to 5 https URLs of already hosted images, entered by the ADMIN; upload to object storage — ARCH-002, Media storage; ADR-015 — is future work)
 - status: `AVAILABLE`, `RESERVED`, `ADOPTED`
 - createdAt, updatedAt
 
@@ -264,6 +267,8 @@ Conceptual attributes:
 - `CANCELLED` — an `APPROVED` request that does not proceed (e.g. the applicant does not follow through after the meeting); the `ADMIN` cancels it and the `Animal` returns from `RESERVED` to `AVAILABLE`. Only an `APPROVED` request can be cancelled. A cancelled request does not block the same user from submitting a new request for that animal later.
 
 Allowed transitions: `PENDING` → `APPROVED` | `REJECTED`; `APPROVED` → `COMPLETED` | `CANCELLED`. `REJECTED`, `COMPLETED` and `CANCELLED` are final.
+
+An `ADMIN` action changes the request and, where it applies, its `Animal` in the same transaction, and only if both are still in the expected status (approve requires the animal to be `AVAILABLE`); otherwise nothing changes. Approving a request does not change the other `PENDING` requests for the same animal; the `ADMIN` decides them one by one. At most one `PENDING` or `APPROVED` request per user and animal exists at any time, enforced by a partial unique index.
 
 Withdrawal of a request by the applicant is not modelled for the MVP; this is future scope if a real need for it appears.
 
