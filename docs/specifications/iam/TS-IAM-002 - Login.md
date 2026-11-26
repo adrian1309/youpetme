@@ -70,7 +70,9 @@ Autentica a un usuario existente y crea una sesión autenticada.
     "firstName": "John",
     "lastName": "Doe",
     "email": "john@example.com",
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "role": "USER",
+    "hasSeenWelcome": false
   },
   "authentication": {
     "accessToken": "<access-token>"
@@ -78,7 +80,7 @@ Autentica a un usuario existente y crea una sesión autenticada.
 }
 ```
 
-Igual que en TS-IAM-001, el refresh token **no** viaja en el cuerpo: el servidor lo entrega en una cookie `HttpOnly` y `Secure` mediante `Set-Cookie`, y el access token se mantiene en memoria en el cliente (ADR-002). Nunca se incluyen secretos, hashes o datos internos de sesión en la respuesta.
+Igual que en TS-IAM-001, el refresh token **no** viaja en el cuerpo: el servidor lo entrega en una cookie `HttpOnly` y `Secure` mediante `Set-Cookie`, y el access token se mantiene en memoria en el cliente (ADR-002). Nunca se incluyen secretos, hashes o datos internos de sesión en la respuesta. `user.role` y `user.hasSeenWelcome` solo sirven a la web para decidir qué mostrar; la API autoriza siempre (ADR-002).
 
 #### Errores esperados
 
@@ -110,7 +112,9 @@ Sin body. El refresh token se lee de la cookie `HttpOnly` y `Secure`; el cliente
     "firstName": "John",
     "lastName": "Doe",
     "email": "john@example.com",
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "role": "USER",
+    "hasSeenWelcome": false
   },
   "authentication": {
     "accessToken": "<access-token>"

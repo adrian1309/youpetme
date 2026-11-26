@@ -40,7 +40,11 @@ For the **MVP**, we will use: **Option 2 (agent with tool use)** for the interac
 
 ### Welcome/introduction moment (MVP)
 
-In addition to the ongoing chatbot behaviour, the MVP includes a one-time **welcome trigger**: on a user's first visit, Diango appears centred on screen with a single speech-bubble message, distinct from the regular chatbot surface. Once dismissed, Diango returns to its normal always-available presence (Design System — AI-assisted experiences) and behaves as the agent described above. Whether the user has already seen this welcome moment is tracked per authenticated user (the `UserProfile.hasSeenWelcome` flag) or, for a guest, client-side (localStorage). The guest mark is stored under the key `youpetme:diango-welcome-seen` with the value `"true"`, defined as a single constant in the web client. When a guest who has already seen the welcome registers, the client sends that mark and the new profile is created with `hasSeenWelcome = true`, consistent with the guest/authenticated persistence split already established for Favourites (Functional Map — Animals, Future).
+In addition to the ongoing chatbot behaviour, the MVP includes a one-time **welcome trigger**: on a user's first visit, Diango appears centred on screen with a single speech-bubble message, distinct from the regular chatbot surface. Once dismissed, Diango returns to its normal always-available presence (Design System — AI-assisted experiences) and behaves as the agent described above. Whether the user has already seen this welcome moment is tracked per authenticated user (the `UserProfile.hasSeenWelcome` flag) or, for a guest, client-side (localStorage). When a guest who has already seen the welcome registers, the client sends that mark and the new profile is created with `hasSeenWelcome = true`, consistent with the guest/authenticated persistence split already established for Favourites (Functional Map — Animals, Future).
+
+### Implementation (MVP)
+
+The client resends the session history on every request and the server stores nothing. Diango has one read-only tool, `search_animals`, which returns `AVAILABLE` animals only, and the tool loop stops after three model calls. The details are in TS-AI-001.
 
 ## Consequences
 
@@ -81,6 +85,7 @@ Rejected for the MVP specifically because of the unresolved privacy design work 
 - Functional Map — AI Assistant
 - MVP — AI
 - Design System — AI-assisted experiences (Diango)
+- TS-AI-001 — Diango Assistant
 - ADR-010 — AI Matching Approach
 - ARCH-002 — Explicit non-decisions (LangChain)
 - Non Functional Requirements — Privacy and data protection
