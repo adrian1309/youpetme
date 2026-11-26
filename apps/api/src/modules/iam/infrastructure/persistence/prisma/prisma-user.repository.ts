@@ -12,12 +12,21 @@ const ACCOUNT_SELECT = {
   termsVersion: true,
   createdAt: true,
   updatedAt: true,
-  profile: { select: { firstName: true, lastName: true } },
+  profile: {
+    select: { firstName: true, lastName: true, hasSeenWelcome: true, matchingPreferences: true },
+  },
 } as const;
 
 type AccountRow = {
   [K in Exclude<keyof typeof ACCOUNT_SELECT, 'profile'>]: User[K];
-} & { profile: { firstName: string; lastName: string } | null };
+} & {
+  profile: {
+    firstName: string;
+    lastName: string;
+    hasSeenWelcome: boolean;
+    matchingPreferences: unknown;
+  } | null;
+};
 
 export class PrismaUserRepository implements UserRepository {
   constructor(private readonly prisma: PrismaService) {}
@@ -41,6 +50,13 @@ export class PrismaUserRepository implements UserRepository {
       await this.prisma.user.findUnique({ where: { id: userId }, select: ACCOUNT_SELECT }),
     );
   }
+
+  async markWelcomeSeen(userId: string): Promise<void> {
+    await this.prisma.userProfile.updateMany({
+      where: { userId },
+      data: { hasSeenWelcome: true },
+    });
+  }
 }
 
 /** Every user is created with its profile in one transaction (TS-IAM-001). */
@@ -51,5 +67,7 @@ function toAccount(row: AccountRow | null): UserAccount | null {
     user: User.reconstitute(user),
     firstName: profile.firstName,
     lastName: profile.lastName,
+    hasSeenWelcome: profile.hasSeenWelcome,
+    matchingPreferences: profile.matchingPreferences ?? null,
   };
 }

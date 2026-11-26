@@ -82,6 +82,7 @@ export class LoginUserUseCase {
         email: user.email,
         status: user.status,
         role: user.role,
+        hasSeenWelcome: account.hasSeenWelcome,
       },
       accessToken,
       refreshToken,

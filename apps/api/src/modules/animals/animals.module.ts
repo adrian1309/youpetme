@@ -23,6 +23,8 @@ import { AnimalsController } from './presentation/http/animals.controller';
   // IamModule provides the stateless access-token guard (ADR-002).
   imports: [IamModule],
   controllers: [AnimalsController],
+  // Diango's catalogue tool reuses the public catalogue query (ADR-011).
+  exports: [LIST_AVAILABLE_ANIMALS_USE_CASE],
   providers: [
     AdminGuard,
     {

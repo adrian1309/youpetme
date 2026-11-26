@@ -14,6 +14,8 @@ export interface AuthenticatedUser {
   status: 'ACTIVE';
   /** For the client's route guards only; the API enforces authorization on its own. */
   role: 'USER' | 'ADMIN';
+  /** Diango's welcome was already shown (ADR-011, SCRUM-17): the client skips it. */
+  hasSeenWelcome: boolean;
 }
 
 /** 200 body. The refresh token is only ever delivered as an HttpOnly cookie. */

@@ -48,3 +48,24 @@ export function authenticatedUserOf(request: object): VerifiedAccessToken {
   }
   return user;
 }
+
+/**
+ * Like AccessTokenGuard, but a request without `Authorization` goes through as a visitor (Diango
+ * answers guests and users, ADR-011). A token that is sent and fails is still a 401, so the
+ * client renews it instead of silently losing the user's context.
+ */
+@Injectable()
+export class OptionalAccessTokenGuard implements CanActivate {
+  constructor(@Inject(ACCESS_TOKEN_VERIFIER) private readonly verifier: AccessTokenVerifier) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest<GuardedRequest>();
+    if (request.headers.authorization === undefined) return true;
+    return new AccessTokenGuard(this.verifier).canActivate(context);
+  }
+}
+
+/** The user of a request guarded by OptionalAccessTokenGuard; null for a visitor. */
+export function optionalAuthenticatedUserOf(request: object): VerifiedAccessToken | null {
+  return (request as GuardedRequest)[AUTHENTICATED_USER] ?? null;
+}

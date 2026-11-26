@@ -7,6 +7,7 @@ export interface AuthenticatedSessionResult {
     email: string;
     status: string;
     role: 'USER' | 'ADMIN';
+    hasSeenWelcome: boolean;
   };
   accessToken: string;
   /** Delivered to the client only as an HttpOnly cookie, never in the response body. */

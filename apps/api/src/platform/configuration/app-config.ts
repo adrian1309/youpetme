@@ -25,7 +25,21 @@ export interface AppConfig {
     /** Lifetime of a password reset link (TS-IAM-004), PASSWORD_RESET_EXPIRATION. */
     ttlMs: number;
   };
+  /** Which AIProvider adapter backs the assistant (ADR-011); only Anthropic in production. */
+  ai: AiProviderConfig;
+  assistant: {
+    /** Chat requests allowed per client IP and minute, ASSISTANT_RATE_LIMIT_PER_MINUTE. */
+    rateLimitPerMinute: number;
+  };
 }
+
+export type AiProviderConfig =
+  | { provider: 'anthropic'; apiKey: string; model: string }
+  /** Development and automated tests: predictable answers, no network calls. */
+  | { provider: 'fake' };
+
+/** The cheapest current Claude model that handles a short tool-using chat. */
+const DEFAULT_AI_MODEL = 'claude-haiku-5-5';
 
 export type EmailDeliveryConfig =
   | { delivery: 'resend'; resendApiKey: string; from: string }
@@ -71,6 +85,11 @@ const envSchema = z
     EMAIL_FROM: z.string().min(1).optional(),
     EMAIL_OUTBOX_DIR: z.string().min(1).optional(),
     PASSWORD_RESET_EXPIRATION: z.string().default('2h').pipe(duration),
+    // ADR-011: fake in development and automated tests, Anthropic in production.
+    AI_PROVIDER: z.enum(['anthropic', 'fake']).default('fake'),
+    ANTHROPIC_API_KEY: z.string().min(1).optional(),
+    AI_MODEL: z.string().min(1).default(DEFAULT_AI_MODEL),
+    ASSISTANT_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   })
   .refine((env) => env.COOKIE_SAMESITE !== 'None' || env.COOKIE_SECURE, {
     path: ['COOKIE_SAMESITE'],
@@ -92,6 +111,10 @@ const envSchema = z
       }
     }
   })
+  .refine((env) => env.AI_PROVIDER !== 'anthropic' || env.ANTHROPIC_API_KEY !== undefined, {
+    path: ['ANTHROPIC_API_KEY'],
+    message: 'is required when AI_PROVIDER=anthropic',
+  })
   // Outside local development the values shipped in .env.example must not be usable (ARCH-001).
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'production') return;
@@ -101,6 +124,14 @@ const envSchema = z
         code: 'custom',
         path: ['EMAIL_DELIVERY'],
         message: 'must be resend in production',
+      });
+    }
+    // The fake assistant answers from fixed rules, never from the catalogue the user sees.
+    if (env.AI_PROVIDER !== 'anthropic') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['AI_PROVIDER'],
+        message: 'must be anthropic in production',
       });
     }
     for (const name of ['JWT_ACCESS_SECRET', 'JWT_REFRESH_SECRET'] as const) {
@@ -167,7 +198,15 @@ export function loadAppConfig(env: Record<string, string | undefined>): AppConfi
     refreshCookie: { secure: values.COOKIE_SECURE, sameSite: values.COOKIE_SAMESITE },
     email: emailDelivery(values),
     passwordReset: { ttlMs: values.PASSWORD_RESET_EXPIRATION },
+    ai: aiProvider(values),
+    assistant: { rateLimitPerMinute: values.ASSISTANT_RATE_LIMIT_PER_MINUTE },
   };
+}
+
+function aiProvider(values: z.infer<typeof envSchema>): AiProviderConfig {
+  return values.AI_PROVIDER === 'anthropic'
+    ? { provider: 'anthropic', apiKey: values.ANTHROPIC_API_KEY!, model: values.AI_MODEL }
+    : { provider: 'fake' };
 }
 
 /** The refinements above guarantee the variables each mode needs. */

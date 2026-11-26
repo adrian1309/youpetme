@@ -44,7 +44,13 @@ describe('PrismaUserRepository (PostgreSQL)', () => {
       const byId = await users.findAccountById(account.user.id);
 
       for (const found of [byEmail, byId]) {
-        expect(found).toEqual({ user: expect.anything(), firstName: 'John', lastName: 'Doe' });
+        expect(found).toEqual({
+          user: expect.anything(),
+          firstName: 'John',
+          lastName: 'Doe',
+          hasSeenWelcome: false,
+          matchingPreferences: null,
+        });
         expect(found!.user).toMatchObject({
           id: account.user.id,
           email: 'john@example.com',

@@ -136,6 +136,7 @@ describe('POST /api/v1/auth/login and /api/v1/auth/refresh (PostgreSQL)', () => 
             email: EMAIL,
             status: 'ACTIVE',
             role: 'USER',
+            hasSeenWelcome: false,
           },
           authentication: { accessToken: expect.any(String) },
         });
@@ -285,6 +286,7 @@ describe('POST /api/v1/auth/login and /api/v1/auth/refresh (PostgreSQL)', () => 
             email: EMAIL,
             status: 'ACTIVE',
             role: 'USER',
+            hasSeenWelcome: false,
           },
           authentication: { accessToken: expect.any(String) },
         });

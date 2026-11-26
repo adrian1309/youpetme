@@ -34,6 +34,7 @@ export class CallLog {
 /** In-memory adapters for unit tests only (ARCH-002); excluded from production builds. */
 export class InMemoryAccounts implements UserRepository, AccountRegistrationRepository {
   readonly accounts: NewAccount[] = [];
+  readonly welcomeSeen = new Set<string>();
   failNextRegisterWith: Error | undefined;
 
   constructor(private readonly log: CallLog = new CallLog()) {}
@@ -58,7 +59,14 @@ export class InMemoryAccounts implements UserRepository, AccountRegistrationRepo
       user: account.user,
       firstName: account.profile.firstName,
       lastName: account.profile.lastName,
+      hasSeenWelcome: account.profile.hasSeenWelcome || this.welcomeSeen.has(account.user.id),
+      matchingPreferences: account.profile.matchingPreferences,
     };
+  }
+
+  markWelcomeSeen(userId: string): Promise<void> {
+    this.welcomeSeen.add(userId);
+    return Promise.resolve();
   }
 
   register(account: NewAccount): Promise<void> {

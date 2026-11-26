@@ -118,6 +118,7 @@ describe('RefreshSessionUseCase (US-IAM-002)', () => {
         email: 'john@example.com',
         status: 'ACTIVE',
         role: 'USER',
+        hasSeenWelcome: false,
       });
     });
 

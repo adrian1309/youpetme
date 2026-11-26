@@ -4,7 +4,12 @@ import type {
   AccessTokenVerifier,
   VerifiedAccessToken,
 } from '../../domain/ports/access-token-verifier';
-import { AccessTokenGuard, authenticatedUserOf } from './access-token.guard';
+import {
+  AccessTokenGuard,
+  authenticatedUserOf,
+  OptionalAccessTokenGuard,
+  optionalAuthenticatedUserOf,
+} from './access-token.guard';
 
 const verified: VerifiedAccessToken = { userId: 'user-1', sessionId: 'session-1', role: 'USER' };
 
@@ -54,5 +59,32 @@ describe('AccessTokenGuard (ADR-002: stateless access token, L3)', () => {
       new AccessTokenGuard(new FakeVerifier()).canActivate(context),
     ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(() => authenticatedUserOf(request)).toThrow();
+  });
+});
+
+describe('OptionalAccessTokenGuard (visitors allowed, e.g. Diango)', () => {
+  it('lets a request without Authorization through as a visitor', async () => {
+    const { context, request } = contextWith(undefined);
+
+    await expect(
+      new OptionalAccessTokenGuard(new FakeVerifier()).canActivate(context),
+    ).resolves.toBe(true);
+    expect(optionalAuthenticatedUserOf(request)).toBeNull();
+  });
+
+  it('exposes the user of a valid Bearer token', async () => {
+    const { context, request } = contextWith('Bearer valid-token');
+
+    await new OptionalAccessTokenGuard(new FakeVerifier()).canActivate(context);
+
+    expect(optionalAuthenticatedUserOf(request)).toEqual(verified);
+  });
+
+  it('rejects a token that is sent but invalid or expired with 401, so the client can renew it', async () => {
+    const { context } = contextWith('Bearer not-valid');
+
+    await expect(
+      new OptionalAccessTokenGuard(new FakeVerifier()).canActivate(context),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
   });
 });

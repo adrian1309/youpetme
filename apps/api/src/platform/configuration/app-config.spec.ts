@@ -30,6 +30,8 @@ describe('loadAppConfig', () => {
       refreshCookie: { secure: false, sameSite: 'Strict' },
       email: { delivery: 'console' },
       passwordReset: { ttlMs: 2 * 60 * 60 * 1000 },
+      ai: { provider: 'fake' },
+      assistant: { rateLimitPerMinute: 10 },
     });
   });
 
@@ -200,6 +202,49 @@ describe('loadAppConfig', () => {
     });
   });
 
+  describe('AI provider (ADR-011)', () => {
+    it('configures Anthropic with its key and the cheapest model by default', () => {
+      const config = loadAppConfig({
+        ...validEnv,
+        AI_PROVIDER: 'anthropic',
+        ANTHROPIC_API_KEY: 'sk-ant-test-key',
+      });
+
+      expect(config.ai).toEqual({
+        provider: 'anthropic',
+        apiKey: 'sk-ant-test-key',
+        model: 'claude-haiku-5-5',
+      });
+    });
+
+    it('takes the model from AI_MODEL', () => {
+      const config = loadAppConfig({
+        ...validEnv,
+        AI_PROVIDER: 'anthropic',
+        ANTHROPIC_API_KEY: 'sk-ant-test-key',
+        AI_MODEL: 'claude-sonnet-5-5',
+      });
+
+      expect(config.ai).toMatchObject({ model: 'claude-sonnet-5-5' });
+    });
+
+    it('requires ANTHROPIC_API_KEY with AI_PROVIDER=anthropic, without echoing values', () => {
+      expect(() => loadAppConfig({ ...validEnv, AI_PROVIDER: 'anthropic' })).toThrow(
+        'ANTHROPIC_API_KEY',
+      );
+    });
+
+    it('rejects an unknown AI_PROVIDER', () => {
+      expect(() => loadAppConfig({ ...validEnv, AI_PROVIDER: 'openai' })).toThrow('AI_PROVIDER');
+    });
+
+    it('takes the assistant rate limit from ASSISTANT_RATE_LIMIT_PER_MINUTE', () => {
+      const config = loadAppConfig({ ...validEnv, ASSISTANT_RATE_LIMIT_PER_MINUTE: '3' });
+
+      expect(config.assistant.rateLimitPerMinute).toBe(3);
+    });
+  });
+
   describe('in production', () => {
     const production = {
       ...validEnv,
@@ -208,6 +253,8 @@ describe('loadAppConfig', () => {
       EMAIL_DELIVERY: 'resend',
       RESEND_API_KEY: 're_live_0123456789',
       EMAIL_FROM: 'YouPetMe <no-reply@example.com>',
+      AI_PROVIDER: 'anthropic',
+      ANTHROPIC_API_KEY: 'sk-ant-live-0123456789',
     };
 
     it('accepts a real configuration', () => {
@@ -253,6 +300,17 @@ describe('loadAppConfig', () => {
         ).toThrow('EMAIL_DELIVERY');
       },
     );
+
+    it('rejects the fake AI provider', () => {
+      expect(() => loadAppConfig({ ...production, AI_PROVIDER: 'fake' })).toThrow('AI_PROVIDER');
+    });
+
+    it('rejects the fake AI provider when AI_PROVIDER is left out', () => {
+      const env: Record<string, string | undefined> = { ...production };
+      delete env.AI_PROVIDER;
+
+      expect(() => loadAppConfig(env)).toThrow('AI_PROVIDER');
+    });
 
     it('keeps the same values valid for local development', () => {
       expect(() =>
