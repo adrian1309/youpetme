@@ -22,6 +22,7 @@ const refreshed: RefreshResponse = {
     email: 'john@example.com',
     status: 'ACTIVE',
     role: 'USER',
+    hasSeenWelcome: true,
   },
   authentication: { accessToken: 'restored-token' },
 };

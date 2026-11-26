@@ -56,6 +56,7 @@ export function signedInAs(role: 'USER' | 'ADMIN'): RefreshResponse {
       email: 'ana@example.com',
       status: 'ACTIVE',
       role,
+      hasSeenWelcome: true,
     },
     authentication: { accessToken: `${role.toLowerCase()}-token` },
   };

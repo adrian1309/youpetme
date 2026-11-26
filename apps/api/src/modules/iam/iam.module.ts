@@ -11,6 +11,7 @@ import type { EmailSender } from '../notifications/domain/ports/email-sender';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { EMAIL_SENDER } from '../notifications/notifications.tokens';
 import { LoginUserUseCase } from './application/use-cases/login-user.use-case';
+import { MarkWelcomeSeenUseCase } from './application/use-cases/mark-welcome-seen.use-case';
 import { RequestPasswordResetUseCase } from './application/use-cases/request-password-reset.use-case';
 import { ResetPasswordUseCase } from './application/use-cases/reset-password.use-case';
 import type { PasswordResetTokenRepository } from './domain/ports/password-reset-token-repository';
@@ -36,6 +37,7 @@ import {
   ACCESS_TOKEN_VERIFIER,
   ACCOUNT_REGISTRATION_REPOSITORY,
   LOGIN_USER_USE_CASE,
+  MARK_WELCOME_SEEN_USE_CASE,
   PASSWORD_RESET_TOKEN_REPOSITORY,
   REFRESH_SESSION_USE_CASE,
   REGISTER_USER_USE_CASE,
@@ -45,11 +47,12 @@ import {
   USER_REPOSITORY,
   USER_SESSION_REPOSITORY,
 } from './iam.tokens';
-import { AccessTokenGuard } from './presentation/http/access-token.guard';
+import { AccessTokenGuard, OptionalAccessTokenGuard } from './presentation/http/access-token.guard';
 import { AuthSessionController } from './presentation/http/auth-session.controller';
 import { IamExceptionFilter } from './presentation/http/iam-exception.filter';
 import { RegisterController } from './presentation/http/register.controller';
 import { TermsVersionController } from './presentation/http/terms-version.controller';
+import { UsersMeController } from './presentation/http/users-me.controller';
 
 @Module({
   imports: [EventEmitterModule.forRoot(), NotificationsModule],
@@ -58,9 +61,11 @@ import { TermsVersionController } from './presentation/http/terms-version.contro
     AuthSessionController,
     PasswordResetController,
     TermsVersionController,
+    UsersMeController,
   ],
-  // Other modules protect their endpoints with the same stateless access-token check (ADR-002).
-  exports: [AccessTokenGuard, ACCESS_TOKEN_VERIFIER],
+  // Other modules protect their endpoints with the same stateless access-token check (ADR-002);
+  // the AI module reads the user's profile context through USER_REPOSITORY (ADR-011).
+  exports: [AccessTokenGuard, OptionalAccessTokenGuard, ACCESS_TOKEN_VERIFIER, USER_REPOSITORY],
   providers: [
     { provide: APP_FILTER, useClass: IamExceptionFilter },
     {
@@ -148,6 +153,12 @@ import { TermsVersionController } from './presentation/http/terms-version.contro
       }),
     },
     AccessTokenGuard,
+    OptionalAccessTokenGuard,
+    {
+      provide: MARK_WELCOME_SEEN_USE_CASE,
+      inject: [USER_REPOSITORY],
+      useFactory: (users: UserRepository) => new MarkWelcomeSeenUseCase(users),
+    },
     {
       provide: REVOKE_SESSION_USE_CASE,
       inject: [USER_SESSION_REPOSITORY, JwtTokenIssuer, NestEventPublisher],

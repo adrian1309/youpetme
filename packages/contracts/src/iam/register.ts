@@ -31,6 +31,8 @@ export interface RegisterResponse {
     status: 'ACTIVE';
     /** Always USER: ADMIN accounts are never created by registration. */
     role: 'USER' | 'ADMIN';
+    /** As sent in the request (false when left out). */
+    hasSeenWelcome: boolean;
   };
   authentication: {
     accessToken: string;

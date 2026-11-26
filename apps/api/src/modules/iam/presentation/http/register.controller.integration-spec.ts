@@ -103,6 +103,7 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
         email: 'john@example.com',
         status: 'ACTIVE',
         role: 'USER',
+        hasSeenWelcome: false,
       });
       expect(Object.keys(body)).toEqual(['user', 'authentication']);
       expect(Object.keys(body.authentication)).toEqual(['accessToken']);
@@ -149,6 +150,8 @@ describe('POST /api/v1/auth/register (PostgreSQL)', () => {
         .post('/api/v1/auth/register')
         .send({ ...validBody, email: '  John@Example.COM ', hasSeenWelcome: true })
         .expect(201);
+      // SCRUM-17 scenario 3: the client learns it from the response and skips the welcome.
+      expect((response.body as RegisterResponse).user.hasSeenWelcome).toBe(true);
 
       const user = await prisma.user.findUniqueOrThrow({
         where: { id: (response.body as RegisterResponse).user.id },

@@ -1,10 +1,14 @@
 import type { User } from '../entities/user.entity';
 
-/** A user together with the profile names an authentication response needs. */
+/** A user together with the profile data an authentication response and Diango need. */
 export interface UserAccount {
   user: User;
   firstName: string;
   lastName: string;
+  /** Diango's welcome was already shown to this user (ADR-011, SCRUM-17). */
+  hasSeenWelcome: boolean;
+  /** UserProfile.matchingPreferences (ADR-010); null until AI Matching saves a profile. */
+  matchingPreferences: unknown;
 }
 
 export interface UserRepository {
@@ -13,4 +17,6 @@ export interface UserRepository {
   /** `normalizedEmail` is already trimmed and lowercase. */
   findAccountByEmail(normalizedEmail: string): Promise<UserAccount | null>;
   findAccountById(userId: string): Promise<UserAccount | null>;
+  /** Idempotent; does nothing for an unknown user. */
+  markWelcomeSeen(userId: string): Promise<void>;
 }

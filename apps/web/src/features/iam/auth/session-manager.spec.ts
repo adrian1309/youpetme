@@ -23,6 +23,7 @@ function refreshed(accessToken: string, firstName = 'John'): RefreshResponse {
       email: 'john@example.com',
       status: 'ACTIVE',
       role: 'USER',
+      hasSeenWelcome: true,
     },
     authentication: { accessToken },
   };
