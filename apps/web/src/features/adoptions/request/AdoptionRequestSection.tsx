@@ -12,7 +12,8 @@ import { Link, useNavigate } from 'react-router';
 
 import { Alert } from '../../../components/Alert';
 import { AnimalPhoto } from '../../../components/AnimalPhoto';
-import { Button, primaryButtonClass, secondaryButtonClass } from '../../../components/Button';
+import { Button } from '../../../components/Button';
+import { buttonClass, secondaryButtonClass } from '../../../components/button-styles';
 import { Notice } from '../../../components/Notice';
 import { TextAreaField } from '../../../components/TextAreaField';
 import { useApiClient } from '../../../lib/http/api-client-context';
@@ -84,7 +85,7 @@ export function AdoptionRequestSection({ animal }: { animal: RequestAnimal }) {
         type="button"
         onClick={open}
         aria-disabled={sent || undefined}
-        className={`${primaryButtonClass} w-full aria-disabled:cursor-not-allowed`}
+        className={`${buttonClass('primary', 'lg')} w-full aria-disabled:cursor-not-allowed`}
       >
         {sent ? <Check aria-hidden="true" className="size-5" /> : null}
         {sent ? t('adoptions.request.sentButton') : t('adoptions.request.open')}

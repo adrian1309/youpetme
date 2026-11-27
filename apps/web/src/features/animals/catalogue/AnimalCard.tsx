@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
 import { AnimalPhoto } from '../../../components/AnimalPhoto';
-import { secondaryButtonClass } from '../../../components/Button';
+import { secondaryButtonClass } from '../../../components/button-styles';
 import { AgeIcon, CompatibilityIcon, SizeIcon, SpeciesIcon, Tag } from '../animal-tags';
 
 /** At most this many temperament tags on a card; the detail shows them all. */
@@ -16,7 +16,17 @@ const CARD_TEMPERAMENT_TAGS = 2;
  * stretched link named after the animal; "Conócelo" only looks like a button. `children` adds
  * content below the tags (AI Matching: the fit and its reasons).
  */
-export function AnimalCard({ animal, children }: { animal: AnimalSummary; children?: ReactNode }) {
+export function AnimalCard({
+  animal,
+  children,
+  headingLevel = 2,
+}: {
+  animal: AnimalSummary;
+  children?: ReactNode;
+  /** 3 when the cards sit under a section heading (home page). */
+  headingLevel?: 2 | 3;
+}) {
+  const Heading = headingLevel === 3 ? 'h3' : 'h2';
   const { t } = useTranslation();
   const species = t(`animals.species.${animal.species}`);
   // Unknown compatibility is left out of cards so it is never read as "no" (Design System).
@@ -41,11 +51,11 @@ export function AnimalCard({ animal, children }: { animal: AnimalSummary; childr
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-3 p-4">
-        <h2 className="text-xl font-semibold text-text">
+        <Heading className="text-xl font-semibold text-text">
           <Link to={`/animals/${animal.id}`} className="after:absolute after:inset-0">
             {animal.name}
           </Link>
-        </h2>
+        </Heading>
         <ul className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted">
           <li className="inline-flex items-center gap-1.5">
             <SizeIcon />

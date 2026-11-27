@@ -56,10 +56,10 @@ export function TextField({
           aria-describedby={describedBy(ids, { hint, error })}
           className={`block min-h-11 w-full rounded-control border bg-surface px-3 py-2 text-base text-text focus:border-brand-primary ${
             error ? 'border-2 border-feedback-error' : 'border-border-input'
-          } ${startIcon ? 'pl-10' : ''} ${endAdornment ? 'pr-14' : ''} ${className ?? ''}`}
+          } ${startIcon ? 'pl-10' : ''} ${endAdornment ? 'pr-12' : ''} ${className ?? ''}`}
         />
         {endAdornment ? (
-          <div className="absolute inset-y-0 right-0 flex items-center pr-1">{endAdornment}</div>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-1.5">{endAdornment}</div>
         ) : null}
       </div>
       <FieldMessages ids={ids} hint={hint} hintState={hintState} error={error} />

@@ -81,14 +81,18 @@ export async function logInAsAdmin(page: Page, admin: Visitor): Promise<Response
 
 export async function expectSignedIn(page: Page, visitor: Visitor) {
   await expect(page).toHaveURL('/');
-  await expect(page.getByRole('heading', { level: 1, name: 'Has iniciado sesión.' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: `Hola, ${visitor.firstName}` }),
+  ).toBeVisible();
   await expect(page.getByRole('banner')).toContainText(`Hola, ${visitor.firstName}`);
 }
 
 /** The visitor home, with no greeting and no error: the user has to sign in again. */
 export async function expectVisitor(page: Page) {
-  await expect(page.getByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
-  await expect(page.getByRole('link', { name: 'Iniciar sesión' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { level: 1, name: '¿Listo para encontrar a tu mejor amigo?' }),
+  ).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Inicia sesión', exact: true })).toBeVisible();
   await expect(page.getByRole('banner')).not.toContainText('Hola');
   await expect(page.getByRole('alert')).toHaveCount(0);
 }

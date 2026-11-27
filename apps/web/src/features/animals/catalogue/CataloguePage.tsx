@@ -1,16 +1,23 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { AGE_GROUPS, type ListAnimalsResponse, SIZES, SPECIES } from '@youpetme/contracts';
-import { Baby, Cake, Check, PawPrint, Ruler, Search, SearchX } from 'lucide-react';
+import { AGE_GROUPS, SIZES, SPECIES } from '@youpetme/contracts';
+import {
+  Baby,
+  Cake,
+  Check,
+  PawPrint,
+  Ruler,
+  Search,
+  SearchX,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 
 import { Alert } from '../../../components/Alert';
-import { primaryButtonClass, secondaryButtonClass } from '../../../components/Button';
+import { buttonClass, secondaryButtonClass } from '../../../components/button-styles';
 import { PageTitle } from '../../../components/PageTitle';
-import { useApiClient } from '../../../lib/http/api-client-context';
-import { ANIMALS_PATH } from '../animal-tags';
 import { AnimalCard } from './AnimalCard';
+import { useAnimals } from './use-animals';
 
 /** Query parameters the catalogue keeps in the URL and forwards to the API as they are. */
 const FILTER_KEYS = [
@@ -32,7 +39,6 @@ const iconClass = 'size-5 text-brand-primary';
 /** `/animals`: public catalogue of AVAILABLE animals with filters (SCRUM-12, SCRUM-56). */
 export function CataloguePage() {
   const { t } = useTranslation();
-  const client = useApiClient();
   const titleId = useId();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -47,14 +53,7 @@ export function CataloguePage() {
   if (currentPage > 1) apiQuery.set('page', String(currentPage));
   const queryString = apiQuery.toString();
 
-  const query = useQuery({
-    queryKey: ['animals', queryString],
-    queryFn: ({ signal }) =>
-      client.get<ListAnimalsResponse>(`${ANIMALS_PATH}${queryString ? `?${queryString}` : ''}`, {
-        signal,
-      }),
-    placeholderData: keepPreviousData,
-  });
+  const query = useAnimals(queryString);
 
   /** "Buscar": the chosen filters go to the URL (and so to the API), from the first page. */
   function apply(filters: Filters) {
@@ -173,7 +172,7 @@ function FilterForm({
       onSubmit={submit}
       className="mb-8 space-y-5 rounded-card border border-border-subtle bg-surface p-5 shadow-soft"
     >
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
         <PillRadioGroup
           legend={t('animals.catalogue.filters.species')}
           icon={<PawPrint aria-hidden="true" className={iconClass} />}
@@ -198,27 +197,30 @@ function FilterForm({
           value={draft.ageGroup}
           onChange={(value) => set('ageGroup', value)}
         />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        <PillCheckbox
-          label={t('animals.catalogue.filters.compatibleWithChildren')}
-          icon={<Baby aria-hidden="true" className="size-5" />}
-          checked={draft.compatibleWithChildren === 'true'}
-          onChange={(checked) => set('compatibleWithChildren', checked ? 'true' : '')}
-        />
-        <PillCheckbox
-          label={t('animals.catalogue.filters.compatibleWithOtherAnimals')}
-          icon={<PawPrint aria-hidden="true" className="size-5" />}
-          checked={draft.compatibleWithOtherAnimals === 'true'}
-          onChange={(checked) => set('compatibleWithOtherAnimals', checked ? 'true' : '')}
-        />
+        <PillFieldset
+          legend={t('animals.catalogue.filters.others')}
+          icon={<SlidersHorizontal aria-hidden="true" className={iconClass} />}
+        >
+          <PillCheckbox
+            label={t('animals.catalogue.filters.compatibleWithChildren')}
+            icon={<Baby aria-hidden="true" className="size-5" />}
+            checked={draft.compatibleWithChildren === 'true'}
+            onChange={(checked) => set('compatibleWithChildren', checked ? 'true' : '')}
+          />
+          <PillCheckbox
+            label={t('animals.catalogue.filters.compatibleWithOtherAnimals')}
+            icon={<PawPrint aria-hidden="true" className="size-5" />}
+            checked={draft.compatibleWithOtherAnimals === 'true'}
+            onChange={(checked) => set('compatibleWithOtherAnimals', checked ? 'true' : '')}
+          />
+        </PillFieldset>
       </div>
       <div className="flex flex-wrap gap-3">
-        <button type="submit" className={primaryButtonClass}>
+        <button type="submit" className={buttonClass('primary', 'lg')}>
           <Search aria-hidden="true" className="size-5" />
           {t('animals.catalogue.filters.search')}
         </button>
-        <button type="button" onClick={onClear} className={secondaryButtonClass}>
+        <button type="button" onClick={onClear} className={buttonClass('secondary', 'lg')}>
           {t('animals.catalogue.filters.clear')}
         </button>
       </div>
@@ -246,33 +248,48 @@ function PillRadioGroup({
   onChange(value: string): void;
 }) {
   return (
+    <PillFieldset legend={legend} icon={icon}>
+      {options.map((option) => {
+        const checked = value === option.value;
+        return (
+          <label key={option.value}>
+            <input
+              type="radio"
+              name={name}
+              value={option.value}
+              checked={checked}
+              onChange={() => onChange(option.value)}
+              className="peer sr-only"
+            />
+            <span className={pillClass}>
+              {/* The check mark tells the choice apart without relying on colour. */}
+              {checked ? <Check aria-hidden="true" className="size-4" /> : null}
+              {option.label}
+            </span>
+          </label>
+        );
+      })}
+    </PillFieldset>
+  );
+}
+
+/** A filter group: fieldset + legend with its icon, and its pills (Design System — Filters). */
+function PillFieldset({
+  legend,
+  icon,
+  children,
+}: {
+  legend: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
     <fieldset>
       <legend className="mb-2 flex items-center gap-2 text-base font-semibold text-text">
         {icon}
         {legend}
       </legend>
-      <div className="flex flex-wrap gap-2">
-        {options.map((option) => {
-          const checked = value === option.value;
-          return (
-            <label key={option.value}>
-              <input
-                type="radio"
-                name={name}
-                value={option.value}
-                checked={checked}
-                onChange={() => onChange(option.value)}
-                className="peer sr-only"
-              />
-              <span className={pillClass}>
-                {/* The check mark tells the choice apart without relying on colour. */}
-                {checked ? <Check aria-hidden="true" className="size-4" /> : null}
-                {option.label}
-              </span>
-            </label>
-          );
-        })}
-      </div>
+      <div className="flex flex-wrap gap-2">{children}</div>
     </fieldset>
   );
 }

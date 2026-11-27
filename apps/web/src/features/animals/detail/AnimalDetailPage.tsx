@@ -7,7 +7,7 @@ import { Link, useParams } from 'react-router';
 
 import { Alert } from '../../../components/Alert';
 import { AnimalPhoto } from '../../../components/AnimalPhoto';
-import { secondaryButtonClass } from '../../../components/Button';
+import { secondaryButtonClass } from '../../../components/button-styles';
 import { PageTitle } from '../../../components/PageTitle';
 import { useApiClient } from '../../../lib/http/api-client-context';
 import { ApiError } from '../../../lib/http/api-error';

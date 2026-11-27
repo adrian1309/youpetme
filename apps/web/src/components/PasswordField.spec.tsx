@@ -38,6 +38,16 @@ describe('PasswordField', () => {
     expect(toggle).toHaveTextContent('');
   });
 
+  it('keeps the toggle inside the field: 36 px with an inward focus ring (SCRUM-56)', () => {
+    render(<PasswordField label="Contraseña" {...labels} />);
+
+    expect(screen.getByRole('button', { name: 'Mostrar contraseña' })).toHaveClass(
+      'size-9',
+      'focus-visible:outline-offset-[-3px]',
+    );
+    expect(screen.getByLabelText('Contraseña', { selector: 'input' })).toHaveClass('pr-12');
+  });
+
   it('is operable from the keyboard and keeps the focus on the toggle', async () => {
     render(<PasswordField label="Contraseña" {...labels} />);
     const input = screen.getByLabelText('Contraseña', { selector: 'input' });

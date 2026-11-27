@@ -87,7 +87,7 @@ test.describe('US-IAM-001 — Create Account', () => {
     // Then the account exists, they are authenticated and they land on the authenticated area
     expect(response.status()).toBe(201);
     await expect(page).toHaveURL('/');
-    await expect(page.getByRole('heading', { name: 'Tu cuenta está creada.' })).toBeVisible();
+    await expect(page.getByText('Tu cuenta está creada.')).toBeVisible();
     await expect(page.getByRole('banner')).toContainText(`Hola, ${visitor.firstName}`);
   });
 

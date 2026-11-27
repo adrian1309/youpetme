@@ -89,7 +89,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       await fillAndSubmit('  ana@example.com ');
 
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
       expect(screen.getByRole('banner')).toHaveTextContent('Hola, Ana');
       const [url, init] = fetchMock.mock.calls[0]!;
       expect(url).toBe(`${TEST_API_URL}/api/v1/auth/login`);
@@ -113,7 +113,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       answer(jsonResponse(200, signedIn));
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
     });
   });
 
@@ -174,7 +174,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       await fillAndSubmit();
 
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
     });
   });
 
@@ -268,7 +268,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
     renderLogin(vi.fn().mockResolvedValue(jsonResponse(200, signedIn)));
 
     await fillAndSubmit('ana@example.com', 'my-secure-passphrase');
-    await screen.findByText('Has iniciado sesión.');
+    await screen.findByRole('heading', { level: 1, name: /^Hola, / });
 
     const logged = JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
     expect(logged).not.toContain('my-secure-passphrase');

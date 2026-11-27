@@ -8,7 +8,8 @@ import { useEffect, useId, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 
-import { Button, secondaryButtonClass } from '../../components/Button';
+import { Button } from '../../components/Button';
+import { secondaryButtonClass } from '../../components/button-styles';
 import { PageTitle } from '../../components/PageTitle';
 import { TextAreaField } from '../../components/TextAreaField';
 import { ApiError } from '../../lib/http/api-error';
@@ -152,7 +153,7 @@ export function MatchingPage() {
             })}
           </ul>
         </div>
-        <Button type="submit" pending={pending} className="text-lg">
+        <Button type="submit" pending={pending} size="lg">
           {pending ? (
             <LoaderCircle aria-hidden="true" className="size-5 motion-safe:animate-spin" />
           ) : (

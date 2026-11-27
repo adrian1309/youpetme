@@ -207,13 +207,42 @@
   "home": {
     "greeting": "Hola, {{name}}",
     "accountCreated": "Tu cuenta está creada.",
-    "visitor": {
-      "register": "Crear cuenta",
-      "login": "Iniciar sesión",
-      "catalogue": "Ver animales en adopción"
+    "hero": {
+      "title": "¿Listo para encontrar a tu mejor amigo?",
+      "subtitle": "Cada animal de YouPetMe espera un hogar. Empieza por el que encaje contigo.",
+      "loginPrompt": "¿Ya tienes cuenta?",
+      "login": "Inicia sesión"
     },
-    "signedIn": "Has iniciado sesión.",
-    "catalogue": "Ver animales en adopción"
+    "actions": {
+      "catalogue": "Ver animales",
+      "matching": "Encuentra tu compañero",
+      "panel": "Ir al panel"
+    },
+    "how": {
+      "title": "Cómo funciona",
+      "discover": {
+        "title": "Descubre",
+        "body": "Explora los animales que esperan un hogar."
+      },
+      "diango": {
+        "title": "Cuéntale a Diango",
+        "body": "Dinos cómo eres y te recomendamos a quién conocer primero."
+      },
+      "adopt": {
+        "title": "Adopta",
+        "body": "Envía tu solicitud y el refugio se pondrá en contacto contigo."
+      }
+    },
+    "friends": {
+      "title": "Algunos de nuestros amigos",
+      "all": "Ver todos los animales"
+    },
+    "band": {
+      "title": "Tu nuevo mejor amigo está a un clic"
+    },
+    "user": {
+      "subtitle": "¿Qué te apetece hacer hoy?"
+    }
   },
   "configuration": {
     "error": {
@@ -405,7 +434,8 @@
         "compatibleWithChildren": "Bien con niños",
         "compatibleWithOtherAnimals": "Bien con otros animales",
         "search": "Buscar",
-        "clear": "Quitar filtros"
+        "clear": "Quitar filtros",
+        "others": "Otros"
       },
       "results": "{{count}} animales",
       "results_one": "{{count}} animal",

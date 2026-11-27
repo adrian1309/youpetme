@@ -135,6 +135,16 @@ describe('CataloguePage (/animals, SCRUM-12)', () => {
     expect(queries.at(-1)).toBe('');
   });
 
+  it('groups the compatibility pills under "Otros", like the other filters', async () => {
+    const { fetchMock } = catalogueApi();
+    renderCatalogue(fetchMock);
+    await screen.findByRole('heading', { level: 2, name: 'Luna' });
+
+    const others = group('Otros');
+    expect(others.getByRole('checkbox', { name: 'Bien con niños' })).toBeInTheDocument();
+    expect(others.getByRole('checkbox', { name: 'Bien con otros animales' })).toBeInTheDocument();
+  });
+
   it('says there are no animals yet, never "no match", when no filter is applied', async () => {
     const { fetchMock } = catalogueApi(() => jsonResponse(200, page([])));
     renderCatalogue(fetchMock);

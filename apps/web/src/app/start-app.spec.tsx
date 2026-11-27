@@ -89,7 +89,12 @@ describe('startApp', () => {
     noSession();
     await start({ DEV: true });
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '¿Listo para encontrar a tu mejor amigo?',
+      }),
+    ).toBeVisible();
     expect(screen.queryByText('No se puede iniciar la aplicación')).not.toBeInTheDocument();
   });
 
@@ -97,6 +102,11 @@ describe('startApp', () => {
     noSession();
     await start({ DEV: false, VITE_API_URL: 'https://api.example.com' });
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'YouPetMe' })).toBeVisible();
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '¿Listo para encontrar a tu mejor amigo?',
+      }),
+    ).toBeVisible();
   });
 });
