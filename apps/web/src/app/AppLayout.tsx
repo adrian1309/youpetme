@@ -32,7 +32,8 @@ export function AppLayout() {
       >
         {t('common.skipToContent')}
       </a>
-      <div className="flex min-h-screen flex-col">
+      {/* overflow-x-clip: decorative shapes never cause horizontal scroll (SCRUM-56). */}
+      <div className="flex min-h-screen flex-col overflow-x-clip">
         <AppHeader />
         <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1">
           {status === 'restoring' ? (
