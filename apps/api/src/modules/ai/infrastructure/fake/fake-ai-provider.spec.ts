@@ -70,4 +70,52 @@ describe('FakeAiProvider', () => {
       text: expect.stringContaining('Hola, Ana'),
     });
   });
+
+  describe('matching extraction (structured output)', () => {
+    const extract = async (text: string) => {
+      const turn = await ai.complete(
+        request({ system: 'Extractor', messages: ask(text), outputSchema: { type: 'object' } }),
+      );
+      expect(turn.stopReason).toBe('end_turn');
+      const [block] = turn.content;
+      return JSON.parse(block?.type === 'text' ? block.text : 'null') as Record<string, unknown>;
+    };
+
+    it('answers every field, null when the text does not say it', async () => {
+      expect(await extract('Hola')).toEqual({
+        housingSize: null,
+        activityLevel: null,
+        experienceWithAnimals: null,
+        hasChildren: null,
+        hasOtherAnimals: null,
+        preferredSpecies: null,
+        preferredSize: null,
+        preferredAgeGroup: null,
+      });
+    });
+
+    it('takes "vivo en un piso" as housing only, never as a size preference', async () => {
+      expect(await extract('Vivo en un piso')).toMatchObject({
+        housingSize: 'SMALL',
+        preferredSize: null,
+      });
+    });
+
+    it('reads the keyword rules', async () => {
+      expect(
+        await extract(
+          'Busco un perro pequeño, tengo hijos y otro gato, soy muy activa y es mi primera vez',
+        ),
+      ).toEqual({
+        housingSize: null,
+        activityLevel: 'HIGH',
+        experienceWithAnimals: 'NONE',
+        hasChildren: true,
+        hasOtherAnimals: true,
+        preferredSpecies: 'DOG',
+        preferredSize: 'SMALL',
+        preferredAgeGroup: null,
+      });
+    });
+  });
 });

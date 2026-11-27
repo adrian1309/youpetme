@@ -11,6 +11,8 @@ import type {
  */
 export class FakeAiProvider implements AiProvider {
   async complete(request: AiCompletionRequest): Promise<AiTurn> {
+    if (request.outputSchema) return text(JSON.stringify(extractProfile(lastUserText(request))));
+
     const last = request.messages.at(-1);
     const toolResult = last?.content.find(
       (block): block is Extract<AiBlock, { type: 'tool_result' }> => block.type === 'tool_result',
@@ -41,6 +43,28 @@ export class FakeAiProvider implements AiProvider {
       `Hola${name ? `, ${name}` : ''}. Soy Diango (modo de prueba). Pregúntame por perros o gatos.`,
     );
   }
+}
+
+function lastUserText(request: AiCompletionRequest): string {
+  return (request.messages.at(-1)?.content ?? [])
+    .filter((block): block is Extract<AiBlock, { type: 'text' }> => block.type === 'text')
+    .map((block) => block.text.toLowerCase())
+    .join(' ');
+}
+
+/** AI Matching's extraction by keywords: only what the text says, null for the rest. */
+function extractProfile(description: string): Record<string, unknown> {
+  const says = (pattern: RegExp) => pattern.test(description);
+  return {
+    housingSize: says(/piso|apartamento/) ? 'SMALL' : says(/jard[ií]n/) ? 'LARGE' : null,
+    activityLevel: says(/tranquil/) ? 'LOW' : says(/activ|deporte|correr/) ? 'HIGH' : null,
+    experienceWithAnimals: says(/primera vez|nunca he tenido/) ? 'NONE' : null,
+    hasChildren: says(/niñ|hij/) ? true : null,
+    hasOtherAnimals: says(/otros? (perr|gat|animal)/) ? true : null,
+    preferredSpecies: says(/perr/) ? 'DOG' : says(/gat/) ? 'CAT' : null,
+    preferredSize: says(/pequeñ/) ? 'SMALL' : null,
+    preferredAgeGroup: says(/cachorr/) ? 'PUPPY_KITTEN' : null,
+  };
 }
 
 function describeResult(content: string): string {

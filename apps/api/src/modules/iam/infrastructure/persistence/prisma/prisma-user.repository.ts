@@ -1,3 +1,4 @@
+import type { Prisma } from '../../../../../platform/database/generated/client';
 import type { PrismaService } from '../../../../../platform/database/prisma.service';
 import { User } from '../../../domain/entities/user.entity';
 import type { UserAccount, UserRepository } from '../../../domain/ports/user-repository';
@@ -55,6 +56,16 @@ export class PrismaUserRepository implements UserRepository {
     await this.prisma.userProfile.updateMany({
       where: { userId },
       data: { hasSeenWelcome: true },
+    });
+  }
+
+  async saveMatchingPreferences(
+    userId: string,
+    preferences: Record<string, unknown>,
+  ): Promise<void> {
+    await this.prisma.userProfile.updateMany({
+      where: { userId },
+      data: { matchingPreferences: preferences as Prisma.InputJsonObject },
     });
   }
 }

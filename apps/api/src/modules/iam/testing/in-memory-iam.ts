@@ -35,6 +35,7 @@ export class CallLog {
 export class InMemoryAccounts implements UserRepository, AccountRegistrationRepository {
   readonly accounts: NewAccount[] = [];
   readonly welcomeSeen = new Set<string>();
+  readonly matchingPreferences = new Map<string, Record<string, unknown>>();
   failNextRegisterWith: Error | undefined;
 
   constructor(private readonly log: CallLog = new CallLog()) {}
@@ -60,12 +61,18 @@ export class InMemoryAccounts implements UserRepository, AccountRegistrationRepo
       firstName: account.profile.firstName,
       lastName: account.profile.lastName,
       hasSeenWelcome: account.profile.hasSeenWelcome || this.welcomeSeen.has(account.user.id),
-      matchingPreferences: account.profile.matchingPreferences,
+      matchingPreferences:
+        this.matchingPreferences.get(account.user.id) ?? account.profile.matchingPreferences,
     };
   }
 
   markWelcomeSeen(userId: string): Promise<void> {
     this.welcomeSeen.add(userId);
+    return Promise.resolve();
+  }
+
+  saveMatchingPreferences(userId: string, preferences: Record<string, unknown>): Promise<void> {
+    this.matchingPreferences.set(userId, preferences);
     return Promise.resolve();
   }
 
