@@ -39,7 +39,7 @@ Conceptual attributes:
 - createdAt
 - updatedAt
 
-`matchingPreferences` is a convenience starting point, not a restriction: the user can always enter different preferences, and it is never used to narrow what they can ask. A guest's preferences are never stored server-side; until the guest registers they live only in the browser (localStorage, the same guest pattern as Favourites — Functional Map), and after registration the client offers them as the starting point for this field. `AdopterProfile` remains a future profile; when it exists, `matchingPreferences` is the natural candidate to move into it.
+`matchingPreferences` is a convenience starting point, not a restriction: the user can always enter different preferences, and it is never used to narrow what they can ask. A guest's preferences are never stored server-side; until the guest registers they live only in the browser (localStorage, the same guest pattern as Favourites — Functional Map), and after registration the client offers them as the starting point for this field (an unchecked "save my search preferences" option on the registration form). Its shape is the adopter profile of ADR-010: a JSON object with only the attributes stated (enums and booleans), without free text. `AdopterProfile` remains a future profile; when it exists, `matchingPreferences` is the natural candidate to move into it.
 
 ---
 

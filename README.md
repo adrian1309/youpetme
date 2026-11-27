@@ -4,7 +4,7 @@ YouPetMe is a web-based animal adoption platform that connects potential adopter
 
 ## Project status
 
-The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined. The monorepo skeleton (workspaces, tooling and CI) is in place, and the first features are implemented: registration, login, logout, password recovery, the animal catalogue, adoption requests and Diango, the AI assistant.
+The project is currently in the **architecture foundation phase**. Product scope, architecture decisions and the first technical specification have been defined. The monorepo skeleton (workspaces, tooling and CI) is in place, and the first features are implemented: registration, login, logout, password recovery, the animal catalogue, adoption requests, Diango (the AI assistant) and AI Matching.
 
 ## Product vision
 
@@ -95,6 +95,7 @@ The authoritative documents for the current foundation are:
 - TS-ANIMALS-001 — Animal Catalogue.
 - TS-ADOPTION-001 — Adoption Requests.
 - TS-AI-001 — Diango Assistant.
+- TS-AI-002 — AI Matching.
 
 ## Getting Started
 
