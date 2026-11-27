@@ -20,8 +20,9 @@ export function Alert({ children, focusOnMount = false }: AlertProps) {
     <div
       ref={ref}
       role="alert"
+      // Focused by script only (tabIndex -1); its own border marks it, so no second ring.
       tabIndex={-1}
-      className="flex gap-2 rounded-control border-2 border-feedback-error bg-surface-muted p-3 text-base text-feedback-error"
+      className="flex focus:outline-none gap-2 rounded-control border-2 border-feedback-error bg-surface-muted p-3 text-base text-feedback-error"
     >
       <span aria-hidden="true">⚠</span>
       <div>{children}</div>

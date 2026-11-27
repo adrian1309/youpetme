@@ -494,7 +494,9 @@
         "choose": "Elige una opción",
         "photoUrl": {
           "label": "URL de la foto",
-          "hint": "Dirección https de una imagen ya publicada"
+          "hint": "Dirección https de una imagen ya publicada",
+          "preview": "Vista previa de la foto",
+          "previewName": "Tu nuevo amigo"
         },
         "breed": {
           "label": "Raza (opcional)"
@@ -529,6 +531,12 @@
       "actions": {
         "submit": "Registrar animal",
         "submitting": "Registrando…"
+      },
+      "intro": "Dale una nueva oportunidad a un amigo.",
+      "sections": {
+        "basics": "Datos básicos",
+        "photo": "Foto y raza",
+        "character": "Carácter y convivencia"
       }
     }
   },
@@ -566,7 +574,7 @@
       "title": "Solicitudes de adopción",
       "filters": {
         "status": "Estado",
-        "any": "Todos"
+        "any": "Todas"
       },
       "animalFilter": "Solo se muestran las solicitudes de un animal.",
       "showAll": "Ver todas las solicitudes",
@@ -607,7 +615,16 @@
         "previous": "Anterior",
         "next": "Siguiente",
         "page": "Página {{page}} de {{pages}}"
-      }
+      },
+      "statusFilter": {
+        "PENDING": "Pendientes",
+        "APPROVED": "Aprobadas",
+        "REJECTED": "Rechazadas",
+        "COMPLETED": "Completadas",
+        "CANCELLED": "Canceladas"
+      },
+      "emptyNone": "Aún no hay solicitudes",
+      "emptyNoneBody": "Cuando alguien quiera adoptar, su solicitud aparecerá aquí."
     }
   },
   "assistant": {
@@ -621,15 +638,16 @@
       "close": "Cerrar el chat de Diango"
     },
     "chat": {
-      "close": "Cerrar",
+      "close": "Cerrar chat",
       "conversation": "Conversación con Diango",
       "greeting": "¡Hola! ¿En qué te ayudo? Puedes preguntarme por la adopción o por los animales disponibles.",
       "you": "Tú:",
       "diango": "Diango:",
-      "typing": "Diango está escribiendo…",
+      "typing": "Diango está pensando…",
       "retry": "Reintentar",
       "inputLabel": "Escribe tu pregunta",
-      "send": "Enviar"
+      "send": "Enviar mensaje",
+      "status": "Asistente de YouPetMe"
     },
     "errors": {
       "unavailable": "Diango no está disponible ahora. Inténtalo de nuevo en un momento.",

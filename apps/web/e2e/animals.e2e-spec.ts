@@ -25,14 +25,22 @@ test('an ADMIN registers an animal and a visitor finds it with filters and opens
   await page.getByRole('banner').getByRole('link', { name: 'Panel' }).click();
   await page.getByRole('link', { name: 'Registrar animal' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Registrar un animal' })).toBeVisible();
+  // Choices are pills (SCRUM-56): click the pill (the label) of the hidden radio or checkbox.
+  // `has` is searched inside each label, so scope to the group first.
+  const pillOf = (group: string, role: 'radio' | 'checkbox', option: string) =>
+    page
+      .getByRole('group', { name: group })
+      .locator('label')
+      .filter({ has: page.getByRole(role, { name: option, exact: true }) });
   await page.getByLabel('Nombre').fill(name);
-  await page.getByLabel('Especie').selectOption({ label: 'Gato' });
-  await page.getByLabel('Tamaño').selectOption({ label: 'Pequeño' });
-  await page.getByLabel('Edad').selectOption({ label: 'Joven' });
+  await pillOf('Especie', 'radio', 'Gato').click();
+  await pillOf('Tamaño', 'radio', 'Pequeño').click();
+  await pillOf('Edad', 'radio', 'Joven').click();
   // An image that is never fetched successfully in CI is fine: the test checks the text only.
   await page.getByLabel('URL de la foto').fill('https://images.example.com/misi.jpg');
-  await page.getByRole('checkbox', { name: 'Juguetón' }).check();
-  await page.getByLabel('¿Se lleva bien con niños?').selectOption({ label: 'Sí' });
+  await pillOf('Carácter (opcional)', 'checkbox', 'Juguetón').click();
+  await expect(page.getByRole('checkbox', { name: 'Juguetón' })).toBeChecked();
+  await pillOf('¿Se lleva bien con niños?', 'radio', 'Sí').click();
   await page.getByRole('button', { name: 'Registrar animal' }).click();
 
   // Then its detail opens

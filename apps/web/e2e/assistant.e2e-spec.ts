@@ -52,7 +52,7 @@ test('a first-time guest meets Diango, closes the welcome and asks about small d
   // When they ask about small dogs
   await page.getByRole('button', { name: 'Abrir el chat de Diango' }).click();
   await page.getByLabel('Escribe tu pregunta').fill('¿Tenéis perros pequeños?');
-  await page.getByRole('button', { name: 'Enviar' }).click();
+  await page.getByRole('button', { name: 'Enviar mensaje', exact: true }).click();
 
   // Then the answer comes from the catalogue
   await expect(page.getByRole('log')).toContainText(name);

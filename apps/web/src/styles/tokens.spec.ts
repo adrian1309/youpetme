@@ -37,6 +37,9 @@ describe('design tokens (WCAG 2.1 AA, warm palette — SCRUM-56)', () => {
       'on-accent-soft',
       'accent-warm',
       'on-accent-warm',
+      'success-soft',
+      'error-soft',
+      'neutral-soft',
       'surface-muted',
       'text',
       'text-muted',
@@ -70,6 +73,12 @@ describe('design tokens (WCAG 2.1 AA, warm palette — SCRUM-56)', () => {
     ['feedback-success', 'page'],
     ['on-accent-soft', 'accent-soft'],
     ['on-accent-warm', 'accent-warm'],
+    ['feedback-success', 'success-soft'],
+    ['feedback-error', 'error-soft'],
+    ['text-muted', 'neutral-soft'],
+    ['text', 'neutral-soft'],
+    ['text', 'success-soft'],
+    ['text', 'error-soft'],
   ])('text %s on %s has at least 4.5:1 contrast', (foreground, background) => {
     expect(contrast(colors[foreground]!, colors[background]!)).toBeGreaterThanOrEqual(4.5);
   });
