@@ -222,3 +222,20 @@ describe('createApiClient — bodiless PUT (Diango welcome, SCRUM-17)', () => {
     await expect(client.put('/api/v1/users/me/welcome-seen')).rejects.toBeInstanceOf(ApiError);
   });
 });
+
+describe('createApiClient — PUT with a JSON body (AI Matching preferences, SCRUM-16)', () => {
+  it('sends the body as JSON with the bearer token', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    const client = createApiClient({ baseUrl: 'http://localhost:3000', fetch: fetchMock });
+
+    await client.put('/api/v1/users/me/matching-preferences', {
+      accessToken: 'token',
+      body: { preferredSpecies: 'DOG' },
+    });
+
+    const [, init] = fetchMock.mock.calls[0]!;
+    expect(init).toMatchObject({ method: 'PUT', body: '{"preferredSpecies":"DOG"}' });
+    expect(new Headers(init.headers).get('Content-Type')).toBe('application/json');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer token');
+  });
+});

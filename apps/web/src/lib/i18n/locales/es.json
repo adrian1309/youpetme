@@ -30,6 +30,9 @@
       "terms": {
         "label": "Acepto los <terms>Términos de Servicio</terms> y la <privacy>Política de Privacidad</privacy>.",
         "opensInNewTab": "(se abre en una pestaña nueva)"
+      },
+      "matchingPreferences": {
+        "label": "Guardar mis preferencias de búsqueda"
       }
     },
     "actions": {
@@ -189,7 +192,8 @@
     "signOut": "Cerrar sesión",
     "signingOut": "Cerrando sesión…",
     "catalogue": "Animales",
-    "adoptionRequests": "Solicitudes"
+    "adoptionRequests": "Solicitudes",
+    "matching": "Encuentra tu compañero"
   },
   "home": {
     "greeting": "Hola, {{name}}",
@@ -582,6 +586,50 @@
     "errors": {
       "unavailable": "Diango no está disponible ahora. Inténtalo de nuevo en un momento.",
       "rateLimited": "Has enviado muchos mensajes seguidos. Espera un momento y vuelve a intentarlo."
+    }
+  },
+  "matching": {
+    "title": "Encuentra tu compañero",
+    "intro": "Cuéntanos cómo es tu día a día y qué buscas, y te recomendamos animales disponibles que encajan contigo. Puedes hablarnos de:",
+    "tips": {
+      "housing": "Tu vivienda: piso, casa, si tiene jardín…",
+      "activity": "Tu nivel de actividad: tranquilo, activo, si sales a correr…",
+      "experience": "Tu experiencia con animales: si es tu primera vez o ya has tenido alguno.",
+      "family": "Si en casa hay niños u otros animales, y si prefieres alguna especie, tamaño o edad."
+    },
+    "form": {
+      "label": "Cuéntanos sobre ti y lo que buscas",
+      "counter": "{{count}}/{{max}}",
+      "required": "Escribe algo sobre ti y lo que buscas.",
+      "submit": "Buscar compañero"
+    },
+    "searching": "Buscando animales que encajen contigo…",
+    "retry": "Reintentar",
+    "errors": {
+      "unavailable": "La búsqueda no está disponible ahora. Inténtalo de nuevo en un momento.",
+      "rateLimited": "Has hecho muchas búsquedas seguidas. Espera un momento y vuelve a intentarlo."
+    },
+    "empty": {
+      "title": "No hemos encontrado animales que encajen",
+      "body": "Ahora mismo ningún animal disponible encaja con lo que nos has contado. Prueba a describirlo de otra forma o explora el catálogo completo.",
+      "catalogue": "Ver todos los animales"
+    },
+    "results": {
+      "title": "Te recomendamos",
+      "greatFit": "Encaja muy bien",
+      "goodFit": "Encaja bien",
+      "reasons": "Por qué encaja"
+    },
+    "reasons": {
+      "SPECIES_MATCH": "Es de la especie que buscas",
+      "SIZE_MATCH": "Tiene el tamaño que prefieres",
+      "AGE_MATCH": "Tiene la edad que prefieres",
+      "SIZE_FITS_HOME": "Su tamaño encaja con tu vivienda",
+      "ACTIVE_MATCH": "Es activo y juguetón, como tu ritmo de vida",
+      "CALM_MATCH": "Es tranquilo, como tu ritmo de vida",
+      "GOOD_FOR_BEGINNERS": "Es cariñoso, buena opción si es tu primer animal",
+      "GOOD_WITH_CHILDREN": "Se lleva bien con niños",
+      "GOOD_WITH_ANIMALS": "Se lleva bien con otros animales"
     }
   }
 }

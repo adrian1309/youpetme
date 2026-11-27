@@ -37,6 +37,9 @@ export function AppHeader() {
           <Link to="/animals" className="font-medium text-brand-primary underline">
             {t('header.catalogue')}
           </Link>
+          <Link to="/matching" className="font-medium text-brand-primary underline">
+            {t('header.matching')}
+          </Link>
           {session?.user.role === 'ADMIN' ? (
             <Link
               to="/admin/adoption-requests"

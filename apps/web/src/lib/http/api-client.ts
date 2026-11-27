@@ -19,8 +19,11 @@ export interface ApiClient {
   get<TResponse>(path: string, options?: RequestOptions): Promise<TResponse>;
   /** Without `body`, nothing is sent and no Content-Type is set (e.g. the refresh request). */
   post<TResponse>(path: string, body?: unknown, options?: RequestOptions): Promise<TResponse>;
-  /** Bodiless PUT for idempotent commands answered with 204 (no response body expected). */
-  put(path: string, options?: RequestOptions): Promise<void>;
+  /**
+   * PUT for idempotent commands answered with 204 (no response body expected). Bodiless unless
+   * `body` is given, which is sent as JSON.
+   */
+  put(path: string, options?: RequestOptions & { body?: unknown }): Promise<void>;
 }
 
 function headersFor(options: RequestOptions, json: boolean): Record<string, string> {
@@ -90,12 +93,14 @@ export function createApiClient({ baseUrl, fetch: fetchImpl }: ApiClientOptions)
         ...(options.signal ? { signal: options.signal } : {}),
       });
     },
-    async put(path: string, options: RequestOptions = {}): Promise<void> {
+    async put(path: string, options: RequestOptions & { body?: unknown } = {}): Promise<void> {
+      const hasBody = options.body !== undefined;
       await send<unknown>(
         path,
         {
           method: 'PUT',
-          headers: headersFor(options, false),
+          headers: headersFor(options, hasBody),
+          ...(hasBody ? { body: JSON.stringify(options.body) } : {}),
           ...(options.signal ? { signal: options.signal } : {}),
         },
         false,
