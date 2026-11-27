@@ -99,42 +99,54 @@ describe('HomePage (/, SCRUM-56)', () => {
     });
   });
 
+  /** Every section of the full home page, in order, with the right heading levels. */
+  async function expectFullHome() {
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 2, name: 'Cómo funciona' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Algunos de nuestros amigos' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Tu nuevo mejor amigo está a un clic' }),
+    ).toBeInTheDocument();
+  }
+
+  const hrefs = (name: string) =>
+    main()
+      .getAllByRole('link', { name })
+      .map((link) => link.getAttribute('href'));
+
   describe('for a signed-in USER', () => {
-    it('greets them by name with the two actions and the animals', async () => {
+    it('shows the full home page with a greeting and the two actions in the hero and the band', async () => {
       const { container } = renderHome('USER');
 
       expect(
         await screen.findByRole('heading', { level: 1, name: 'Hola, Ana' }),
       ).toBeInTheDocument();
       expect(screen.getByText('¿Qué te apetece hacer hoy?')).toBeInTheDocument();
-      expect(main().getByRole('link', { name: 'Ver animales' })).toHaveAttribute(
-        'href',
-        '/animals',
-      );
-      expect(main().getByRole('link', { name: 'Encuentra tu compañero' })).toBeInTheDocument();
-      expect(
-        await screen.findByRole('heading', { level: 2, name: 'Algunos de nuestros amigos' }),
-      ).toBeInTheDocument();
+      await expectFullHome();
+      expect(hrefs('Ver animales')).toEqual(['/animals', '/animals']);
+      expect(hrefs('Encuentra tu compañero')).toEqual(['/matching', '/matching']);
+      expect(screen.queryByRole('link', { name: 'Inicia sesión' })).not.toBeInTheDocument();
       expect(screen.queryByText('Has iniciado sesión.')).not.toBeInTheDocument();
-      expect(screen.queryByText('Cómo funciona')).not.toBeInTheDocument();
       await expectNoAxeViolations(container, { page: true });
     });
   });
 
   describe('for an ADMIN', () => {
-    it('greets them with "Ir al panel" and "Ver animales" only', async () => {
-      renderHome('ADMIN');
+    it('shows the full home page with "Ir al panel" and "Ver animales" in the hero and the band', async () => {
+      const { container } = renderHome('ADMIN');
 
       expect(
         await screen.findByRole('heading', { level: 1, name: 'Hola, Ana' }),
       ).toBeInTheDocument();
-      expect(main().getByRole('link', { name: 'Ir al panel' })).toHaveAttribute('href', '/admin');
-      expect(main().getByRole('link', { name: 'Ver animales' })).toHaveAttribute(
-        'href',
-        '/animals',
-      );
-      expect(screen.queryByText('Cómo funciona')).not.toBeInTheDocument();
-      expect(screen.queryByText('Algunos de nuestros amigos')).not.toBeInTheDocument();
+      await expectFullHome();
+      expect(hrefs('Ir al panel')).toEqual(['/admin', '/admin']);
+      expect(hrefs('Ver animales')).toEqual(['/animals', '/animals']);
+      expect(
+        main().queryByRole('link', { name: 'Encuentra tu compañero' }),
+      ).not.toBeInTheDocument();
+      await expectNoAxeViolations(container, { page: true });
     });
   });
 });

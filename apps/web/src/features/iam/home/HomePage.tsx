@@ -16,61 +16,46 @@ const FRIENDS = 3;
 const iconClass = 'size-6';
 
 /**
- * `/` (SCRUM-20, SCRUM-56): a warm hero with the two main actions, how it works, a few animals
- * and a closing band for a visitor; a greeting with the actions (and the animals) once signed in.
+ * `/` (SCRUM-20, SCRUM-56): the same full page for everyone (hero, how it works, a few animals
+ * and a closing band). Only the hero's text and the actions depend on who is visiting.
  */
 export function HomePage() {
   const { t } = useTranslation();
   const { session, accountCreated } = useAuth();
-
-  if (session?.user.role === 'ADMIN') {
-    return (
-      <Greeting name={session.user.firstName}>
-        <Link to="/admin" className={buttonClass('primary', 'lg')}>
-          <LayoutDashboard aria-hidden="true" className={iconClass} />
-          {t('home.actions.panel')}
-        </Link>
-        <Link to="/animals" className={buttonClass('secondary', 'lg')}>
-          <Heart aria-hidden="true" className={iconClass} />
-          {t('home.actions.catalogue')}
-        </Link>
-      </Greeting>
-    );
-  }
-
-  if (session) {
-    return (
-      <>
-        <Greeting
-          name={session.user.firstName}
-          subtitle={t('home.user.subtitle')}
-          notice={accountCreated ? t('home.accountCreated') : undefined}
-        >
-          <MainActions />
-        </Greeting>
-        <Friends />
-      </>
-    );
-  }
+  const isAdmin = session?.user.role === 'ADMIN';
+  const actions = isAdmin ? <AdminActions /> : <MainActions />;
 
   return (
     <>
       <PageTitle />
-      <section className="relative overflow-hidden px-4 py-20 text-center sm:py-28">
+      {/* Clipped vertically only: the shapes may spill into the page margins, never above or
+          below the hero (the layout clips them at the window's edges). */}
+      <section className="relative flex min-h-[26rem] items-center justify-center overflow-y-clip px-4 py-20 text-center sm:py-28">
         <Decorations />
         <div className="relative mx-auto max-w-3xl">
+          {session && accountCreated ? (
+            <div className="mx-auto mb-6 max-w-md text-left">
+              <Notice>{t('home.accountCreated')}</Notice>
+            </div>
+          ) : null}
           <h1 className="mx-auto max-w-2xl text-[2rem] font-semibold leading-tight text-text sm:text-[2.75rem]">
-            {t('home.hero.title')}
+            {session ? t('home.greeting', { name: session.user.firstName }) : t('home.hero.title')}
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-lg text-text-muted sm:text-xl">
-            {t('home.hero.subtitle')}
-          </p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <MainActions />
-          </div>
-          <p className="mt-6 text-base text-text-muted">
-            {t('home.hero.loginPrompt')} <Link to="/login">{t('home.hero.login')}</Link>
-          </p>
+          {!session ? (
+            <p className="mx-auto mt-5 max-w-xl text-lg text-text-muted sm:text-xl">
+              {t('home.hero.subtitle')}
+            </p>
+          ) : !isAdmin ? (
+            <p className="mx-auto mt-5 max-w-xl text-lg text-text-muted sm:text-xl">
+              {t('home.user.subtitle')}
+            </p>
+          ) : null}
+          <div className="mt-8 flex flex-wrap justify-center gap-4">{actions}</div>
+          {!session ? (
+            <p className="mt-6 text-base text-text-muted">
+              {t('home.hero.loginPrompt')} <Link to="/login">{t('home.hero.login')}</Link>
+            </p>
+          ) : null}
         </div>
       </section>
 
@@ -94,9 +79,7 @@ export function HomePage() {
         <h2 id="home-band" className="mb-6 text-2xl font-bold text-on-accent-soft">
           {t('home.band.title')}
         </h2>
-        <div className="flex flex-wrap justify-center gap-4">
-          <MainActions />
-        </div>
+        <div className="flex flex-wrap justify-center gap-4">{actions}</div>
       </section>
     </>
   );
@@ -119,35 +102,20 @@ function MainActions() {
   );
 }
 
-function Greeting({
-  name,
-  subtitle,
-  notice,
-  children,
-}: {
-  name: string;
-  subtitle?: string;
-  notice?: string;
-  children: ReactNode;
-}) {
+/** The ADMIN's actions: "Ir al panel" first, then "Ver animales". */
+function AdminActions() {
   const { t } = useTranslation();
   return (
-    <section className="relative overflow-hidden px-4 py-16 text-center">
-      <PageTitle />
-      <Decorations />
-      <div className="relative mx-auto max-w-3xl">
-        {notice ? (
-          <div className="mx-auto mb-6 max-w-md text-left">
-            <Notice>{notice}</Notice>
-          </div>
-        ) : null}
-        <h1 className="text-[2rem] font-semibold leading-tight text-text sm:text-[2.75rem]">
-          {t('home.greeting', { name })}
-        </h1>
-        {subtitle ? <p className="mt-4 text-lg text-text-muted sm:text-xl">{subtitle}</p> : null}
-        <div className="mt-8 flex flex-wrap justify-center gap-4">{children}</div>
-      </div>
-    </section>
+    <>
+      <Link to="/admin" className={buttonClass('primary', 'lg')}>
+        <LayoutDashboard aria-hidden="true" className={iconClass} />
+        {t('home.actions.panel')}
+      </Link>
+      <Link to="/animals" className={buttonClass('secondary', 'lg')}>
+        <Heart aria-hidden="true" className={iconClass} />
+        {t('home.actions.catalogue')}
+      </Link>
+    </>
   );
 }
 
@@ -194,8 +162,9 @@ function Friends() {
 function Decorations() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-      <div className="absolute -left-24 -top-24 size-72 rounded-pill bg-accent-soft" />
-      <div className="absolute -bottom-28 -right-20 size-80 rounded-pill bg-accent-warm" />
+      {/* Inside the hero's height (it is clipped vertically); free to spill sideways. */}
+      <div className="absolute -left-24 top-6 size-72 rounded-pill bg-accent-soft" />
+      <div className="absolute -right-20 bottom-6 size-80 rounded-pill bg-accent-warm" />
       <PawPrint className="absolute left-[8%] top-[55%] size-24 -rotate-12 text-brand-primary/10" />
       <PawPrint className="absolute right-[10%] top-[12%] size-20 rotate-12 text-brand-primary/10" />
     </div>
