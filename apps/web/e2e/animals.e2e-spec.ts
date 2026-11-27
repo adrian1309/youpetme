@@ -26,10 +26,12 @@ test('an ADMIN registers an animal and a visitor finds it with filters and opens
   await page.getByRole('link', { name: 'Registrar animal' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Registrar un animal' })).toBeVisible();
   // Choices are pills (SCRUM-56): click the pill (the label) of the hidden radio or checkbox.
+  // `has` is searched inside each label, so scope to the group first.
   const pillOf = (group: string, role: 'radio' | 'checkbox', option: string) =>
     page
+      .getByRole('group', { name: group })
       .locator('label')
-      .filter({ has: page.getByRole('group', { name: group }).getByRole(role, { name: option }) });
+      .filter({ has: page.getByRole(role, { name: option, exact: true }) });
   await page.getByLabel('Nombre').fill(name);
   await pillOf('Especie', 'radio', 'Gato').click();
   await pillOf('Tamaño', 'radio', 'Pequeño').click();
