@@ -19,4 +19,9 @@ export interface UserRepository {
   findAccountById(userId: string): Promise<UserAccount | null>;
   /** Idempotent; does nothing for an unknown user. */
   markWelcomeSeen(userId: string): Promise<void>;
+  /**
+   * Replaces UserProfile.matchingPreferences (ADR-010). The caller has already validated the
+   * value; does nothing for an unknown user.
+   */
+  saveMatchingPreferences(userId: string, preferences: Record<string, unknown>): Promise<void>;
 }

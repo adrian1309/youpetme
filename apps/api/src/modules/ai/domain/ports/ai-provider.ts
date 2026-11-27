@@ -28,6 +28,11 @@ export interface AiCompletionRequest {
   system: string;
   messages: AiMessage[];
   tools: AiToolDefinition[];
+  /**
+   * JSON Schema the answer must follow (structured output). The answer is then one text block
+   * holding that JSON. Used by AI Matching's extraction (ADR-010).
+   */
+  outputSchema?: Record<string, unknown>;
 }
 
 export type AiStopReason = 'end_turn' | 'tool_use' | 'max_tokens' | 'refusal' | 'other';

@@ -3,6 +3,7 @@
 // business logic here (ARCH-001).
 export * from './adoptions/adoption-requests';
 export * from './ai/assistant';
+export * from './ai/matching';
 export * from './animals/animals';
 export * from './errors';
 export * from './iam/login';

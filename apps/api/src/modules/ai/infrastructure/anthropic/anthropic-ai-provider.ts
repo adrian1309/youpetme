@@ -34,14 +34,23 @@ export class AnthropicAiProvider implements AiProvider {
       response = await this.client.messages.create({
         model: this.model,
         max_tokens: MAX_TOKENS,
-        // A short chat with one search tool needs little reasoning.
-        output_config: { effort: 'low' },
+        // A short chat with one search tool, or one extraction, needs little reasoning.
+        output_config: {
+          effort: 'low',
+          ...(request.outputSchema
+            ? { format: { type: 'json_schema', schema: request.outputSchema } }
+            : {}),
+        },
         system: request.system,
-        tools: request.tools.map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
-        })),
+        ...(request.tools.length > 0
+          ? {
+              tools: request.tools.map((tool) => ({
+                name: tool.name,
+                description: tool.description,
+                input_schema: tool.inputSchema as Anthropic.Tool.InputSchema,
+              })),
+            }
+          : {}),
         messages: request.messages.map(toMessageParam),
       });
     } catch (error) {

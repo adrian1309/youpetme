@@ -1,4 +1,5 @@
 import type { UserRepository } from '../../../iam/domain/ports/user-repository';
+import { parseAdopterProfile } from '../../application/matching/adopter-profile.schema';
 import type {
   AssistantUserContext,
   AssistantUserContextReader,
@@ -11,6 +12,10 @@ export class IamAssistantUserContext implements AssistantUserContextReader {
   async find(userId: string): Promise<AssistantUserContext | null> {
     const account = await this.users.findAccountById(userId);
     if (!account || account.user.status !== 'ACTIVE') return null;
-    return { firstName: account.firstName, matchingPreferences: account.matchingPreferences };
+    // Only a valid adopter profile (enums only, no free text) reaches the prompt.
+    return {
+      firstName: account.firstName,
+      matchingPreferences: parseAdopterProfile(account.matchingPreferences),
+    };
   }
 }
