@@ -12,8 +12,13 @@ describe('App', () => {
     );
     render(<App apiClient={createApiClient({ baseUrl: 'http://api.test', fetch: fetchMock })} />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'YouPetMe' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', {
+        level: 1,
+        name: '¿Listo para encontrar a tu mejor amigo?',
+      }),
+    ).toBeInTheDocument();
     expect(fetchMock.mock.calls[0]![0]).toBe('http://api.test/api/v1/auth/refresh');
-    expect(screen.getByRole('link', { name: 'Crear cuenta' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Registrarse' })).toBeInTheDocument();
   });
 });

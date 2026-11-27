@@ -1,3 +1,4 @@
+import { Mail } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import type { PasswordResetRequestedResponse } from '@youpetme/contracts';
@@ -106,6 +107,7 @@ export function ForgotPasswordForm({ titleId, onSent }: ForgotPasswordFormProps)
         }}
         type="email"
         label={t('forgotPassword.fields.email.label')}
+        startIcon={<Mail className="size-5" />}
         autoComplete="email"
         autoCapitalize="none"
         spellCheck={false}

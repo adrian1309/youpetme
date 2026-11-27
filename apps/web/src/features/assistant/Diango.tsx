@@ -1,6 +1,8 @@
+import { Check } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { primaryButtonClass } from '../../components/button-styles';
 import { useApiClient } from '../../lib/http/api-client-context';
 import { readDiangoWelcomeSeen, writeDiangoWelcomeSeen } from '../../lib/storage/diango-welcome';
 import { useAuth } from '../iam/auth/auth-state';
@@ -75,7 +77,7 @@ function DiangoWelcome({ onClose }: { onClose(): void }) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-text/40 p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-on-accent-soft/60 p-4">
       <div
         role="dialog"
         aria-modal="true"
@@ -83,11 +85,16 @@ function DiangoWelcome({ onClose }: { onClose(): void }) {
         aria-describedby={textId}
         onKeyDown={(event) => {
           if (event.key === 'Escape') onClose();
+          // "Entendido" is the only control: Tab stays on it (focus trapped).
+          if (event.key === 'Tab') {
+            event.preventDefault();
+            closeRef.current?.focus();
+          }
         }}
-        className="flex max-w-sm flex-col items-center gap-3"
+        className="flex max-w-sm flex-col items-center gap-1"
       >
-        <div className="relative rounded-control bg-surface p-4 text-center shadow-lg">
-          <h2 id={titleId} className="text-xl font-semibold text-text">
+        <div className="relative rounded-card border border-brand-primary bg-accent-soft p-5 text-center shadow-lg">
+          <h2 id={titleId} className="text-xl font-semibold text-on-accent-soft">
             {t('assistant.welcome.title')}
           </h2>
           <p id={textId} className="mt-2 text-base text-text">
@@ -97,12 +104,18 @@ function DiangoWelcome({ onClose }: { onClose(): void }) {
             ref={closeRef}
             type="button"
             onClick={onClose}
-            className="mt-3 min-h-11 rounded-control bg-brand-primary px-4 text-base font-semibold text-on-brand hover:bg-brand-primary-hover"
+            className={`${primaryButtonClass} mt-4`}
           >
+            <Check aria-hidden="true" className="size-5" />
             {t('assistant.welcome.close')}
           </button>
+          {/* Speech-bubble tail pointing down at Diango. */}
+          <span
+            aria-hidden="true"
+            className="absolute -bottom-2 left-1/2 size-4 -translate-x-1/2 rotate-45 border-b border-r border-brand-primary bg-accent-soft"
+          />
         </div>
-        <DiangoMascot className="size-32" />
+        <DiangoMascot className="size-48" />
       </div>
     </div>
   );

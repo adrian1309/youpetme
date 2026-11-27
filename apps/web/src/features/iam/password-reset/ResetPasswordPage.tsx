@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from 'react-router';
 import { PageTitle } from '../../../components/PageTitle';
 import { useAuth } from '../auth/auth-state';
 import { ResetPasswordForm } from './ResetPasswordForm';
+import { AuthCard } from '../../../components/AuthCard';
 
 const TITLE_ID = 'reset-password-title';
 
@@ -46,12 +47,9 @@ export function ResetPasswordPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-xl px-4 py-8">
+    <AuthCard titleId={TITLE_ID} title={title}>
       <PageTitle title={title} />
       <meta name="referrer" content="no-referrer" />
-      <h1 id={TITLE_ID} className="mb-4 text-3xl font-bold text-text">
-        {title}
-      </h1>
       {!token || linkInvalid ? (
         <>
           <p className="mb-6 text-base text-text">{t('resetPassword.invalidLink.body')}</p>
@@ -72,6 +70,6 @@ export function ResetPasswordPage() {
           />
         </>
       )}
-    </div>
+    </AuthCard>
   );
 }

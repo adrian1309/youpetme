@@ -3,7 +3,7 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, NavLink, useNavigate } from 'react-router';
 
-import { primaryButtonClass, secondaryButtonClass } from '../components/Button';
+import { primaryButtonClass, secondaryButtonClass } from '../components/button-styles';
 import { useAuth } from '../features/iam/auth/auth-state';
 import { APP_NAME } from '../lib/app-name';
 
@@ -80,12 +80,8 @@ export function AppHeader() {
               </li>
               {session?.user.role === 'ADMIN' ? (
                 <li>
-                  <NavLink
-                    to="/admin/adoption-requests"
-                    onClick={closeMenu}
-                    className={navLinkClass}
-                  >
-                    {t('header.adoptionRequests')}
+                  <NavLink to="/admin" onClick={closeMenu} className={navLinkClass}>
+                    {t('header.panel')}
                   </NavLink>
                 </li>
               ) : null}

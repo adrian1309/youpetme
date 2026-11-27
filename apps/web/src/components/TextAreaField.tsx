@@ -23,7 +23,7 @@ export function TextAreaField({ label, hint, error, ...props }: TextAreaFieldPro
         id={ids.inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(ids, { hint, error })}
-        className={`block w-full rounded-control border bg-surface px-3 py-2 text-base text-text ${
+        className={`block w-full rounded-control border bg-surface px-3 py-2 text-base text-text focus:border-brand-primary ${
           error ? 'border-2 border-feedback-error' : 'border-border-input'
         }`}
       />

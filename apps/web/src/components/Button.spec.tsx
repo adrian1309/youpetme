@@ -54,6 +54,20 @@ describe('Button', () => {
     });
   });
 
+  it('has an optional large size for the main actions (SCRUM-56)', () => {
+    render(
+      <>
+        <Button>Normal</Button>
+        <Button size="lg">Grande</Button>
+      </>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Normal' })).toHaveClass('min-h-11');
+    const large = screen.getByRole('button', { name: 'Grande' });
+    expect(large).toHaveClass('min-h-14', 'text-lg', 'px-8');
+    expect(large).not.toHaveClass('min-h-11');
+  });
+
   it('has no accessibility violations', async () => {
     const { container } = render(<Button>Crear cuenta</Button>);
 

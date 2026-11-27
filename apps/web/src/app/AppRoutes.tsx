@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router';
 
 import { PlaceholderPage } from '../components/PlaceholderPage';
+import { AdminPanelPage } from '../features/admin/AdminPanelPage';
 import { AdoptionRequestsPage } from '../features/adoptions/admin/AdoptionRequestsPage';
 import { CataloguePage } from '../features/animals/catalogue/CataloguePage';
 import { AnimalDetailPage } from '../features/animals/detail/AnimalDetailPage';
@@ -30,6 +31,14 @@ export function AppRoutes() {
         <Route path="animals" element={<CataloguePage />} />
         <Route path="animals/:id" element={<AnimalDetailPage />} />
         <Route path="matching" element={<MatchingPage />} />
+        <Route
+          path="admin"
+          element={
+            <RequireAdmin>
+              <AdminPanelPage />
+            </RequireAdmin>
+          }
+        />
         <Route
           path="admin/animals/new"
           element={

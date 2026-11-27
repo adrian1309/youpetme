@@ -28,7 +28,8 @@ export function PasswordField({ showLabel, hideLabel, ...fieldProps }: PasswordF
           aria-label={visible ? hideLabel : showLabel}
           aria-pressed={visible}
           onClick={() => setVisible((current) => !current)}
-          className="flex min-h-11 min-w-11 items-center justify-center rounded-pill text-brand-primary hover:bg-accent-soft"
+          // 36 px inside the 44 px field, with the focus ring drawn inwards so it never sticks out.
+          className="flex size-9 items-center justify-center rounded-pill text-brand-primary hover:bg-accent-soft focus-visible:outline-offset-[-3px]"
         >
           {visible ? (
             <EyeOff aria-hidden="true" className="size-5" />

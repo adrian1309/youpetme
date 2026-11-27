@@ -4,7 +4,12 @@ import { expect, test } from '@playwright/test';
 
 import { promoteToAdmin } from './support/database.ts';
 import { API_URL } from './support/env.ts';
-import { accessTokenOf, logIn, registeredVisitor, submitLogin } from './support/session-ui.ts';
+import {
+  accessTokenOf,
+  logInAsAdmin,
+  registeredVisitor,
+  submitLogin,
+} from './support/session-ui.ts';
 
 /**
  * Main adoption flow against the real API and PostgreSQL (SCRUM-14, SCRUM-15): a user asks to
@@ -19,7 +24,7 @@ test('a user requests an adoption and the ADMIN approves and completes it', asyn
   // Given an ADMIN and an AVAILABLE animal registered by them
   const admin = await registeredVisitor(request);
   promoteToAdmin(admin.email);
-  const token = await accessTokenOf(await logIn(page, admin));
+  const token = await accessTokenOf(await logInAsAdmin(page, admin));
   const name = `Toby ${randomUUID().slice(0, 8)}`;
   const created = await request.post(`${API_URL}/api/v1/animals`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -47,16 +52,25 @@ test('a user requests an adoption and the ADMIN approves and completes it', asyn
   await expect(user).toHaveURL(`/animals/${id}`);
   await expect(user.getByRole('banner')).toContainText(`Hola, ${applicant.firstName}`);
 
-  // And send the request with a message
+  // And send the request with a message, in the request dialog (SCRUM-56)
   await user.getByRole('button', { name: 'Solicitar adopción' }).click();
-  await user.getByLabel('Mensaje para el refugio (opcional)').fill('Tengo un jardín grande.');
-  await user.getByRole('button', { name: 'Enviar solicitud' }).click();
+  const dialog = user.getByRole('dialog', { name: `Solicitar la adopción de ${name}` });
+  await dialog.getByLabel('Mensaje para el refugio (opcional)').fill('Tengo un jardín grande.');
+  await dialog.getByRole('button', { name: 'Enviar solicitud' }).click();
 
-  // Then it is confirmed
-  await expect(user.getByText(`Hemos recibido tu solicitud para adoptar a ${name}.`)).toBeVisible();
+  // Then it is confirmed and the action turns into "Solicitud enviada"
+  await expect(
+    user.getByText('¡Solicitud enviada! El refugio se pondrá en contacto contigo.'),
+  ).toBeVisible();
+  await expect(dialog).toHaveCount(0);
+  await expect(user.getByRole('button', { name: 'Solicitud enviada' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  );
 
-  // When the ADMIN opens the requests of that animal and approves it
+  // When the ADMIN opens the requests of that animal (they never see "Solicitar adopción")
   await page.goto(`/animals/${id}`);
+  await expect(page.getByRole('button', { name: 'Solicitar adopción' })).toHaveCount(0);
   await page.getByRole('link', { name: `Ver las solicitudes de adopción de ${name}` }).click();
   const card = page.getByRole('article', { name: `Solicitud para ${name}` });
   await expect(card).toContainText(applicant.email);

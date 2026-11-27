@@ -1,4 +1,5 @@
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import { AppRoutes } from '../../../app/AppRoutes';
 import { detail, fakeApi, LUNA_ID } from '../../../test/animals';
@@ -41,11 +42,43 @@ describe('AnimalDetailPage (/animals/:id, SCRUM-13)', () => {
       expect(screen.getByText(text)).toBeInTheDocument();
     }
     expect(screen.queryByText(/ya no está disponible/)).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Volver al catálogo' })).toHaveAttribute(
-      'href',
-      '/animals',
-    );
+    const back = screen.getByRole('link', { name: 'Volver al catálogo' });
+    expect(back).toHaveAttribute('href', '/animals');
+    // At the top, before the name (SCRUM-56).
+    expect(
+      back.compareDocumentPosition(screen.getByRole('heading', { level: 1 })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     await waitFor(() => expect(document.title).toBe('Luna · YouPetMe'));
+  });
+
+  it('puts the adoption card at the end, after compatibility and care notes', async () => {
+    renderDetail(found());
+
+    const adopt = await screen.findByRole('heading', { level: 2, name: '¿Te lo llevas a casa?' });
+    const care = screen.getByRole('heading', { level: 2, name: 'Salud y cuidados' });
+    const compatibility = screen.getByRole('heading', { level: 2, name: 'Convivencia' });
+    expect(care.compareDocumentPosition(adopt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      compatibility.compareDocumentPosition(adopt) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Solicitar adopción' })).toBeInTheDocument();
+  });
+
+  it('switches the main photo with thumbnail buttons', async () => {
+    const urls = ['https://images.example.com/1.jpg', 'https://images.example.com/2.jpg'];
+    renderDetail(found({ photoUrls: urls }));
+
+    const second = await screen.findByRole('button', { name: 'Ver foto 2 de Luna' });
+    expect(screen.getByRole('button', { name: 'Ver foto 1 de Luna' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(second).toHaveAttribute('aria-pressed', 'false');
+    await userEvent.click(second);
+
+    expect(second).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('img', { name: 'Foto 2 de Luna' })).toHaveAttribute('src', urls[1]);
   });
 
   it('has no accessibility violations', async () => {

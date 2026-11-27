@@ -89,7 +89,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       await fillAndSubmit('  ana@example.com ');
 
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
       expect(screen.getByRole('banner')).toHaveTextContent('Hola, Ana');
       const [url, init] = fetchMock.mock.calls[0]!;
       expect(url).toBe(`${TEST_API_URL}/api/v1/auth/login`);
@@ -113,7 +113,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
       answer(jsonResponse(200, signedIn));
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
     });
   });
 
@@ -136,6 +136,36 @@ describe('LoginPage (/login, US-IAM-002)', () => {
       expect(String(fetchMock.mock.calls[1]![0])).toContain('/api/v1/animals/a-1');
     });
 
+    it('keeps that page for an ADMIN too', async () => {
+      const fetchMock = vi.fn<typeof fetch>(async (input) =>
+        String(input).endsWith('/api/v1/auth/login')
+          ? jsonResponse(200, { ...signedIn, user: { ...signedIn.user, role: 'ADMIN' } })
+          : jsonResponse(404, { statusCode: 404, error: 'Not Found', message: 'x' }),
+      );
+      renderWithProviders(<AppRoutes />, { initialEntries: fromAnimal, fetch: fetchMock });
+
+      await fillAndSubmit();
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Este animal no existe' }),
+      ).toBeInTheDocument();
+    });
+
+    it('lands an ADMIN on the admin panel when no page sent them (SCRUM-56)', async () => {
+      const fetchMock = vi.fn<typeof fetch>(async (input) =>
+        String(input).endsWith('/api/v1/auth/login')
+          ? jsonResponse(200, { ...signedIn, user: { ...signedIn.user, role: 'ADMIN' } })
+          : jsonResponse(200, { items: [], page: 1, pageSize: 20, total: 0 }),
+      );
+      renderLogin(fetchMock);
+
+      await fillAndSubmit();
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Panel de administración' }),
+      ).toBeInTheDocument();
+    });
+
     it('ignores a target that is not a path of this app', async () => {
       renderWithProviders(<AppRoutes />, {
         initialEntries: [{ pathname: '/login', state: { from: '//evil.example' } }],
@@ -144,7 +174,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       await fillAndSubmit();
 
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
     });
   });
 
@@ -227,7 +257,13 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       await fillAndSubmit('ana@example.com', 'short');
 
-      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      // Wait for the landing first: the home page then asks for a few animals with the same
+      // fetch (SCRUM-56), so count the login requests only.
+      await screen.findByRole('heading', { level: 1, name: /^Hola, / });
+      const logins = fetchMock.mock.calls.filter(([url]) =>
+        String(url).endsWith('/api/v1/auth/login'),
+      );
+      expect(logins).toHaveLength(1);
     });
   });
 
@@ -238,7 +274,7 @@ describe('LoginPage (/login, US-IAM-002)', () => {
     renderLogin(vi.fn().mockResolvedValue(jsonResponse(200, signedIn)));
 
     await fillAndSubmit('ana@example.com', 'my-secure-passphrase');
-    await screen.findByText('Has iniciado sesión.');
+    await screen.findByRole('heading', { level: 1, name: /^Hola, / });
 
     const logged = JSON.stringify(spies.flatMap((spy) => spy.mock.calls));
     expect(logged).not.toContain('my-secure-passphrase');

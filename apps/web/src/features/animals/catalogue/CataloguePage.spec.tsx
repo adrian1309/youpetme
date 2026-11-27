@@ -2,13 +2,16 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AppRoutes } from '../../../app/AppRoutes';
-import { fakeApi, LUNA_ID, page, summary } from '../../../test/animals';
+import { fakeApi, LUNA_ID, page, signedInAs, summary } from '../../../test/animals';
 import { expectNoAxeViolations } from '../../../test/axe';
 import { jsonResponse, renderWithProviders } from '../../../test/render-with-providers';
 
 function renderCatalogue(fetchMock: typeof fetch, path = '/animals') {
   return renderWithProviders(<AppRoutes />, { initialEntries: [path], fetch: fetchMock });
 }
+
+const group = (name: string) => within(screen.getByRole('group', { name }));
+const search = () => userEvent.click(screen.getByRole('button', { name: 'Buscar' }));
 
 /** Records the query of every catalogue request and answers with `respond`. */
 function catalogueApi(
@@ -40,10 +43,12 @@ describe('CataloguePage (/animals, SCRUM-12)', () => {
     for (const tag of ['Perro', 'Mediano', 'Adulto', 'Tranquilo', 'Bien con niños']) {
       expect(within(card).getByText(tag)).toBeInTheDocument();
     }
-    expect(within(card).getByRole('link', { name: 'Ver ficha de Luna' })).toHaveAttribute(
-      'href',
-      `/animals/${LUNA_ID}`,
-    );
+    // One stretched link per card, named after the animal (SCRUM-56).
+    const links = within(card).getAllByRole('link');
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAccessibleName('Luna');
+    expect(links[0]).toHaveAttribute('href', `/animals/${LUNA_ID}`);
+    expect(within(card).getByText('Conócelo')).toBeInTheDocument();
     expect(screen.getByText('1 animal')).toBeInTheDocument();
     await waitFor(() => expect(document.title).toBe('Animales en adopción · YouPetMe'));
   });
@@ -56,7 +61,7 @@ describe('CataloguePage (/animals, SCRUM-12)', () => {
     await expectNoAxeViolations(container, { page: true });
   });
 
-  describe('filters (scenario 2): each one is sent to the API and kept in the URL', () => {
+  describe('filters (scenario 2): applied with "Buscar", sent to the API and kept in the URL', () => {
     it.each([
       ['Especie', 'Gato', 'species=CAT'],
       ['Tamaño', 'Grande', 'size=LARGE'],
@@ -66,9 +71,23 @@ describe('CataloguePage (/animals, SCRUM-12)', () => {
       renderCatalogue(fetchMock);
       await screen.findByRole('heading', { level: 2, name: 'Luna' });
 
-      await userEvent.selectOptions(screen.getByLabelText(label), option);
+      await userEvent.click(group(label).getByRole('radio', { name: option }));
+      await search();
 
       await waitFor(() => expect(queries.at(-1)).toBe(expected));
+    });
+
+    it('does not filter until "Buscar" is pressed', async () => {
+      const { fetchMock, queries } = catalogueApi();
+      renderCatalogue(fetchMock);
+      await screen.findByRole('heading', { level: 2, name: 'Luna' });
+
+      await userEvent.click(group('Especie').getByRole('radio', { name: 'Gato' }));
+      await userEvent.click(screen.getByRole('checkbox', { name: 'Bien con niños' }));
+
+      expect(queries).toEqual(['']);
+      await search();
+      await waitFor(() => expect(queries.at(-1)).toBe('species=CAT&compatibleWithChildren=true'));
     });
 
     it.each([
@@ -80,6 +99,7 @@ describe('CataloguePage (/animals, SCRUM-12)', () => {
       await screen.findByRole('heading', { level: 2, name: 'Luna' });
 
       await userEvent.click(screen.getByRole('checkbox', { name: label }));
+      await search();
 
       await waitFor(() => expect(queries.at(-1)).toBe(expected));
     });
@@ -91,7 +111,8 @@ describe('CataloguePage (/animals, SCRUM-12)', () => {
       await screen.findByRole('heading', { level: 2, name: 'Luna' });
 
       expect(queries).toEqual(['species=DOG&compatibleWithChildren=true']);
-      expect(screen.getByLabelText('Especie')).toHaveValue('DOG');
+      expect(group('Especie').getByRole('radio', { name: 'Perro' })).toBeChecked();
+      expect(group('Tamaño').getByRole('radio', { name: 'Todos' })).toBeChecked();
       expect(screen.getByRole('checkbox', { name: 'Bien con niños' })).toBeChecked();
     });
   });
@@ -102,11 +123,51 @@ describe('CataloguePage (/animals, SCRUM-12)', () => {
     );
     renderCatalogue(fetchMock, '/animals?species=CAT');
 
-    expect(await screen.findByText('Ningún animal encaja con estos filtros')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Quitar filtros' }));
+    const empty = await screen.findByRole('heading', {
+      level: 2,
+      name: 'Ningún animal encaja con tu búsqueda',
+    });
+    await userEvent.click(
+      within(empty.closest('section')!).getByRole('button', { name: 'Quitar filtros' }),
+    );
 
     expect(await screen.findByRole('heading', { level: 2, name: 'Luna' })).toBeInTheDocument();
     expect(queries.at(-1)).toBe('');
+  });
+
+  it('groups the compatibility pills under "Otros", like the other filters', async () => {
+    const { fetchMock } = catalogueApi();
+    renderCatalogue(fetchMock);
+    await screen.findByRole('heading', { level: 2, name: 'Luna' });
+
+    const others = group('Otros');
+    expect(others.getByRole('checkbox', { name: 'Bien con niños' })).toBeInTheDocument();
+    expect(others.getByRole('checkbox', { name: 'Bien con otros animales' })).toBeInTheDocument();
+  });
+
+  it('says there are no animals yet, never "no match", when no filter is applied', async () => {
+    const { fetchMock } = catalogueApi(() => jsonResponse(200, page([])));
+    renderCatalogue(fetchMock);
+
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Todavía no hay animales publicados' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Ningún animal encaja con tu búsqueda')).not.toBeInTheDocument();
+  });
+
+  it('offers no "Registrar animal" entry in the catalogue, not even to an ADMIN', async () => {
+    const fetchMock = fakeApi(
+      { 'GET /api/v1/animals': () => jsonResponse(200, page([summary()])) },
+      signedInAs('ADMIN'),
+    );
+    renderWithProviders(<AppRoutes />, {
+      initialEntries: ['/animals'],
+      fetch: fetchMock,
+      auth: 'restore',
+    });
+
+    await screen.findByRole('heading', { level: 2, name: 'Luna' });
+    expect(screen.queryByRole('link', { name: 'Registrar animal' })).not.toBeInTheDocument();
   });
 
   it('moves between pages', async () => {

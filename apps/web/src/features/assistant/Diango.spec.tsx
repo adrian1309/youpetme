@@ -57,6 +57,17 @@ describe('Diango (SCRUM-17 welcome, SCRUM-18 chat)', () => {
   });
 
   describe('welcome', () => {
+    it('keeps the focus on "Entendido" while open (focus trapped)', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<Diango />);
+
+      const close = within(welcome()!).getByRole('button', { name: /entendido/i });
+      await user.tab();
+      expect(close).toHaveFocus();
+      await user.tab({ shift: true });
+      expect(close).toHaveFocus();
+    });
+
     it('greets a first-time guest once, centred, and closing it remembers the guest', async () => {
       const user = userEvent.setup();
       const { container } = renderWithProviders(<Diango />);

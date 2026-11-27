@@ -174,7 +174,7 @@ describe('ForgotPasswordPage (/forgot-password, US-IAM-004)', () => {
       ),
     });
 
-    expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
     expect(screen.queryByRole('form')).not.toBeInTheDocument();
   });
 });

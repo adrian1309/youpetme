@@ -75,7 +75,8 @@
       "network": "No hemos podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.",
       "reviewFields": "Revisa los datos del formulario e inténtalo de nuevo.",
       "generic": "No hemos podido crear la cuenta. Inténtalo de nuevo."
-    }
+    },
+    "intro": "Únete y encuentra a tu compañero."
   },
   "login": {
     "title": "Iniciar sesión",
@@ -115,7 +116,8 @@
       "reviewFields": "Revisa los datos del formulario e inténtalo de nuevo.",
       "generic": "No hemos podido iniciar sesión. Inténtalo de nuevo."
     },
-    "passwordReset": "Tu contraseña se ha actualizado. Inicia sesión con la nueva."
+    "passwordReset": "Tu contraseña se ha actualizado. Inicia sesión con la nueva.",
+    "intro": "Qué alegría verte de nuevo."
   },
   "forgotPassword": {
     "title": "Recupera tu contraseña",
@@ -192,12 +194,12 @@
     "signOut": "Cerrar sesión",
     "signingOut": "Cerrando sesión…",
     "catalogue": "Animales",
-    "adoptionRequests": "Solicitudes",
     "matching": "Encuentra tu compañero",
     "signIn": "Entrar",
     "register": "Registrarse",
     "menu": "Menú",
-    "primaryNav": "Navegación principal"
+    "primaryNav": "Navegación principal",
+    "panel": "Panel"
   },
   "footer": {
     "tagline": "Cada animal merece un hogar"
@@ -205,13 +207,42 @@
   "home": {
     "greeting": "Hola, {{name}}",
     "accountCreated": "Tu cuenta está creada.",
-    "visitor": {
-      "register": "Crear cuenta",
-      "login": "Iniciar sesión",
-      "catalogue": "Ver animales en adopción"
+    "hero": {
+      "title": "¿Listo para encontrar a tu mejor amigo?",
+      "subtitle": "Cada animal de YouPetMe espera un hogar. Empieza por el que encaje contigo.",
+      "loginPrompt": "¿Ya tienes cuenta?",
+      "login": "Inicia sesión"
     },
-    "signedIn": "Has iniciado sesión.",
-    "catalogue": "Ver animales en adopción"
+    "actions": {
+      "catalogue": "Ver animales",
+      "matching": "Encuentra tu compañero",
+      "panel": "Ir al panel"
+    },
+    "how": {
+      "title": "Cómo funciona",
+      "discover": {
+        "title": "Descubre",
+        "body": "Explora los animales que esperan un hogar."
+      },
+      "diango": {
+        "title": "Cuéntale a Diango",
+        "body": "Dinos cómo eres y te recomendamos a quién conocer primero."
+      },
+      "adopt": {
+        "title": "Adopta",
+        "body": "Envía tu solicitud y el refugio se pondrá en contacto contigo."
+      }
+    },
+    "friends": {
+      "title": "Algunos de nuestros amigos",
+      "all": "Ver todos los animales"
+    },
+    "band": {
+      "title": "Tu nuevo mejor amigo está a un clic"
+    },
+    "user": {
+      "subtitle": "¿Qué te apetece hacer hoy?"
+    }
   },
   "configuration": {
     "error": {
@@ -396,13 +427,15 @@
     "catalogue": {
       "title": "Animales en adopción",
       "filters": {
-        "legend": "Filtrar",
         "species": "Especie",
         "size": "Tamaño",
         "ageGroup": "Edad",
         "any": "Todos",
         "compatibleWithChildren": "Bien con niños",
-        "compatibleWithOtherAnimals": "Bien con otros animales"
+        "compatibleWithOtherAnimals": "Bien con otros animales",
+        "search": "Buscar",
+        "clear": "Quitar filtros",
+        "others": "Otros"
       },
       "results": "{{count}} animales",
       "results_one": "{{count}} animal",
@@ -410,8 +443,8 @@
       "loading": "Cargando animales…",
       "error": "No hemos podido cargar los animales. Vuelve a intentarlo en unos minutos.",
       "empty": {
-        "title": "Ningún animal encaja con estos filtros",
-        "body": "Prueba a quitar algún filtro para ver más animales.",
+        "title": "Ningún animal encaja con tu búsqueda",
+        "body": "Prueba a quitar algún filtro: hay más peludos esperando.",
         "clear": "Quitar filtros"
       },
       "pagination": {
@@ -420,8 +453,11 @@
         "next": "Siguiente",
         "page": "Página {{page}} de {{pages}}"
       },
-      "viewDetail": "Ver ficha de {{name}}",
-      "addAnimal": "Registrar animal"
+      "noAnimals": {
+        "title": "Todavía no hay animales publicados",
+        "body": "Pronto llegarán peludos buscando hogar. ¡Vuelve en unos días!"
+      },
+      "meet": "Conócelo"
     },
     "detail": {
       "loading": "Cargando la ficha…",
@@ -437,7 +473,8 @@
       "temperament": "Carácter",
       "compatibility": "Convivencia",
       "careNotes": "Salud y cuidados",
-      "back": "Volver al catálogo"
+      "back": "Volver al catálogo",
+      "thumbnail": "Ver foto {{index}} de {{name}}"
     },
     "register": {
       "title": "Registrar un animal",
@@ -506,13 +543,17 @@
       "submit": "Enviar solicitud",
       "submitting": "Enviando solicitud…",
       "cancel": "Cancelar",
-      "sent": "Hemos recibido tu solicitud para adoptar a {{name}}. El refugio la revisará y se pondrá en contacto contigo.",
+      "sent": "¡Solicitud enviada! El refugio se pondrá en contacto contigo.",
       "errors": {
         "active": "Ya tienes una solicitud activa para este animal.",
         "tooLong": "El mensaje puede tener como máximo {{max}} caracteres.",
         "generic": "No hemos podido enviar la solicitud. Vuelve a intentarlo en unos minutos."
       },
-      "adminLink": "Ver las solicitudes de adopción de {{name}}"
+      "adminLink": "Ver las solicitudes de adopción de {{name}}",
+      "cardTitle": "¿Te lo llevas a casa?",
+      "cardBody": "Te responderemos lo antes posible.",
+      "sentButton": "Solicitud enviada",
+      "counter": "{{count}}/{{max}}"
     },
     "status": {
       "PENDING": "Pendiente",
@@ -597,20 +638,19 @@
   },
   "matching": {
     "title": "Encuentra tu compañero",
-    "intro": "Cuéntanos cómo es tu día a día y qué buscas, y te recomendamos animales disponibles que encajan contigo. Puedes hablarnos de:",
+    "intro": "Él te recomienda a quién conocer primero.",
     "tips": {
-      "housing": "Tu vivienda: piso, casa, si tiene jardín…",
-      "activity": "Tu nivel de actividad: tranquilo, activo, si sales a correr…",
-      "experience": "Tu experiencia con animales: si es tu primera vez o ya has tenido alguno.",
-      "family": "Si en casa hay niños u otros animales, y si prefieres alguna especie, tamaño o edad."
+      "housing": "Tu vivienda",
+      "activity": "Tu actividad",
+      "experience": "Tu experiencia",
+      "family": "Niños u otros animales"
     },
     "form": {
       "label": "Cuéntanos sobre ti y lo que buscas",
       "counter": "{{count}}/{{max}}",
       "required": "Escribe algo sobre ti y lo que buscas.",
-      "submit": "Buscar compañero"
+      "submit": "Encontrar mi compañero"
     },
-    "searching": "Buscando animales que encajen contigo…",
     "retry": "Reintentar",
     "errors": {
       "unavailable": "La búsqueda no está disponible ahora. Inténtalo de nuevo en un momento.",
@@ -622,7 +662,7 @@
       "catalogue": "Ver todos los animales"
     },
     "results": {
-      "title": "Te recomendamos",
+      "title": "Tus mejores matches",
       "greatFit": "Encaja muy bien",
       "goodFit": "Encaja bien",
       "reasons": "Por qué encaja"
@@ -637,6 +677,37 @@
       "GOOD_FOR_BEGINNERS": "Es cariñoso, buena opción si es tu primer animal",
       "GOOD_WITH_CHILDREN": "Se lleva bien con niños",
       "GOOD_WITH_ANIMALS": "Se lleva bien con otros animales"
+    },
+    "heading": "Cuéntale a Diango cómo eres",
+    "examples": {
+      "label": "Ideas para empezar",
+      "flat": "Vivo en un piso",
+      "children": "Tengo niños",
+      "firstTime": "Es mi primera vez",
+      "running": "Salgo a correr",
+      "otherDog": "Tengo otro perro"
+    },
+    "loading": {
+      "announce": "Buscando tu compañero",
+      "sniffing": "Diango está olfateando…",
+      "candidates": "Buscando a tus mejores candidatos…",
+      "almost": "Casi lo tengo…"
+    }
+  },
+  "admin": {
+    "panel": {
+      "title": "Panel de administración",
+      "registerAnimal": {
+        "title": "Registrar animal",
+        "body": "Da de alta un animal para que aparezca en el catálogo."
+      },
+      "requests": {
+        "title": "Solicitudes de adopción",
+        "pending_one": "{{count}} pendiente",
+        "pending_other": "{{count}} pendientes",
+        "loading": "Contando las pendientes…",
+        "unavailable": "Revisa y decide las solicitudes recibidas."
+      }
     }
   }
 }

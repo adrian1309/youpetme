@@ -1,3 +1,4 @@
+import { Lock, Mail } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import type { LoginResponse } from '@youpetme/contracts';
@@ -20,13 +21,14 @@ import {
   type LoginFormValues,
 } from './login.schema';
 import { mapLoginError, type LoginField } from './map-login-error';
+import { returnPath } from './return-path';
 
 const LOGIN_PATH = '/api/v1/auth/login';
 
 /** Fields in the order they appear on the page, which is the order focus moves through errors. */
 const FIELD_ORDER: LoginField[] = ['email', 'password'];
 
-export function LoginForm({ titleId, redirectTo = '/' }: { titleId: string; redirectTo?: string }) {
+export function LoginForm({ titleId, returnState }: { titleId: string; returnState?: unknown }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { signIn } = useAuth();
@@ -99,7 +101,7 @@ export function LoginForm({ titleId, redirectTo = '/' }: { titleId: string; redi
         accessToken: response.authentication.accessToken,
         user: { id, firstName, lastName, email, role, hasSeenWelcome },
       });
-      void navigate(redirectTo, { replace: true });
+      void navigate(returnPath(returnState, role), { replace: true });
     } catch (error) {
       const mapped = mapLoginError(error);
       for (const [name, key] of Object.entries(mapped.fieldErrors)) {
@@ -128,6 +130,7 @@ export function LoginForm({ titleId, redirectTo = '/' }: { titleId: string; redi
         {...bind('email')}
         type="email"
         label={t('login.fields.email.label')}
+        startIcon={<Mail className="size-5" />}
         autoComplete="email"
         autoCapitalize="none"
         spellCheck={false}
@@ -138,6 +141,7 @@ export function LoginForm({ titleId, redirectTo = '/' }: { titleId: string; redi
       <PasswordField
         {...bind('password')}
         label={t('login.fields.password.label')}
+        startIcon={<Lock className="size-5" />}
         showLabel={t('login.fields.password.show')}
         hideLabel={t('login.fields.password.hide')}
         autoComplete="current-password"

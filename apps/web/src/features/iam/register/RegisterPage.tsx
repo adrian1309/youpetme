@@ -4,6 +4,7 @@ import { Link, Navigate } from 'react-router';
 import { PageTitle } from '../../../components/PageTitle';
 import { useAuth } from '../auth/auth-state';
 import { RegisterForm } from './RegisterForm';
+import { AuthCard } from '../../../components/AuthCard';
 
 const TITLE_ID = 'register-title';
 
@@ -16,11 +17,8 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl px-4 py-8">
+    <AuthCard titleId={TITLE_ID} title={t('register.title')} intro={t('register.intro')}>
       <PageTitle title={t('register.title')} />
-      <h1 id={TITLE_ID} className="mb-6 text-3xl font-bold text-text">
-        {t('register.title')}
-      </h1>
       <RegisterForm titleId={TITLE_ID} />
       <p className="mt-6 text-base text-text">
         {t('register.login.prompt')}{' '}
@@ -28,6 +26,6 @@ export function RegisterPage() {
           {t('register.login.link')}
         </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }

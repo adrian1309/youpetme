@@ -32,15 +32,14 @@ describe('AppRoutes', () => {
     it('shows the brand and a way to create an account', () => {
       renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
 
-      expect(screen.getByRole('heading', { level: 1, name: 'YouPetMe' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Crear cuenta' })).toHaveAttribute(
+      expect(
+        screen.getByRole('heading', { level: 1, name: '¿Listo para encontrar a tu mejor amigo?' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Registrarse' })).toHaveAttribute(
         'href',
         '/register',
       );
-      expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toHaveAttribute(
-        'href',
-        '/login',
-      );
+      expect(screen.getByRole('link', { name: 'Inicia sesión' })).toHaveAttribute('href', '/login');
     });
 
     it('has a header, a main landmark and a skip link as the first stop', async () => {
@@ -85,10 +84,10 @@ describe('AppRoutes', () => {
       const header = screen.getByRole('banner');
       expect(header).toHaveTextContent('YouPetMe');
       expect(header).toHaveTextContent('Hola, John');
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Has iniciado sesión.');
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Hola, John');
       expect(screen.queryByRole('link', { name: /perfil/i })).not.toBeInTheDocument();
       expect(within(header).getByRole('button', { name: 'Cerrar sesión' })).toBeVisible();
-      expect(screen.queryByRole('link', { name: 'Crear cuenta' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Registrarse' })).not.toBeInTheDocument();
     });
 
     it('has no accessibility violations as a whole page', async () => {
@@ -110,7 +109,7 @@ describe('AppRoutes', () => {
         { initialEntries: ['/register'] },
       );
 
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
       expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
   });
@@ -158,8 +157,10 @@ describe('AppRoutes', () => {
       await user.click(screen.getByRole('checkbox', { name: /Acepto los/ }));
       await user.click(screen.getByRole('button', { name: 'Crear cuenta' }));
 
-      expect(await screen.findByText('Hola, Ana')).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Tu cuenta está creada.');
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Hola, Ana' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Tu cuenta está creada.')).toBeInTheDocument();
       expect(window.localStorage.length).toBe(0);
     });
 
@@ -271,10 +272,13 @@ describe('AppRoutes', () => {
 
     async function expectPublicHome() {
       expect(
-        await screen.findByRole('heading', { level: 1, name: 'YouPetMe' }),
+        await screen.findByRole('heading', {
+          level: 1,
+          name: '¿Listo para encontrar a tu mejor amigo?',
+        }),
       ).toBeInTheDocument();
       expect(screen.getByRole('banner')).not.toHaveTextContent('Hola');
-      expect(screen.getByRole('link', { name: 'Iniciar sesión' })).toBeVisible();
+      expect(screen.getByRole('link', { name: 'Inicia sesión' })).toBeVisible();
       expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).not.toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     }
@@ -305,7 +309,9 @@ describe('AppRoutes', () => {
     it('Scenario 1: shows that the logout is in progress and sends it only once', async () => {
       const user = userEvent.setup();
       let answer: (response: Response) => void = () => undefined;
-      const fetchMock = vi.fn(() => new Promise<Response>((resolve) => (answer = resolve)));
+      const fetchMock = vi.fn<typeof fetch>(
+        () => new Promise<Response>((resolve) => (answer = resolve)),
+      );
       renderWithProviders(
         <SignedInOnce>
           <AppRoutes />
@@ -320,7 +326,9 @@ describe('AppRoutes', () => {
       expect(pending).toHaveAttribute('aria-disabled', 'true');
       await user.click(pending);
 
-      expect(fetchMock).toHaveBeenCalledTimes(1);
+      // The home also asks for a few animals (SCRUM-56): count the logout calls only.
+      const logouts = fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/auth/logout'));
+      expect(logouts).toHaveLength(1);
       answer(new Response(null, { status: 204 }));
       await expectPublicHome();
     });
@@ -376,7 +384,7 @@ describe('AppRoutes', () => {
 
       answer(jsonResponse(200, { ...refreshed, user: { ...refreshed.user, status: 'ACTIVE' } }));
 
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
       expect(screen.getByRole('banner')).toHaveTextContent('Hola, John');
       expect(screen.queryByText('Recuperando tu sesión…')).not.toBeInTheDocument();
     });
@@ -388,7 +396,7 @@ describe('AppRoutes', () => {
         fetch: vi.fn().mockResolvedValue(jsonResponse(200, refreshed)),
       });
 
-      expect(await screen.findByText('Has iniciado sesión.')).toBeInTheDocument();
+      expect(await screen.findByRole('heading', { level: 1, name: /^Hola, / })).toBeInTheDocument();
       expect(screen.queryByRole('form')).not.toBeInTheDocument();
     });
 
@@ -402,7 +410,10 @@ describe('AppRoutes', () => {
       });
 
       expect(
-        await screen.findByRole('heading', { level: 1, name: 'YouPetMe' }),
+        await screen.findByRole('heading', {
+          level: 1,
+          name: '¿Listo para encontrar a tu mejor amigo?',
+        }),
       ).toBeInTheDocument();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
@@ -455,10 +466,9 @@ describe('AppRoutes', () => {
     it('offers the catalogue from the home and the header to a visitor', () => {
       renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
 
-      expect(screen.getByRole('link', { name: 'Ver animales en adopción' })).toHaveAttribute(
-        'href',
-        '/animals',
-      );
+      expect(
+        within(screen.getByRole('main')).getAllByRole('link', { name: 'Ver animales' })[0],
+      ).toHaveAttribute('href', '/animals');
       expect(
         within(screen.getByRole('banner')).getByRole('link', { name: 'Animales' }),
       ).toHaveAttribute('href', '/animals');
@@ -472,10 +482,9 @@ describe('AppRoutes', () => {
         { initialEntries: ['/'] },
       );
 
-      expect(await screen.findByRole('link', { name: 'Ver animales en adopción' })).toHaveAttribute(
-        'href',
-        '/animals',
-      );
+      expect(
+        (await within(screen.getByRole('main')).findAllByRole('link', { name: 'Ver animales' }))[0],
+      ).toHaveAttribute('href', '/animals');
       expect(
         within(screen.getByRole('banner')).getByRole('link', { name: 'Animales' }),
       ).toHaveAttribute('href', '/animals');
@@ -556,7 +565,7 @@ describe('AppRoutes', () => {
       await userEvent.setup().click(link);
 
       expect(
-        await screen.findByRole('heading', { level: 1, name: 'Encuentra tu compañero' }),
+        await screen.findByRole('heading', { level: 1, name: 'Cuéntale a Diango cómo eres' }),
       ).toBeInTheDocument();
       await expectNoAxeViolations(container, { page: true });
     });
