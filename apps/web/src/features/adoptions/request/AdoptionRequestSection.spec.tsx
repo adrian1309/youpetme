@@ -58,12 +58,23 @@ describe('Adoption request on the animal page (SCRUM-14)', () => {
     });
     const user = await openForm();
 
+    expect(
+      screen.getByRole('dialog', { name: 'Solicitar la adopción de Luna' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('form', { name: 'Solicitar la adopción de Luna' })).toBeInTheDocument();
+    expect(screen.getByText('0/1000')).toBeInTheDocument();
     await user.type(screen.getByLabelText('Mensaje para el refugio (opcional)'), 'Tengo jardín');
     await user.click(screen.getByRole('button', { name: 'Enviar solicitud' }));
 
-    const notice = await screen.findByText(/Hemos recibido tu solicitud para adoptar a Luna\./);
+    const notice = await screen.findByText(
+      '¡Solicitud enviada! El refugio se pondrá en contacto contigo.',
+    );
     expect(notice.closest('[role="status"]')).not.toBeNull();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Solicitud enviada' })).toHaveAttribute(
+      'aria-disabled',
+      'true',
+    );
     expect(sent).toEqual({ animalId: LUNA_ID, message: 'Tengo jardín' });
     const submit = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST' && init.body);
     expect(new Headers(submit![1]!.headers).get('Authorization')).toBe('Bearer user-token');
@@ -82,7 +93,7 @@ describe('Adoption request on the animal page (SCRUM-14)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Enviar solicitud' }));
 
-    await screen.findByText(/Hemos recibido tu solicitud/);
+    await screen.findByText(/Solicitud enviada!/);
     expect(sent).toEqual({ animalId: LUNA_ID, message: null });
   });
 
@@ -182,7 +193,7 @@ describe('Adoption request on the animal page (SCRUM-14)', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancelar' }));
 
-    await waitFor(() => expect(screen.queryByRole('form')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Solicitar adopción' })).toHaveFocus();
   });
 });
@@ -194,6 +205,16 @@ describe('Admin link on the animal page (SCRUM-15)', () => {
     expect(
       await screen.findByRole('link', { name: 'Ver las solicitudes de adopción de Luna' }),
     ).toHaveAttribute('href', `/admin/adoption-requests?animalId=${LUNA_ID}`);
+  });
+
+  it('never offers an ADMIN the adoption card or "Solicitar adopción" (UI only)', async () => {
+    renderPage('ADMIN');
+
+    expect(
+      await screen.findByRole('link', { name: 'Ver las solicitudes de adopción de Luna' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Solicitar adopción' })).not.toBeInTheDocument();
+    expect(screen.queryByText('¿Te lo llevas a casa?')).not.toBeInTheDocument();
   });
 
   it('is not shown to a USER', async () => {

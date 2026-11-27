@@ -66,6 +66,19 @@ export async function reloadAndRefresh(page: Page): Promise<Response> {
   return response;
 }
 
+/** Like logIn, for an account promoted to ADMIN: it lands on the admin panel (SCRUM-56). */
+export async function logInAsAdmin(page: Page, admin: Visitor): Promise<Response> {
+  await page.goto('/login');
+  const response = await submitLogin(page, admin.email, admin.password);
+  expect(response.status()).toBe(200);
+  await expect(page).toHaveURL('/admin');
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Panel de administración' }),
+  ).toBeVisible();
+  await expect(page.getByRole('banner')).toContainText(`Hola, ${admin.firstName}`);
+  return response;
+}
+
 export async function expectSignedIn(page: Page, visitor: Visitor) {
   await expect(page).toHaveURL('/');
   await expect(page.getByRole('heading', { level: 1, name: 'Has iniciado sesión.' })).toBeVisible();

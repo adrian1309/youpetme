@@ -136,6 +136,36 @@ describe('LoginPage (/login, US-IAM-002)', () => {
       expect(String(fetchMock.mock.calls[1]![0])).toContain('/api/v1/animals/a-1');
     });
 
+    it('keeps that page for an ADMIN too', async () => {
+      const fetchMock = vi.fn<typeof fetch>(async (input) =>
+        String(input).endsWith('/api/v1/auth/login')
+          ? jsonResponse(200, { ...signedIn, user: { ...signedIn.user, role: 'ADMIN' } })
+          : jsonResponse(404, { statusCode: 404, error: 'Not Found', message: 'x' }),
+      );
+      renderWithProviders(<AppRoutes />, { initialEntries: fromAnimal, fetch: fetchMock });
+
+      await fillAndSubmit();
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Este animal no existe' }),
+      ).toBeInTheDocument();
+    });
+
+    it('lands an ADMIN on the admin panel when no page sent them (SCRUM-56)', async () => {
+      const fetchMock = vi.fn<typeof fetch>(async (input) =>
+        String(input).endsWith('/api/v1/auth/login')
+          ? jsonResponse(200, { ...signedIn, user: { ...signedIn.user, role: 'ADMIN' } })
+          : jsonResponse(200, { items: [], page: 1, pageSize: 20, total: 0 }),
+      );
+      renderLogin(fetchMock);
+
+      await fillAndSubmit();
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Panel de administración' }),
+      ).toBeInTheDocument();
+    });
+
     it('ignores a target that is not a path of this app', async () => {
       renderWithProviders(<AppRoutes />, {
         initialEntries: [{ pathname: '/login', state: { from: '//evil.example' } }],

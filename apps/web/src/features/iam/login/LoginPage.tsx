@@ -6,6 +6,7 @@ import { PageTitle } from '../../../components/PageTitle';
 import { useAuth } from '../auth/auth-state';
 import { LoginForm } from './LoginForm';
 import { returnPath } from './return-path';
+import { AuthCard } from '../../../components/AuthCard';
 
 const TITLE_ID = 'login-title';
 
@@ -15,30 +16,27 @@ const TITLE_ID = 'login-title';
  */
 export function LoginPage() {
   const { t } = useTranslation();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, session } = useAuth();
   const location = useLocation();
   // Set by /reset-password after a successful reset (TS-IAM-004, D9).
   const passwordReset =
     (location.state as { passwordReset?: unknown } | null)?.passwordReset === true;
 
-  const target = returnPath(location.state);
+  const target = returnPath(location.state, session?.user.role);
 
   if (isAuthenticated) {
     return <Navigate to={target} replace />;
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl px-4 py-8">
+    <AuthCard titleId={TITLE_ID} title={t('login.title')} intro={t('login.intro')}>
       <PageTitle title={t('login.title')} />
-      <h1 id={TITLE_ID} className="mb-6 text-3xl font-bold text-text">
-        {t('login.title')}
-      </h1>
       {passwordReset ? (
         <div className="mb-6">
           <Notice focusOnMount>{t('login.passwordReset')}</Notice>
         </div>
       ) : null}
-      <LoginForm titleId={TITLE_ID} redirectTo={target} />
+      <LoginForm titleId={TITLE_ID} returnState={location.state} />
       <p className="mt-6 text-base text-text">
         <Link to="/forgot-password" className="font-bold text-brand-primary">
           {t('login.forgotPassword')}
@@ -50,6 +48,6 @@ export function LoginPage() {
           {t('login.register.link')}
         </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }

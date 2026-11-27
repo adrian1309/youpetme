@@ -6,6 +6,16 @@ import { expectNoAxeViolations } from '../test/axe';
 import { TextField } from './TextField';
 
 describe('TextField', () => {
+  it('shows a decorative start icon that never replaces the label (SCRUM-56)', async () => {
+    const { container } = render(
+      <TextField label="Correo electrónico" startIcon={<svg data-testid="icon" />} />,
+    );
+
+    expect(screen.getByTestId('icon').closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(screen.getByLabelText('Correo electrónico')).toHaveClass('pl-10');
+    await expectNoAxeViolations(container);
+  });
+
   it('has a visible label programmatically associated with the input', () => {
     render(<TextField label="Nombre" name="firstName" />);
 

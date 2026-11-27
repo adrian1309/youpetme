@@ -1,18 +1,43 @@
-import type { AnimalSummary } from '@youpetme/contracts';
-import { useTranslation } from 'react-i18next';
+import type { AnimalSummary, Species } from '@youpetme/contracts';
+import { Cake, Cat, Check, CircleHelp, Dog, PawPrint, Ruler, TriangleAlert } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 export const ANIMALS_PATH = '/api/v1/animals';
 
-/** Text tag (Design System — Animal information patterns): the text alone carries the meaning. */
-export function Tag({ children }: { children: string }) {
+const iconClass = 'size-4 shrink-0';
+
+/** Text tag in a pill (Design System — Animal information patterns): the text carries meaning. */
+export function Tag({ children, icon }: { children: string; icon?: ReactNode }) {
   return (
-    <li className="rounded-full border border-border-input bg-surface-muted px-3 py-1 text-sm text-text">
+    <li className="inline-flex items-center gap-1.5 rounded-pill bg-accent-soft px-3 py-1 text-sm font-medium text-on-accent-soft">
+      {icon}
       {children}
     </li>
   );
 }
 
-type TagSource = Pick<
+/** Dog, Cat or a paw for any other species; decorative, the species name is always written. */
+export function SpeciesIcon({
+  species,
+  className = iconClass,
+}: {
+  species: Species;
+  className?: string;
+}) {
+  const Icon = species === 'DOG' ? Dog : species === 'CAT' ? Cat : PawPrint;
+  return <Icon aria-hidden="true" className={className} />;
+}
+
+export const SizeIcon = () => <Ruler aria-hidden="true" className={iconClass} />;
+export const AgeIcon = () => <Cake aria-hidden="true" className={iconClass} />;
+
+/** Check = good with, TriangleAlert = better without, CircleHelp = unknown. Text always follows. */
+export function CompatibilityIcon({ value }: { value: boolean | null }) {
+  const Icon = value === true ? Check : value === false ? TriangleAlert : CircleHelp;
+  return <Icon aria-hidden="true" className={iconClass} />;
+}
+
+export type TagSource = Pick<
   AnimalSummary,
   | 'species'
   | 'size'
@@ -21,18 +46,3 @@ type TagSource = Pick<
   | 'compatibleWithChildren'
   | 'compatibleWithOtherAnimals'
 >;
-
-/** Card tags: species, size, age, temperament and the known compatibility flags. */
-export function useAnimalTags(animal: TagSource): string[] {
-  const { t } = useTranslation();
-  const flag = (kind: 'children' | 'otherAnimals', value: boolean | null) =>
-    value === null ? [] : [t(`animals.compatibility.${kind}.${String(value)}`)];
-  return [
-    t(`animals.species.${animal.species}`),
-    t(`animals.size.${animal.size}`),
-    t(`animals.ageGroup.${animal.ageGroup}`),
-    ...animal.temperament.map((tag) => t(`animals.temperament.${tag}`)),
-    ...flag('children', animal.compatibleWithChildren),
-    ...flag('otherAnimals', animal.compatibleWithOtherAnimals),
-  ];
-}

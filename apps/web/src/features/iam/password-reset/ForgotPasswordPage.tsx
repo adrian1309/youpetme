@@ -6,6 +6,7 @@ import { Notice } from '../../../components/Notice';
 import { PageTitle } from '../../../components/PageTitle';
 import { useAuth } from '../auth/auth-state';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
+import { AuthCard } from '../../../components/AuthCard';
 
 const TITLE_ID = 'forgot-password-title';
 
@@ -23,11 +24,8 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl px-4 py-8">
+    <AuthCard titleId={TITLE_ID} title={t('forgotPassword.title')}>
       <PageTitle title={t('forgotPassword.title')} />
-      <h1 id={TITLE_ID} className="mb-4 text-3xl font-bold text-text">
-        {t('forgotPassword.title')}
-      </h1>
       {sent ? (
         <Notice focusOnMount>{t('forgotPassword.sent')}</Notice>
       ) : (
@@ -41,6 +39,6 @@ export function ForgotPasswordPage() {
           {t('forgotPassword.backToLogin')}
         </Link>
       </p>
-    </div>
+    </AuthCard>
   );
 }

@@ -1,3 +1,4 @@
+import { Lock } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import type { PasswordResetConfirmedResponse } from '@youpetme/contracts';
@@ -150,6 +151,7 @@ export function ResetPasswordForm({
       <PasswordField
         {...bind('password')}
         label={t('resetPassword.fields.password.label')}
+        startIcon={<Lock className="size-5" />}
         showLabel={t('resetPassword.fields.password.show')}
         hideLabel={t('resetPassword.fields.password.hide')}
         autoComplete="new-password"
@@ -162,6 +164,7 @@ export function ResetPasswordForm({
       <PasswordField
         {...bind('confirmPassword')}
         label={t('resetPassword.fields.confirmPassword.label')}
+        startIcon={<Lock className="size-5" />}
         showLabel={t('resetPassword.fields.confirmPassword.show')}
         hideLabel={t('resetPassword.fields.confirmPassword.hide')}
         autoComplete="new-password"

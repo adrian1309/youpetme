@@ -44,7 +44,7 @@ test('a guest describes what they look for, sees a recommended animal and opens 
   await page
     .getByLabel('Cuéntanos sobre ti y lo que buscas')
     .fill('Busco un perro cachorro, vivo en un piso y tengo hijos');
-  await page.getByRole('button', { name: 'Buscar compañero' }).click();
+  await page.getByRole('button', { name: 'Encontrar mi compañero' }).click();
 
   // Then the animal is recommended with the reasons it fits
   const card = page.getByRole('listitem').filter({ has: page.getByRole('heading', { name }) });
@@ -55,6 +55,6 @@ test('a guest describes what they look for, sees a recommended animal and opens 
   );
 
   // And its detail page opens from the card
-  await card.getByRole('link', { name: `Ver ficha de ${name}` }).click();
+  await card.getByRole('link', { name, exact: true }).click();
   await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
 });

@@ -1,3 +1,4 @@
+import { Lock, Mail, User } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import type { RegisterResponse } from '@youpetme/contracts';
@@ -165,6 +166,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
         <TextField
           {...bind('firstName')}
           label={t('register.fields.firstName.label')}
+          startIcon={<User className="size-5" />}
           autoComplete="given-name"
           required
           error={messageFor('firstName')}
@@ -172,6 +174,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
         <TextField
           {...bind('lastName')}
           label={t('register.fields.lastName.label')}
+          startIcon={<User className="size-5" />}
           autoComplete="family-name"
           required
           error={messageFor('lastName')}
@@ -182,6 +185,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
         {...bind('email')}
         type="email"
         label={t('register.fields.email.label')}
+        startIcon={<Mail className="size-5" />}
         autoComplete="email"
         autoCapitalize="none"
         spellCheck={false}
@@ -192,6 +196,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
       <PasswordField
         {...bind('password')}
         label={t('register.fields.password.label')}
+        startIcon={<Lock className="size-5" />}
         showLabel={t('register.fields.password.show')}
         hideLabel={t('register.fields.password.hide')}
         autoComplete="new-password"
@@ -204,6 +209,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
       <PasswordField
         {...bind('confirmPassword')}
         label={t('register.fields.confirmPassword.label')}
+        startIcon={<Lock className="size-5" />}
         showLabel={t('register.fields.confirmPassword.show')}
         hideLabel={t('register.fields.confirmPassword.hide')}
         autoComplete="new-password"

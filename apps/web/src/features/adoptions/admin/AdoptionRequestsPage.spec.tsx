@@ -251,14 +251,12 @@ describe('AdoptionRequestsPage (/admin/adoption-requests, SCRUM-15)', () => {
   });
 });
 
-describe('Header link (SCRUM-15)', () => {
-  it('shows "Solicitudes" to an ADMIN only', async () => {
+describe('Header link (SCRUM-15, SCRUM-56)', () => {
+  it('shows "Panel" to an ADMIN only, instead of "Solicitudes"', async () => {
     const empty = () => list([]);
     const { unmount } = renderPage({ [LIST]: empty });
-    expect(await screen.findByRole('link', { name: 'Solicitudes' })).toHaveAttribute(
-      'href',
-      '/admin/adoption-requests',
-    );
+    expect(await screen.findByRole('link', { name: 'Panel' })).toHaveAttribute('href', '/admin');
+    expect(screen.queryByRole('link', { name: 'Solicitudes' })).not.toBeInTheDocument();
     unmount();
 
     renderPage(
@@ -269,6 +267,6 @@ describe('Header link (SCRUM-15)', () => {
       { role: 'USER', path: '/animals' },
     );
     await screen.findByText(/Hola, Ana/);
-    expect(screen.queryByRole('link', { name: 'Solicitudes' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Panel' })).not.toBeInTheDocument();
   });
 });

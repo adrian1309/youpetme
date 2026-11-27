@@ -80,12 +80,8 @@ export function AppHeader() {
               </li>
               {session?.user.role === 'ADMIN' ? (
                 <li>
-                  <NavLink
-                    to="/admin/adoption-requests"
-                    onClick={closeMenu}
-                    className={navLinkClass}
-                  >
-                    {t('header.adoptionRequests')}
+                  <NavLink to="/admin" onClick={closeMenu} className={navLinkClass}>
+                    {t('header.panel')}
                   </NavLink>
                 </li>
               ) : null}

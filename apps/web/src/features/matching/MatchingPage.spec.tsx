@@ -55,7 +55,7 @@ function fakeApi(options: { replies?: Response[]; session?: RefreshResponse } = 
 }
 
 const descriptionField = () => screen.getByRole('textbox', { name: /cuéntanos/i });
-const submitButton = () => screen.getByRole('button', { name: /buscar compañero/i });
+const submitButton = () => screen.getByRole('button', { name: /encontrar mi compañero/i });
 
 async function describe_(text: string) {
   const user = userEvent.setup();
@@ -73,13 +73,48 @@ describe('MatchingPage (SCRUM-16)', () => {
     const { container } = renderWithProviders(<MatchingPage />, { fetch: fakeApi().fetch });
 
     expect(
-      screen.getByRole('heading', { level: 1, name: /encuentra tu compañero/i }),
+      screen.getByRole('heading', { level: 1, name: /cuéntale a diango cómo eres/i }),
     ).toBeVisible();
     expect(screen.getByText(/tu vivienda/i)).toBeVisible();
     expect(screen.getByText('0/1000')).toBeVisible();
     await userEvent.setup().type(descriptionField(), 'Hola');
     expect(screen.getByText('4/1000')).toBeVisible();
     expect(descriptionField()).toHaveAttribute('maxLength', '1000');
+    await expectNoAxeViolations(container);
+  });
+
+  it('adds the text of an example chip to the description, within the limit', async () => {
+    renderWithProviders(<MatchingPage />, { fetch: fakeApi().fetch });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Vivo en un piso' }));
+    await user.click(screen.getByRole('button', { name: 'Tengo niños' }));
+    expect(descriptionField()).toHaveValue('Vivo en un piso. Tengo niños');
+
+    await user.clear(descriptionField());
+    await user.click(descriptionField());
+    await user.paste('a'.repeat(995));
+    await user.click(screen.getByRole('button', { name: 'Salgo a correr' }));
+    expect(descriptionField()).toHaveValue('a'.repeat(995));
+  });
+
+  it('shows Diango searching, announced once in a polite live region', async () => {
+    const fetch = vi.fn(async (input: RequestInfo | URL) =>
+      String(input).endsWith('/api/v1/auth/refresh')
+        ? jsonResponse(401, {})
+        : new Promise<Response>(() => undefined),
+    ) as unknown as typeof globalThis.fetch;
+    const { container } = renderWithProviders(<MatchingPage />, { fetch });
+
+    await describe_('Busco un perro');
+
+    const region = await screen.findByRole('status');
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    expect(region).toHaveTextContent('Buscando tu compañero');
+    expect(
+      within(region).getByText('Diango está olfateando…').closest('[aria-hidden]'),
+    ).not.toBeNull();
+    expect(submitButton()).toHaveAttribute('aria-disabled', 'true');
     await expectNoAxeViolations(container);
   });
 
@@ -107,7 +142,10 @@ describe('MatchingPage (SCRUM-16)', () => {
         .getAllByRole('listitem')
         .map((item) => item.textContent),
     ).toEqual(['Es de la especie que buscas', 'Su tamaño encaja con tu vivienda']);
-    expect(within(card).getByRole('link', { name: /ver ficha de toby/i })).toHaveAttribute(
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Tus mejores matches' }),
+    ).toBeInTheDocument();
+    expect(within(card).getByRole('link', { name: 'Toby' })).toHaveAttribute(
       'href',
       `/animals/${MATCH.results[0]!.animal.id}`,
     );

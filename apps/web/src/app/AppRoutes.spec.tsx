@@ -556,7 +556,7 @@ describe('AppRoutes', () => {
       await userEvent.setup().click(link);
 
       expect(
-        await screen.findByRole('heading', { level: 1, name: 'Encuentra tu compañero' }),
+        await screen.findByRole('heading', { level: 1, name: 'Cuéntale a Diango cómo eres' }),
       ).toBeInTheDocument();
       await expectNoAxeViolations(container, { page: true });
     });
