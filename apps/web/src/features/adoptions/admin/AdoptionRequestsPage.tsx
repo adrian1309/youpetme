@@ -4,8 +4,24 @@ import {
   ADOPTION_REQUEST_STATUSES,
   type AdoptionRequestAction,
   type AdoptionRequestItem,
+  type AdoptionRequestStatus,
   type ListAdoptionRequestsResponse,
 } from '@youpetme/contracts';
+import {
+  Ban,
+  CalendarDays,
+  Check,
+  CheckCheck,
+  CircleCheck,
+  CircleX,
+  Clock,
+  Inbox,
+  type LucideIcon,
+  Mail,
+  SlidersHorizontal,
+  Undo2,
+  X,
+} from 'lucide-react';
 import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
@@ -13,7 +29,8 @@ import { Link, useSearchParams } from 'react-router';
 import { Alert } from '../../../components/Alert';
 import { Notice } from '../../../components/Notice';
 import { PageTitle } from '../../../components/PageTitle';
-import { SelectField } from '../../../components/SelectField';
+import { primaryButtonClass, secondaryButtonClass } from '../../../components/button-styles';
+import { PillFieldset, PillOption } from '../../../components/PillChoice';
 import { useApiClient } from '../../../lib/http/api-client-context';
 import { ApiError } from '../../../lib/http/api-error';
 import { useAuth } from '../../iam/auth/auth-state';
@@ -21,9 +38,6 @@ import { ADOPTION_REQUESTS_PATH } from '../request/AdoptionRequestSection';
 
 /** `key` remounts the message, so the same text after another action is announced again. */
 type Feedback = { kind: 'done' | 'error'; text: string; key: number };
-
-const actionButton =
-  'min-h-11 rounded-control border-2 border-brand-primary px-4 py-2 text-base font-semibold text-brand-primary hover:bg-surface aria-disabled:cursor-wait aria-disabled:opacity-80';
 
 const formatDate = (iso: string) =>
   new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(iso));
@@ -122,35 +136,50 @@ export function AdoptionRequestsPage() {
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   const title = t('adoptions.admin.title');
 
-  return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
-      <PageTitle title={title} />
-      <h1 id={titleId} className="text-3xl font-bold text-text">
-        {title}
-      </h1>
+  const hasFilters = Boolean(searchParams.get('status') || searchParams.get('animalId'));
+  const status = searchParams.get('status') ?? '';
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <SelectField
-          label={t('adoptions.admin.filters.status')}
-          options={[
-            { value: '', label: t('adoptions.admin.filters.any') },
-            ...ADOPTION_REQUEST_STATUSES.map((value) => ({
-              value,
-              label: t(`adoptions.status.${value}`),
-            })),
-          ]}
-          value={searchParams.get('status') ?? ''}
-          onChange={(event) => setParam('status', event.target.value)}
-        />
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-10">
+      <PageTitle title={title} />
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <span className="flex size-12 items-center justify-center rounded-pill bg-accent-soft text-on-accent-soft">
+          <Inbox aria-hidden="true" className="size-6" />
+        </span>
+        <h1 id={titleId} className="text-3xl font-bold text-text">
+          {title}
+        </h1>
+        <p role="status" className="text-lg text-text-muted">
+          {data ? t('adoptions.admin.results', { count: data.total }) : ''}
+        </p>
+      </div>
+
+      <div className="rounded-card border border-border-subtle bg-surface p-5 shadow-soft">
+        <PillFieldset
+          legend={t('adoptions.admin.filters.status')}
+          icon={<SlidersHorizontal aria-hidden="true" className="size-5 text-brand-primary" />}
+        >
+          {['', ...ADOPTION_REQUEST_STATUSES].map((value) => (
+            <PillOption
+              key={value || 'any'}
+              type="radio"
+              name="status"
+              value={value}
+              label={
+                value
+                  ? t(`adoptions.admin.statusFilter.${value}`)
+                  : t('adoptions.admin.filters.any')
+              }
+              checked={status === value}
+              onChange={() => setParam('status', value || null)}
+            />
+          ))}
+        </PillFieldset>
       </div>
       {searchParams.get('animalId') ? (
         <p className="text-base text-text">
           {t('adoptions.admin.animalFilter')}{' '}
-          <Link
-            to={{ search: withoutAnimal.toString() }}
-            onClick={() => setFeedback(null)}
-            className="font-bold text-brand-primary"
-          >
+          <Link to={{ search: withoutAnimal.toString() }} onClick={() => setFeedback(null)}>
             {t('adoptions.admin.showAll')}
           </Link>
         </p>
@@ -174,14 +203,21 @@ export function AdoptionRequestsPage() {
           {t('adoptions.admin.loading')}
         </p>
       ) : data.items.length === 0 ? (
-        <p className="rounded-control border border-border-input bg-surface-muted p-6 text-base text-text">
-          {t('adoptions.admin.empty')}
-        </p>
+        <div className="flex flex-col items-center gap-3 rounded-card border border-border-subtle bg-surface px-6 py-12 text-center shadow-soft">
+          <span className="flex size-20 items-center justify-center rounded-pill bg-accent-soft text-on-accent-soft">
+            <Inbox aria-hidden="true" className="size-10" />
+          </span>
+          {hasFilters ? (
+            <p className="text-base text-text">{t('adoptions.admin.empty')}</p>
+          ) : (
+            <>
+              <h2 className="text-xl font-bold text-text">{t('adoptions.admin.emptyNone')}</h2>
+              <p className="text-base text-text-muted">{t('adoptions.admin.emptyNoneBody')}</p>
+            </>
+          )}
+        </div>
       ) : (
         <section aria-labelledby={titleId} className="space-y-4">
-          <p className="text-base text-text-muted">
-            {t('adoptions.admin.results', { count: data.total })}
-          </p>
           <ul className="space-y-4">
             {data.items.map((request) => (
               <li key={request.id}>
@@ -202,7 +238,7 @@ export function AdoptionRequestsPage() {
                 type="button"
                 disabled={data.page <= 1}
                 onClick={() => goToPage(data.page - 1)}
-                className={`${actionButton} disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`${secondaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 {t('adoptions.admin.pagination.previous')}
               </button>
@@ -213,7 +249,7 @@ export function AdoptionRequestsPage() {
                 type="button"
                 disabled={data.page >= pages}
                 onClick={() => goToPage(data.page + 1)}
-                className={`${actionButton} disabled:cursor-not-allowed disabled:opacity-50`}
+                className={`${secondaryButtonClass} disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 {t('adoptions.admin.pagination.next')}
               </button>
@@ -224,6 +260,39 @@ export function AdoptionRequestsPage() {
     </div>
   );
 }
+
+/** Status badge: icon, colour and text together; the text alone carries the meaning. */
+const STATUS_BADGE: Record<AdoptionRequestStatus, { Icon: LucideIcon; className: string }> = {
+  PENDING: { Icon: Clock, className: 'bg-accent-warm text-on-accent-warm' },
+  APPROVED: { Icon: CircleCheck, className: 'bg-success-soft text-feedback-success' },
+  REJECTED: { Icon: CircleX, className: 'bg-error-soft text-feedback-error' },
+  COMPLETED: { Icon: CheckCheck, className: 'bg-accent-soft text-on-accent-soft' },
+  CANCELLED: { Icon: Ban, className: 'bg-neutral-soft text-text-muted' },
+};
+
+function StatusBadge({ status }: { status: AdoptionRequestStatus }) {
+  const { t } = useTranslation();
+  const { Icon, className } = STATUS_BADGE[status];
+  return (
+    <p
+      className={`inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-sm font-semibold ${className}`}
+    >
+      <Icon aria-hidden="true" className="size-4" />
+      {t('adoptions.admin.item.status', { status: t(`adoptions.status.${status}`) })}
+    </p>
+  );
+}
+
+const ACTION_STYLE: Record<AdoptionRequestAction, { Icon: LucideIcon; className: string }> = {
+  approve: { Icon: Check, className: primaryButtonClass },
+  reject: {
+    Icon: X,
+    className:
+      'inline-flex min-h-11 items-center justify-center gap-2 rounded-pill border-2 border-feedback-error bg-surface px-5 py-2 text-base font-semibold text-feedback-error hover:bg-error-soft',
+  },
+  complete: { Icon: CheckCheck, className: primaryButtonClass },
+  cancel: { Icon: Undo2, className: secondaryButtonClass },
+};
 
 function RequestCard({
   request,
@@ -242,57 +311,83 @@ function RequestCard({
   return (
     <article
       aria-labelledby={headingId}
-      className="space-y-3 rounded-control border border-border-input p-4"
+      className="space-y-4 rounded-card border border-border-subtle bg-surface p-5 shadow-soft"
     >
       <h2 id={headingId} className="sr-only">
         {t('adoptions.admin.item.title', { name: request.animal.name })}
       </h2>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xl font-bold">
           <Link to={`/animals/${request.animal.id}`} className="font-bold text-brand-primary">
             {request.animal.name}
           </Link>
         </p>
-        <p className="rounded-full border border-border-input bg-surface-muted px-3 py-1 text-sm font-semibold text-text">
-          {t('adoptions.admin.item.status', { status: t(`adoptions.status.${request.status}`) })}
-        </p>
+        <StatusBadge status={request.status} />
       </div>
-      <dl className="grid gap-1 text-base text-text sm:grid-cols-[auto_1fr] sm:gap-x-4">
-        <dt className="font-semibold">{t('adoptions.admin.item.applicant')}</dt>
-        <dd>
-          <span>{applicant}</span> · <span>{request.applicant.email}</span>
-        </dd>
-      </dl>
-      <p className="text-sm text-text-muted">
-        {t('adoptions.admin.item.createdAt', { date: formatDate(request.createdAt) })}
-        {request.decidedAt
-          ? ` · ${t('adoptions.admin.item.decidedAt', { date: formatDate(request.decidedAt) })}`
-          : ''}
-        {` · ${t('adoptions.admin.item.animalStatus', { status: t(`animals.status.${request.animal.status}`) })}`}
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-10 shrink-0 items-center justify-center rounded-pill bg-accent-warm text-lg font-bold text-on-accent-warm"
+        >
+          {request.applicant.firstName.charAt(0).toUpperCase()}
+        </span>
+        <dl className="text-base text-text">
+          <dt className="sr-only">{t('adoptions.admin.item.applicant')}</dt>
+          <dd className="font-semibold">{applicant}</dd>
+          <dd className="flex items-center gap-1.5 text-text-muted">
+            <Mail aria-hidden="true" className="size-4" />
+            <span>{request.applicant.email}</span>
+          </dd>
+        </dl>
+      </div>
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-text-muted">
+        <span className="inline-flex items-center gap-1.5">
+          <CalendarDays aria-hidden="true" className="size-4" />
+          {t('adoptions.admin.item.createdAt', { date: formatDate(request.createdAt) })}
+        </span>
+        {request.decidedAt ? (
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays aria-hidden="true" className="size-4" />
+            {t('adoptions.admin.item.decidedAt', { date: formatDate(request.decidedAt) })}
+          </span>
+        ) : null}
+        <span>
+          {t('adoptions.admin.item.animalStatus', {
+            status: t(`animals.status.${request.animal.status}`),
+          })}
+        </span>
       </p>
-      <p className="whitespace-pre-line text-base text-text">
-        {request.message ?? t('adoptions.admin.item.noMessage')}
-      </p>
+      {request.message ? (
+        <blockquote className="whitespace-pre-line rounded-r-control border-l-4 border-accent-soft bg-page px-4 py-3 text-base text-text">
+          {request.message}
+        </blockquote>
+      ) : (
+        <p className="text-base italic text-text-muted">{t('adoptions.admin.item.noMessage')}</p>
+      )}
       {actions.length > 0 ? (
         <div className="flex flex-wrap gap-3">
-          {actions.map((action) => (
-            <button
-              key={action}
-              type="button"
-              aria-label={t('adoptions.admin.actions.label', {
-                action: t(`adoptions.admin.actions.${action}`),
-                applicant,
-                name: request.animal.name,
-              })}
-              aria-disabled={pending || undefined}
-              onClick={() => {
-                if (!pending) onAction(action);
-              }}
-              className={actionButton}
-            >
-              {t(`adoptions.admin.actions.${action}`)}
-            </button>
-          ))}
+          {actions.map((action) => {
+            const { Icon, className } = ACTION_STYLE[action];
+            return (
+              <button
+                key={action}
+                type="button"
+                aria-label={t('adoptions.admin.actions.label', {
+                  action: t(`adoptions.admin.actions.${action}`),
+                  applicant,
+                  name: request.animal.name,
+                })}
+                aria-disabled={pending || undefined}
+                onClick={() => {
+                  if (!pending) onAction(action);
+                }}
+                className={`${className} aria-disabled:cursor-wait aria-disabled:opacity-80`}
+              >
+                <Icon aria-hidden="true" className="size-5" />
+                {t(`adoptions.admin.actions.${action}`)}
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </article>

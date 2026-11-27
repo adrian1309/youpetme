@@ -23,8 +23,9 @@ export function Notice({ children, focusOnMount = false }: NoticeProps) {
     <div
       ref={ref}
       role="status"
+      // Focused by script only (tabIndex -1); its own border marks it, so no second ring.
       tabIndex={-1}
-      className="flex gap-2 rounded-control border-2 border-feedback-success bg-surface p-3 text-base text-feedback-success"
+      className="flex focus:outline-none gap-2 rounded-control border-2 border-feedback-success bg-surface p-3 text-base text-feedback-success"
     >
       <span aria-hidden="true">✓</span>
       <div>{children}</div>

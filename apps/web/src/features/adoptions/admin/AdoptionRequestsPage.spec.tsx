@@ -178,7 +178,9 @@ describe('AdoptionRequestsPage (/admin/adoption-requests, SCRUM-15)', () => {
     const user = userEvent.setup();
     await row();
 
-    await user.selectOptions(screen.getByLabelText('Estado'), 'Aprobada');
+    const status = within(screen.getByRole('group', { name: 'Estado' }));
+    expect(status.getByRole('radio', { name: 'Todas' })).toBeChecked();
+    await user.click(status.getByRole('radio', { name: 'Aprobadas' }));
 
     await waitFor(() =>
       expect(listUrls(fetchMock).at(-1)!.searchParams.get('status')).toBe('APPROVED'),
@@ -202,6 +204,40 @@ describe('AdoptionRequestsPage (/admin/adoption-requests, SCRUM-15)', () => {
     );
   });
 
+  it('shows the status as a badge with an icon and its text, never colour alone', async () => {
+    renderPage({ [LIST]: () => list([item()]) });
+
+    const badge = within(await row()).getByText('Estado: Pendiente');
+    expect(badge.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(within(await row()).getByText('ana@example.com')).toBeInTheDocument();
+    expect(
+      within(await row())
+        .getByText('Tengo jardín')
+        .closest('blockquote'),
+    ).not.toBeNull();
+  });
+
+  it('announces the result with role="status" and moves the focus there without a second ring', async () => {
+    renderPage({
+      [LIST]: () => list([item({ status: 'APPROVED' })]),
+      'POST /api/v1/adoption-requests/r-1/complete': () =>
+        jsonResponse(200, item({ status: 'COMPLETED' })),
+    });
+    const user = userEvent.setup();
+
+    await user.click(
+      within(await row()).getByRole('button', {
+        name: 'Completar adopción la solicitud de Ana Ruiz para Luna',
+      }),
+    );
+
+    const notice = (await screen.findByText('Adopción completada. Luna ya está adoptado.')).closest(
+      '[role="status"]',
+    )!;
+    expect(notice).toHaveFocus();
+    expect(notice).toHaveClass('focus:outline-none');
+  });
+
   it('paginates', async () => {
     const { fetchMock } = renderPage({
       [LIST]: (url) =>
@@ -217,7 +253,14 @@ describe('AdoptionRequestsPage (/admin/adoption-requests, SCRUM-15)', () => {
   });
 
   it('shows an empty state and a load error', async () => {
-    const { unmount } = renderPage({ [LIST]: () => list([]) });
+    const first = renderPage({ [LIST]: () => list([]) });
+    expect(await screen.findByText('Aún no hay solicitudes')).toBeInTheDocument();
+    first.unmount();
+
+    const { unmount } = renderPage(
+      { [LIST]: () => list([]) },
+      { path: '/admin/adoption-requests?status=APPROVED' },
+    );
     expect(await screen.findByText('No hay solicitudes con estos filtros.')).toBeInTheDocument();
     unmount();
 

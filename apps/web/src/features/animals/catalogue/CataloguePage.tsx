@@ -1,14 +1,5 @@
 import { AGE_GROUPS, SIZES, SPECIES } from '@youpetme/contracts';
-import {
-  Baby,
-  Cake,
-  Check,
-  PawPrint,
-  Ruler,
-  Search,
-  SearchX,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { Baby, Cake, PawPrint, Ruler, Search, SearchX, SlidersHorizontal } from 'lucide-react';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
@@ -16,6 +7,7 @@ import { useSearchParams } from 'react-router';
 import { Alert } from '../../../components/Alert';
 import { buttonClass, secondaryButtonClass } from '../../../components/button-styles';
 import { PageTitle } from '../../../components/PageTitle';
+import { PillFieldset, PillOption } from '../../../components/PillChoice';
 import { AnimalCard } from './AnimalCard';
 import { useAnimals } from './use-animals';
 
@@ -228,10 +220,6 @@ function FilterForm({
   );
 }
 
-/** Pill look of a radio or checkbox; the hidden input keeps the keyboard and the role. */
-const pillClass =
-  'inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-pill border-2 border-border-input bg-surface px-4 text-base font-medium text-text hover:border-brand-primary peer-checked:border-brand-primary peer-checked:bg-brand-primary peer-checked:text-on-brand peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-primary';
-
 function PillRadioGroup({
   legend,
   icon,
@@ -249,48 +237,18 @@ function PillRadioGroup({
 }) {
   return (
     <PillFieldset legend={legend} icon={icon}>
-      {options.map((option) => {
-        const checked = value === option.value;
-        return (
-          <label key={option.value}>
-            <input
-              type="radio"
-              name={name}
-              value={option.value}
-              checked={checked}
-              onChange={() => onChange(option.value)}
-              className="peer sr-only"
-            />
-            <span className={pillClass}>
-              {/* The check mark tells the choice apart without relying on colour. */}
-              {checked ? <Check aria-hidden="true" className="size-4" /> : null}
-              {option.label}
-            </span>
-          </label>
-        );
-      })}
+      {options.map((option) => (
+        <PillOption
+          key={option.value}
+          type="radio"
+          name={name}
+          value={option.value}
+          label={option.label}
+          checked={value === option.value}
+          onChange={() => onChange(option.value)}
+        />
+      ))}
     </PillFieldset>
-  );
-}
-
-/** A filter group: fieldset + legend with its icon, and its pills (Design System — Filters). */
-function PillFieldset({
-  legend,
-  icon,
-  children,
-}: {
-  legend: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
-  return (
-    <fieldset>
-      <legend className="mb-2 flex items-center gap-2 text-base font-semibold text-text">
-        {icon}
-        {legend}
-      </legend>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </fieldset>
   );
 }
 
@@ -306,18 +264,13 @@ function PillCheckbox({
   onChange(checked: boolean): void;
 }) {
   return (
-    <label>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="peer sr-only"
-      />
-      <span className={pillClass}>
-        {checked ? <Check aria-hidden="true" className="size-4" /> : icon}
-        {label}
-      </span>
-    </label>
+    <PillOption
+      type="checkbox"
+      label={label}
+      icon={icon}
+      checked={checked}
+      onChange={(event) => onChange(event.target.checked)}
+    />
   );
 }
 

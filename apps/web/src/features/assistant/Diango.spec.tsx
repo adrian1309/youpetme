@@ -202,6 +202,59 @@ describe('Diango (SCRUM-17 welcome, SCRUM-18 chat)', () => {
       expect(chat!.authorization).toBe('Bearer access-token');
     });
 
+    it('closes the panel with the "Cerrar chat" icon button', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<Diango />);
+
+      await user.click(launcher());
+      const close = screen.getByRole('button', { name: 'Cerrar chat' });
+      expect(close).toHaveTextContent('');
+      await user.click(close);
+
+      expect(screen.queryByRole('dialog', { name: 'Diango' })).not.toBeInTheDocument();
+      expect(launcher()).toHaveFocus();
+    });
+
+    it('has a round "Enviar mensaje" button, unavailable while there is no text', async () => {
+      const user = userEvent.setup();
+      const api = fakeApi({ replies: [jsonResponse(200, { reply: 'Tenemos a Toby.' })] });
+      renderWithProviders(<Diango />, { fetch: api.fetch });
+
+      await user.click(launcher());
+      const send = screen.getByRole('button', { name: 'Enviar mensaje' });
+      expect(send).toHaveAttribute('aria-disabled', 'true');
+      await user.click(send);
+      expect(api.calls.filter((c) => c.url === ASSISTANT_MESSAGES_PATH)).toHaveLength(0);
+
+      await user.type(screen.getByRole('textbox', { name: /tu pregunta/i }), 'Hola');
+      expect(send).not.toHaveAttribute('aria-disabled');
+      await user.click(send);
+      expect(await screen.findByText('Tenemos a Toby.')).toBeInTheDocument();
+    });
+
+    it('shows "Diango está pensando…" once, in a polite live region, while it answers', async () => {
+      const user = userEvent.setup();
+      const fetch = vi.fn(async (input: RequestInfo | URL) =>
+        String(input).endsWith('/api/v1/auth/refresh')
+          ? jsonResponse(401, {})
+          : new Promise<Response>(() => undefined),
+      ) as unknown as typeof globalThis.fetch;
+      const { container } = renderWithProviders(<Diango />, { fetch });
+
+      await user.click(launcher());
+      await user.type(screen.getByRole('textbox', { name: /tu pregunta/i }), 'Hola{Enter}');
+
+      const thinking = await screen.findByText('Diango está pensando…');
+      const region = thinking.closest('[role="status"]')!;
+      expect(region).toHaveAttribute('aria-live', 'polite');
+      expect(region.querySelector('[aria-hidden="true"]')).not.toBeNull();
+      expect(screen.getByRole('button', { name: 'Enviar mensaje' })).toHaveAttribute(
+        'aria-disabled',
+        'true',
+      );
+      await expectNoAxeViolations(container);
+    });
+
     it('closes the panel with Escape and returns the focus to the launcher', async () => {
       const user = userEvent.setup();
       renderWithProviders(<Diango />);

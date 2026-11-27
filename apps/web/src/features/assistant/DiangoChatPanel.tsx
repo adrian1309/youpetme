@@ -3,6 +3,7 @@ import {
   type AssistantChatMessage,
   type AssistantMessageResponse,
 } from '@youpetme/contracts';
+import { Send, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -10,6 +11,7 @@ import { ApiError } from '../../lib/http/api-error';
 import { useApiClient } from '../../lib/http/api-client-context';
 import { useAuth } from '../iam/auth/auth-state';
 import { ASSISTANT_MESSAGES_PATH, toAssistantRequest } from './assistant-api';
+import { DiangoMascot } from './DiangoMascot';
 
 type ChatError = 'unavailable' | 'rateLimited';
 
@@ -29,6 +31,7 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
   const titleId = useId();
   const inputId = useId();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const logRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<AssistantChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [pending, setPending] = useState(false);
@@ -37,6 +40,12 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // Keep the latest message (and the thinking indicator) in view.
+  useEffect(() => {
+    const log = logRef.current;
+    if (log) log.scrollTop = log.scrollHeight;
+  }, [messages, pending]);
 
   async function ask(history: AssistantChatMessage[]): Promise<void> {
     setPending(true);
@@ -76,6 +85,8 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
     }
   }
 
+  const empty = draft.trim() === '';
+
   return (
     <section
       id={id}
@@ -85,29 +96,37 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
       onKeyDown={(event) => {
         if (event.key === 'Escape') onClose();
       }}
-      className="fixed bottom-24 right-4 z-40 flex max-h-[70vh] w-[min(22rem,calc(100vw-2rem))] flex-col rounded-control border border-border-input bg-surface shadow-lg"
+      className="fixed inset-x-2 bottom-20 top-20 z-40 flex flex-col overflow-hidden rounded-card border border-border-subtle bg-surface shadow-lg sm:inset-x-auto sm:right-4 sm:top-auto sm:max-h-[70vh] sm:w-[24rem]"
     >
-      <header className="flex items-center justify-between border-b border-border-input px-4 py-2">
-        <h2 id={titleId} className="text-lg font-semibold text-text">
-          Diango
-        </h2>
+      <header className="flex items-center gap-3 border-b border-border-subtle px-5 py-3">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-pill bg-accent-soft">
+          <DiangoMascot className="size-8" />
+        </span>
+        <div className="flex-1">
+          <h2 id={titleId} className="text-lg font-semibold text-text">
+            Diango
+          </h2>
+          <p className="text-sm text-text-muted">{t('assistant.chat.status')}</p>
+        </div>
         <button
           type="button"
           onClick={onClose}
-          className="min-h-11 rounded-pill px-4 text-base font-bold text-brand-primary hover:bg-accent-soft"
+          aria-label={t('assistant.chat.close')}
+          className="flex size-11 items-center justify-center rounded-pill text-text hover:bg-accent-soft"
         >
-          {t('assistant.chat.close')}
+          <X aria-hidden="true" className="size-5" />
         </button>
       </header>
 
       <div
+        ref={logRef}
         role="log"
         aria-live="polite"
         aria-label={t('assistant.chat.conversation')}
-        className="flex-1 overflow-y-auto px-4 py-3"
+        className="flex-1 overflow-y-auto px-5 py-4"
       >
-        <ol className="flex flex-col gap-2">
-          <li className="self-start rounded-control bg-surface-muted px-3 py-2 text-base text-text">
+        <ol className="flex flex-col gap-3">
+          <li className="max-w-[85%] self-start rounded-card rounded-bl-control bg-accent-soft px-4 py-2.5 text-base text-text">
             {t('assistant.chat.greeting')}
           </li>
           {messages.map((message, index) => (
@@ -115,8 +134,8 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
               key={index}
               className={
                 message.role === 'user'
-                  ? 'self-end whitespace-pre-wrap rounded-control bg-brand-primary px-3 py-2 text-base text-on-brand'
-                  : 'self-start whitespace-pre-wrap rounded-control bg-surface-muted px-3 py-2 text-base text-text'
+                  ? 'max-w-[85%] self-end whitespace-pre-wrap rounded-card rounded-br-control bg-brand-primary px-4 py-2.5 text-base text-on-brand'
+                  : 'max-w-[85%] self-start whitespace-pre-wrap rounded-card rounded-bl-control bg-accent-soft px-4 py-2.5 text-base text-text'
               }
             >
               <span className="sr-only">
@@ -129,48 +148,61 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
       </div>
 
       {pending && (
-        <p role="status" className="px-4 pb-2 text-sm text-text-muted">
+        <p
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 px-5 pb-3 text-sm text-text-muted"
+        >
+          <span aria-hidden="true" className="diango-typing flex gap-1">
+            <span className="size-1.5 rounded-pill bg-brand-primary" />
+            <span className="size-1.5 rounded-pill bg-brand-primary" />
+            <span className="size-1.5 rounded-pill bg-brand-primary" />
+          </span>
           {t('assistant.chat.typing')}
         </p>
       )}
       {error && (
         <div
           role="alert"
-          className="mx-4 mb-2 rounded-control border-2 border-feedback-error p-2 text-base text-feedback-error"
+          className="mx-5 mb-3 rounded-card border-2 border-feedback-error p-3 text-base text-feedback-error"
         >
           <p>{t(`assistant.errors.${error}`)}</p>
           <button
             type="button"
             onClick={() => void ask(messages)}
-            className="mt-1 min-h-11 rounded-pill border-2 border-current px-4 font-bold"
+            className="mt-2 min-h-11 rounded-pill border-2 border-current px-4 font-bold"
           >
             {t('assistant.chat.retry')}
           </button>
         </div>
       )}
 
-      <form onSubmit={submit} className="flex items-end gap-2 border-t border-border-input p-3">
+      <form
+        onSubmit={submit}
+        className="flex items-end gap-2 border-t border-border-subtle bg-page px-4 py-4"
+      >
         <div className="flex flex-1 flex-col">
-          <label htmlFor={inputId} className="text-sm font-medium text-text">
+          <label htmlFor={inputId} className="mb-1 px-3 text-sm font-medium text-text">
             {t('assistant.chat.inputLabel')}
           </label>
           <textarea
             id={inputId}
             ref={inputRef}
-            rows={2}
+            rows={1}
             value={draft}
             maxLength={ASSISTANT_MESSAGE_MAX_LENGTH}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={onInputKeyDown}
-            className="mt-1 w-full resize-none rounded-control border border-border-input px-2 py-1 text-base text-text"
+            className="max-h-32 min-h-11 w-full resize-none rounded-pill border border-border-input bg-surface px-4 py-2.5 text-base text-text focus:border-brand-primary"
           />
         </div>
         <button
           type="submit"
-          aria-disabled={pending || undefined}
-          className="min-h-11 rounded-control bg-brand-primary px-4 text-base font-semibold text-on-brand hover:bg-brand-primary-hover aria-disabled:opacity-80"
+          aria-label={t('assistant.chat.send')}
+          aria-disabled={pending || empty || undefined}
+          className="flex size-11 shrink-0 items-center justify-center rounded-pill bg-brand-primary text-on-brand hover:bg-brand-primary-hover aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
         >
-          {t('assistant.chat.send')}
+          <Send aria-hidden="true" className="size-5" />
         </button>
       </form>
     </section>

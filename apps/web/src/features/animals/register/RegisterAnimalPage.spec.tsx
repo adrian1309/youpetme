@@ -1,4 +1,4 @@
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { CreateAnimalRequest } from '@youpetme/contracts';
 
@@ -23,13 +23,17 @@ function renderAs(role: 'USER' | 'ADMIN' | null, routes: Routes = {}) {
 }
 
 const field = (label: string) => screen.getByLabelText(label);
+/** Pill choices (SCRUM-56): a radio or checkbox inside a named group. */
+const group = (name: string) => within(screen.getByRole('group', { name }));
+const pick = (user: ReturnType<typeof userEvent.setup>, groupName: string, option: string) =>
+  user.click(group(groupName).getByRole('radio', { name: option }));
 const submit = () => screen.getByRole('button', { name: 'Registrar animal' });
 
 async function fillRequired(user = userEvent.setup()) {
   await user.type(field('Nombre'), 'Luna');
-  await user.selectOptions(field('Especie'), 'Perro');
-  await user.selectOptions(field('Tamaño'), 'Mediano');
-  await user.selectOptions(field('Edad'), 'Adulto');
+  await pick(user, 'Especie', 'Perro');
+  await pick(user, 'Tamaño', 'Mediano');
+  await pick(user, 'Edad', 'Adulto');
   await user.type(field('URL de la foto'), 'https://images.example.com/luna.jpg');
   return user;
 }
@@ -83,7 +87,7 @@ describe('RegisterAnimalPage (/admin/animals/new, SCRUM-10)', () => {
     const user = await fillRequired();
     await user.type(field('Raza (opcional)'), 'Labrador');
     await user.click(screen.getByRole('checkbox', { name: 'Tranquilo' }));
-    await user.selectOptions(field('¿Se lleva bien con niños?'), 'Sí');
+    await pick(user, '¿Se lleva bien con niños?', 'Sí');
     await user.type(field('Salud y cuidados (opcional)'), 'Necesita un jardín.');
     await user.click(submit());
 
@@ -120,6 +124,35 @@ describe('RegisterAnimalPage (/admin/animals/new, SCRUM-10)', () => {
     );
   });
 
+  it('starts with no species, size or age chosen, and "No se sabe" for compatibility', async () => {
+    renderAs('ADMIN');
+    await screen.findByRole('heading', { level: 1, name: 'Registrar un animal' });
+
+    for (const name of ['Especie', 'Tamaño', 'Edad']) {
+      for (const radio of group(name).getAllByRole('radio')) expect(radio).not.toBeChecked();
+    }
+    expect(
+      group('¿Se lleva bien con niños?').getByRole('radio', { name: 'No se sabe' }),
+    ).toBeChecked();
+    expect(screen.getByRole('checkbox', { name: 'Tranquilo' })).not.toBeChecked();
+  });
+
+  it('previews the photo once the URL is a valid https address', async () => {
+    renderAs('ADMIN');
+    await screen.findByRole('heading', { level: 1, name: 'Registrar un animal' });
+    const user = userEvent.setup();
+
+    await user.type(field('URL de la foto'), 'http://images.example.com/luna.jpg');
+    expect(screen.queryByRole('img', { name: 'Vista previa de la foto' })).not.toBeInTheDocument();
+
+    await user.clear(field('URL de la foto'));
+    await user.type(field('URL de la foto'), 'https://images.example.com/luna.jpg');
+    expect(screen.getByRole('img', { name: 'Vista previa de la foto' })).toHaveAttribute(
+      'src',
+      'https://images.example.com/luna.jpg',
+    );
+  });
+
   it('rejects a photo URL that is not https', async () => {
     renderAs('ADMIN');
     await screen.findByRole('heading', { level: 1, name: 'Registrar un animal' });
@@ -152,7 +185,10 @@ describe('RegisterAnimalPage (/admin/animals/new, SCRUM-10)', () => {
     await user.click(submit());
 
     expect(await screen.findByText('Revisa este campo.')).toBeInTheDocument();
-    expect(field('Especie')).toHaveAttribute('aria-invalid', 'true');
+    expect(group('Especie').getByRole('radio', { name: 'Perro' })).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
   });
 
   it('explains a 403 from the API', async () => {
