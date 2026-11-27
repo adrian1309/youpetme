@@ -23,10 +23,19 @@ describe('PasswordField', () => {
     const show = screen.getByRole('button', { name: 'Mostrar contraseña' });
     await userEvent.click(show);
 
+    expect(show).toHaveAttribute('aria-pressed', 'true');
     expect(input).toHaveAttribute('type', 'text');
     const hide = screen.getByRole('button', { name: 'Ocultar contraseña' });
     await userEvent.click(hide);
     expect(input).toHaveAttribute('type', 'password');
+  });
+
+  it('is an icon-only toggle: no visible text, not pressed by default', () => {
+    render(<PasswordField label="Contraseña" {...labels} />);
+
+    const toggle = screen.getByRole('button', { name: 'Mostrar contraseña' });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(toggle).toHaveTextContent('');
   });
 
   it('is operable from the keyboard and keeps the focus on the toggle', async () => {

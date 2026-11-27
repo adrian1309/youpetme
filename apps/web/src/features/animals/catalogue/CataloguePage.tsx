@@ -80,7 +80,7 @@ export function CataloguePage() {
           {title}
         </h1>
         {session?.user.role === 'ADMIN' ? (
-          <Link to="/admin/animals/new" className="font-medium text-brand-primary underline">
+          <Link to="/admin/animals/new" className="font-bold text-brand-primary">
             {t('animals.catalogue.addAnimal')}
           </Link>
         ) : null}

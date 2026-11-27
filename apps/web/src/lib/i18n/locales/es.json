@@ -193,7 +193,14 @@
     "signingOut": "Cerrando sesión…",
     "catalogue": "Animales",
     "adoptionRequests": "Solicitudes",
-    "matching": "Encuentra tu compañero"
+    "matching": "Encuentra tu compañero",
+    "signIn": "Entrar",
+    "register": "Registrarse",
+    "menu": "Menú",
+    "primaryNav": "Navegación principal"
+  },
+  "footer": {
+    "tagline": "Cada animal merece un hogar"
   },
   "home": {
     "greeting": "Hola, {{name}}",

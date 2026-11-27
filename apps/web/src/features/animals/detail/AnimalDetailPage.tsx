@@ -23,7 +23,7 @@ export function AnimalDetailPage() {
   });
 
   const back = (
-    <Link to="/animals" className="font-medium text-brand-primary underline">
+    <Link to="/animals" className="font-bold text-brand-primary">
       {t('animals.detail.back')}
     </Link>
   );

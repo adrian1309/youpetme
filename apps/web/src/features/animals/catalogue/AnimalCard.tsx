@@ -29,10 +29,7 @@ export function AnimalCard({ animal, children }: { animal: AnimalSummary; childr
           ))}
         </ul>
         {children}
-        <Link
-          to={`/animals/${animal.id}`}
-          className="mt-auto font-medium text-brand-primary underline"
-        >
+        <Link to={`/animals/${animal.id}`} className="mt-auto font-bold text-brand-primary">
           {t('animals.catalogue.viewDetail', { name: animal.name })}
         </Link>
       </div>

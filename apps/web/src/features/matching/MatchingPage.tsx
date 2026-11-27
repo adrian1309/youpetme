@@ -116,7 +116,7 @@ export function MatchingPage() {
           <button
             type="button"
             onClick={() => void search(sent)}
-            className="mt-1 min-h-11 font-semibold underline"
+            className="mt-1 min-h-11 rounded-pill border-2 border-current px-4 font-bold"
           >
             {t('matching.retry')}
           </button>
@@ -127,7 +127,7 @@ export function MatchingPage() {
         <div className="rounded-control border border-border-input bg-surface-muted p-6">
           <h2 className="mb-2 text-xl font-bold text-text">{t('matching.empty.title')}</h2>
           <p className="mb-4 text-base text-text">{t('matching.empty.body')}</p>
-          <Link to="/animals" className="font-medium text-brand-primary underline">
+          <Link to="/animals" className="font-bold text-brand-primary">
             {t('matching.empty.catalogue')}
           </Link>
         </div>

@@ -94,7 +94,7 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
         <button
           type="button"
           onClick={onClose}
-          className="min-h-11 rounded-control px-3 text-base text-brand-primary underline"
+          className="min-h-11 rounded-pill px-4 text-base font-bold text-brand-primary hover:bg-accent-soft"
         >
           {t('assistant.chat.close')}
         </button>
@@ -142,7 +142,7 @@ export function DiangoChatPanel({ id, onClose }: DiangoChatPanelProps) {
           <button
             type="button"
             onClick={() => void ask(messages)}
-            className="mt-1 min-h-11 font-semibold underline"
+            className="mt-1 min-h-11 rounded-pill border-2 border-current px-4 font-bold"
           >
             {t('assistant.chat.retry')}
           </button>

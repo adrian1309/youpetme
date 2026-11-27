@@ -149,7 +149,7 @@ export function AdoptionRequestsPage() {
           <Link
             to={{ search: withoutAnimal.toString() }}
             onClick={() => setFeedback(null)}
-            className="font-medium text-brand-primary underline"
+            className="font-bold text-brand-primary"
           >
             {t('adoptions.admin.showAll')}
           </Link>
@@ -249,7 +249,7 @@ function RequestCard({
       </h2>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <p className="text-xl font-bold">
-          <Link to={`/animals/${request.animal.id}`} className="text-brand-primary underline">
+          <Link to={`/animals/${request.animal.id}`} className="font-bold text-brand-primary">
             {request.animal.name}
           </Link>
         </p>

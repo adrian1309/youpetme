@@ -56,7 +56,7 @@ export function ResetPasswordPage() {
         <>
           <p className="mb-6 text-base text-text">{t('resetPassword.invalidLink.body')}</p>
           <p className="text-base text-text">
-            <Link to="/forgot-password" className="font-medium text-brand-primary underline">
+            <Link to="/forgot-password" className="font-bold text-brand-primary">
               {t('resetPassword.invalidLink.requestNew')}
             </Link>
           </p>

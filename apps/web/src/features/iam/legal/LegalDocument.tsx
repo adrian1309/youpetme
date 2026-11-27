@@ -85,7 +85,7 @@ export function LegalDocument({ titleKey, sections }: LegalDocumentProps) {
           </section>
         );
       })}
-      <Link to="/" className="font-medium text-brand-primary underline">
+      <Link to="/" className="font-bold text-brand-primary">
         {t('legal.common.back')}
       </Link>
     </div>
