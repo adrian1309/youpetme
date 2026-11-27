@@ -257,7 +257,13 @@ describe('LoginPage (/login, US-IAM-002)', () => {
 
       await fillAndSubmit('ana@example.com', 'short');
 
-      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+      // Wait for the landing first: the home page then asks for a few animals with the same
+      // fetch (SCRUM-56), so count the login requests only.
+      await screen.findByRole('heading', { level: 1, name: /^Hola, / });
+      const logins = fetchMock.mock.calls.filter(([url]) =>
+        String(url).endsWith('/api/v1/auth/login'),
+      );
+      expect(logins).toHaveLength(1);
     });
   });
 
