@@ -11,6 +11,7 @@ import { LoginPage } from '../features/iam/login/LoginPage';
 import { PrivacyPage } from '../features/iam/legal/PrivacyPage';
 import { TermsPage } from '../features/iam/legal/TermsPage';
 import { ForgotPasswordPage } from '../features/iam/password-reset/ForgotPasswordPage';
+import { MatchingPage } from '../features/matching/MatchingPage';
 import { ResetPasswordPage } from '../features/iam/password-reset/ResetPasswordPage';
 import { RegisterPage } from '../features/iam/register/RegisterPage';
 import { AppLayout } from './AppLayout';
@@ -28,6 +29,7 @@ export function AppRoutes() {
         <Route path="reset-password" element={<ResetPasswordPage />} />
         <Route path="animals" element={<CataloguePage />} />
         <Route path="animals/:id" element={<AnimalDetailPage />} />
+        <Route path="matching" element={<MatchingPage />} />
         <Route
           path="admin/animals/new"
           element={

@@ -481,4 +481,22 @@ describe('AppRoutes', () => {
       ).toHaveAttribute('href', '/animals');
     });
   });
+
+  describe('AI Matching (SCRUM-16)', () => {
+    it('links to the public matching page from the header, which is accessible', async () => {
+      const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
+
+      const link = within(screen.getByRole('banner')).getByRole('link', {
+        name: 'Encuentra tu compañero',
+      });
+      expect(link).toHaveAttribute('href', '/matching');
+
+      await userEvent.setup().click(link);
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Encuentra tu compañero' }),
+      ).toBeInTheDocument();
+      await expectNoAxeViolations(container, { page: true });
+    });
+  });
 });

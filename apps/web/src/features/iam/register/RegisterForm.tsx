@@ -13,6 +13,8 @@ import { PasswordField } from '../../../components/PasswordField';
 import { TextField } from '../../../components/TextField';
 import { useApiClient } from '../../../lib/http/api-client-context';
 import { readDiangoWelcomeSeen } from '../../../lib/storage/diango-welcome';
+import { clearMatchingProfile, readMatchingProfile } from '../../../lib/storage/matching-profile';
+import { MATCHING_PREFERENCES_PATH } from '../../matching/matching-api';
 import { useAuth } from '../auth/auth-state';
 import { mapRegisterError, type RegisterField } from './map-register-error';
 import { NewTabLink } from './NewTabLink';
@@ -42,6 +44,9 @@ export function RegisterForm({ titleId }: { titleId: string }) {
   const { signIn } = useAuth();
   const client = useApiClient();
   const [formError, setFormError] = useState<string | null>(null);
+  // AI Matching profile kept as a guest (SCRUM-16, scenario 3): offered, never saved by default.
+  const [keptProfile] = useState(readMatchingProfile);
+  const [saveProfile, setSaveProfile] = useState(false);
   const submitting = useRef(false);
   // Focus moved by the form itself (to the first error) must not clear that error.
   const focusedByForm = useRef(false);
@@ -71,6 +76,16 @@ export function RegisterForm({ titleId }: { titleId: string }) {
         toRegisterRequest(values, { hasSeenWelcome: readDiangoWelcomeSeen() }),
       ),
   });
+
+  /** Best effort: a failure must not undo the registration; the profile stays in the browser. */
+  async function savePreferences(accessToken: string): Promise<void> {
+    try {
+      await client.put(MATCHING_PREFERENCES_PATH, { accessToken, body: keptProfile });
+      clearMatchingProfile();
+    } catch {
+      // Ignored on purpose.
+    }
+  }
 
   function focusField(name: RegisterField) {
     focusedByForm.current = true;
@@ -108,6 +123,7 @@ export function RegisterForm({ titleId }: { titleId: string }) {
     try {
       const response = await mutation.mutateAsync(values);
       const { accessToken } = response.authentication;
+      if (keptProfile && saveProfile) await savePreferences(accessToken);
       const { id, firstName, lastName, email, role, hasSeenWelcome } = response.user;
       signIn(
         { accessToken, user: { id, firstName, lastName, email, role, hasSeenWelcome } },
@@ -209,6 +225,15 @@ export function RegisterForm({ titleId }: { titleId: string }) {
         }
         error={messageFor('termsAccepted')}
       />
+
+      {keptProfile ? (
+        <CheckboxField
+          name="saveMatchingPreferences"
+          label={t('register.fields.matchingPreferences.label')}
+          checked={saveProfile}
+          onChange={(event) => setSaveProfile(event.target.checked)}
+        />
+      ) : null}
 
       <Button type="submit" pending={pending}>
         {pending ? t('register.actions.submitting') : t('register.actions.submit')}

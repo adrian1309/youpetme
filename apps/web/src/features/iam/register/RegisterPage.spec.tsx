@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router';
 
 import { DIANGO_WELCOME_SEEN_KEY } from '../../../lib/storage/diango-welcome';
+import { MATCHING_PROFILE_KEY } from '../../../lib/storage/matching-profile';
 import { expectNoAxeViolations } from '../../../test/axe';
 import {
   jsonResponse,
@@ -284,6 +285,74 @@ describe('RegisterPage', () => {
       expect(JSON.parse(fetchMock.mock.calls[0]![1].body as string)).not.toHaveProperty(
         'hasSeenWelcome',
       );
+    });
+
+    describe('matching preferences kept as a guest (SCRUM-16, scenario 3)', () => {
+      const savePreferences = () =>
+        screen.queryByRole('checkbox', { name: 'Guardar mis preferencias de búsqueda' });
+      const api = () =>
+        vi.fn(async (input: RequestInfo | URL) =>
+          String(input).endsWith('/matching-preferences')
+            ? new Response(null, { status: 204 })
+            : jsonResponse(201, created),
+        );
+
+      it('does not offer anything when no profile is kept', () => {
+        renderRegister(vi.fn());
+
+        expect(savePreferences()).not.toBeInTheDocument();
+      });
+
+      it('offers the kept profile unchecked, and saves it with the new token when accepted', async () => {
+        window.localStorage.setItem(MATCHING_PROFILE_KEY, '{"preferredSpecies":"DOG"}');
+        const user = userEvent.setup();
+        const fetchMock = api();
+        const { container } = renderRegister(fetchMock as unknown as typeof fetch);
+
+        expect(savePreferences()).not.toBeChecked();
+        await expectNoAxeViolations(container);
+        await fillValidForm(user);
+        await user.click(savePreferences()!);
+        await user.click(field.submit());
+
+        await screen.findByText('home: John');
+        const [url, init] = fetchMock.mock.calls[1]! as unknown as [string, RequestInit];
+        expect(url).toBe(`${TEST_API_URL}/api/v1/users/me/matching-preferences`);
+        expect(init).toMatchObject({ method: 'PUT', body: '{"preferredSpecies":"DOG"}' });
+        expect(new Headers(init.headers).get('Authorization')).toBe('Bearer access-token-value');
+        expect(window.localStorage.getItem(MATCHING_PROFILE_KEY)).toBeNull();
+      });
+
+      it('saves nothing when the offer is left unchecked', async () => {
+        window.localStorage.setItem(MATCHING_PROFILE_KEY, '{"preferredSpecies":"DOG"}');
+        const user = userEvent.setup();
+        const fetchMock = api();
+        renderRegister(fetchMock as unknown as typeof fetch);
+
+        await fillValidForm(user);
+        await user.click(field.submit());
+
+        await screen.findByText('home: John');
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      });
+
+      it('still completes the registration when saving the preferences fails', async () => {
+        window.localStorage.setItem(MATCHING_PROFILE_KEY, '{"preferredSpecies":"DOG"}');
+        const user = userEvent.setup();
+        const fetchMock = vi.fn(async (input: RequestInfo | URL) =>
+          String(input).endsWith('/matching-preferences')
+            ? jsonResponse(503, {})
+            : jsonResponse(201, created),
+        );
+        renderRegister(fetchMock as unknown as typeof fetch);
+
+        await fillValidForm(user);
+        await user.click(savePreferences()!);
+        await user.click(field.submit());
+
+        await screen.findByText('home: John');
+        expect(window.localStorage.getItem(MATCHING_PROFILE_KEY)).not.toBeNull();
+      });
     });
 
     it('trims names and email before sending', async () => {
