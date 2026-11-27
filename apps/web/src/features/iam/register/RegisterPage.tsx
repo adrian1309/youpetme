@@ -24,7 +24,7 @@ export function RegisterPage() {
       <RegisterForm titleId={TITLE_ID} />
       <p className="mt-6 text-base text-text">
         {t('register.login.prompt')}{' '}
-        <Link to="/login" className="font-medium text-brand-primary underline">
+        <Link to="/login" className="font-bold text-brand-primary">
           {t('register.login.link')}
         </Link>
       </p>

@@ -25,12 +25,18 @@ function contrast(foreground: string, background: string): number {
   return (light! + 0.05) / (dark! + 0.05);
 }
 
-describe('design tokens (WCAG 2.1 AA, provisional palette)', () => {
+describe('design tokens (WCAG 2.1 AA, warm palette — SCRUM-56)', () => {
   const colors = tokens();
 
   it('declares the semantic colour tokens the registration UI uses', () => {
     for (const name of [
+      'page',
       'surface',
+      'border-subtle',
+      'accent-soft',
+      'on-accent-soft',
+      'accent-warm',
+      'on-accent-warm',
       'surface-muted',
       'text',
       'text-muted',
@@ -56,6 +62,14 @@ describe('design tokens (WCAG 2.1 AA, provisional palette)', () => {
     ['feedback-error', 'surface-muted'],
     ['feedback-success', 'surface'],
     ['brand-primary', 'surface'],
+    ['text', 'page'],
+    ['text-muted', 'page'],
+    ['brand-primary', 'page'],
+    ['brand-primary', 'accent-soft'],
+    ['feedback-error', 'page'],
+    ['feedback-success', 'page'],
+    ['on-accent-soft', 'accent-soft'],
+    ['on-accent-warm', 'accent-warm'],
   ])('text %s on %s has at least 4.5:1 contrast', (foreground, background) => {
     expect(contrast(colors[foreground]!, colors[background]!)).toBeGreaterThanOrEqual(4.5);
   });
@@ -63,6 +77,7 @@ describe('design tokens (WCAG 2.1 AA, provisional palette)', () => {
   it.each([
     ['border-input', 'surface'],
     ['brand-primary', 'surface'],
+    ['brand-primary', 'page'],
   ])('non-text %s against %s has at least 3:1 contrast (inputs, focus ring)', (a, b) => {
     expect(contrast(colors[a]!, colors[b]!)).toBeGreaterThanOrEqual(3);
   });

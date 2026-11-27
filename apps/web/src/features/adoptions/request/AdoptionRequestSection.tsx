@@ -45,7 +45,7 @@ export function AdoptionRequestSection({
       <p>
         <Link
           to={`/admin/adoption-requests?animalId=${encodeURIComponent(animal.id)}`}
-          className="font-medium text-brand-primary underline"
+          className="font-bold text-brand-primary"
         >
           {t('adoptions.request.adminLink', { name: animal.name })}
         </Link>

@@ -14,7 +14,7 @@ export function NewTabLink({ to, children }: { to: string; children?: ReactNode 
       to={to}
       target="_blank"
       rel="noopener noreferrer"
-      className="font-medium text-brand-primary underline"
+      className="font-bold text-brand-primary"
     >
       {children}
       <span className="sr-only"> {t('register.fields.terms.opensInNewTab')}</span>

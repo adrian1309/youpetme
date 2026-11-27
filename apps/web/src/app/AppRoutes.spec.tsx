@@ -482,6 +482,68 @@ describe('AppRoutes', () => {
     });
   });
 
+  describe('header and footer (SCRUM-56)', () => {
+    it('offers "Entrar" and "Registrarse" to a visitor in the header', () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
+      const header = screen.getByRole('banner');
+
+      expect(within(header).getByRole('link', { name: 'YouPetMe' })).toHaveAttribute('href', '/');
+      expect(within(header).getByRole('link', { name: 'Entrar' })).toHaveAttribute(
+        'href',
+        '/login',
+      );
+      expect(within(header).getByRole('link', { name: 'Registrarse' })).toHaveAttribute(
+        'href',
+        '/register',
+      );
+    });
+
+    it('marks the navigation link of the current route with aria-current', async () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/matching'] });
+      const nav = within(screen.getByRole('navigation', { name: 'Navegación principal' }));
+
+      expect(await nav.findByRole('link', { name: 'Encuentra tu compañero' })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+      expect(nav.getByRole('link', { name: 'Animales' })).not.toHaveAttribute('aria-current');
+    });
+
+    it('has a menu button that says whether the navigation is expanded', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
+
+      const menu = within(screen.getByRole('banner')).getByRole('button', { name: 'Menú' });
+      expect(menu).toHaveAttribute('aria-expanded', 'false');
+      await user.click(menu);
+      expect(menu).toHaveAttribute('aria-expanded', 'true');
+      await user.click(menu);
+      expect(menu).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('shows the signed-in user an avatar with their initial and no sign-in links', () => {
+      renderWithProviders(
+        <SignedIn>
+          <AppRoutes />
+        </SignedIn>,
+        { initialEntries: ['/'] },
+      );
+      const header = within(screen.getByRole('banner'));
+
+      expect(header.getByText('J')).toBeInTheDocument();
+      expect(header.queryByRole('link', { name: 'Entrar' })).not.toBeInTheDocument();
+      expect(header.queryByRole('link', { name: 'Registrarse' })).not.toBeInTheDocument();
+    });
+
+    it('has a simple footer with the brand and a tagline', () => {
+      renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });
+
+      const footer = screen.getByRole('contentinfo');
+      expect(footer).toHaveTextContent('YouPetMe');
+      expect(footer).toHaveTextContent('Cada animal merece un hogar');
+    });
+  });
+
   describe('AI Matching (SCRUM-16)', () => {
     it('links to the public matching page from the header, which is accessible', async () => {
       const { container } = renderWithProviders(<AppRoutes />, { initialEntries: ['/'] });

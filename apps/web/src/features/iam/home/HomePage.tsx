@@ -18,7 +18,7 @@ export function HomePage() {
           <h1 className="mb-6 text-3xl font-bold text-text">
             {t(accountCreated ? 'home.accountCreated' : 'home.signedIn')}
           </h1>
-          <Link to="/animals" className="font-medium text-brand-primary underline">
+          <Link to="/animals" className="font-bold text-brand-primary">
             {t('home.catalogue')}
           </Link>
         </>
@@ -26,13 +26,13 @@ export function HomePage() {
         <>
           <h1 className="mb-6 text-3xl font-bold text-text">{APP_NAME}</h1>
           <p className="flex flex-wrap gap-6">
-            <Link to="/animals" className="font-medium text-brand-primary underline">
+            <Link to="/animals" className="font-bold text-brand-primary">
               {t('home.visitor.catalogue')}
             </Link>
-            <Link to="/register" className="font-medium text-brand-primary underline">
+            <Link to="/register" className="font-bold text-brand-primary">
               {t('home.visitor.register')}
             </Link>
-            <Link to="/login" className="font-medium text-brand-primary underline">
+            <Link to="/login" className="font-bold text-brand-primary">
               {t('home.visitor.login')}
             </Link>
           </p>

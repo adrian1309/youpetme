@@ -40,13 +40,13 @@ export function LoginPage() {
       ) : null}
       <LoginForm titleId={TITLE_ID} redirectTo={target} />
       <p className="mt-6 text-base text-text">
-        <Link to="/forgot-password" className="font-medium text-brand-primary underline">
+        <Link to="/forgot-password" className="font-bold text-brand-primary">
           {t('login.forgotPassword')}
         </Link>
       </p>
       <p className="mt-4 text-base text-text">
         {t('login.register.prompt')}{' '}
-        <Link to="/register" className="font-medium text-brand-primary underline">
+        <Link to="/register" className="font-bold text-brand-primary">
           {t('login.register.link')}
         </Link>
       </p>

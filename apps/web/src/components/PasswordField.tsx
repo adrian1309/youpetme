@@ -1,3 +1,4 @@
+import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 
 import { TextField, type TextFieldProps } from './TextField';
@@ -24,10 +25,16 @@ export function PasswordField({ showLabel, hideLabel, ...fieldProps }: PasswordF
       endAdornment={
         <button
           type="button"
+          aria-label={visible ? hideLabel : showLabel}
+          aria-pressed={visible}
           onClick={() => setVisible((current) => !current)}
-          className="min-h-11 min-w-11 rounded-control text-sm font-medium text-brand-primary underline"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-pill text-brand-primary hover:bg-accent-soft"
         >
-          {visible ? hideLabel : showLabel}
+          {visible ? (
+            <EyeOff aria-hidden="true" className="size-5" />
+          ) : (
+            <Eye aria-hidden="true" className="size-5" />
+          )}
         </button>
       }
     />

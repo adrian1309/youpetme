@@ -37,7 +37,7 @@ export function ForgotPasswordPage() {
         </>
       )}
       <p className="mt-6 text-base text-text">
-        <Link to="/login" className="font-medium text-brand-primary underline">
+        <Link to="/login" className="font-bold text-brand-primary">
           {t('forgotPassword.backToLogin')}
         </Link>
       </p>

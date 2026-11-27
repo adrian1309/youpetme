@@ -23,7 +23,7 @@ export function PlaceholderPage({ titleKey, bodyKey = 'placeholder.body' }: Plac
       <PageTitle title={title} />
       <h1 className="mb-4 text-3xl font-bold text-text">{title}</h1>
       <p className="mb-6 text-base text-text">{t(bodyKey)}</p>
-      <Link to="/" className="font-medium text-brand-primary underline">
+      <Link to="/" className="font-bold text-brand-primary">
         {t('placeholder.back')}
       </Link>
     </div>

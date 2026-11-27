@@ -1,9 +1,11 @@
+import { PawPrint } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate } from 'react-router';
 
 import { Diango } from '../features/assistant/Diango';
 import { useAuth } from '../features/iam/auth/auth-state';
+import { APP_NAME } from '../lib/app-name';
 import { AppHeader } from './AppHeader';
 
 /**
@@ -30,16 +32,27 @@ export function AppLayout() {
       >
         {t('common.skipToContent')}
       </a>
-      <AppHeader />
-      <main id="main" tabIndex={-1}>
-        {status === 'restoring' ? (
-          <p role="status" className="mx-auto w-full max-w-xl px-4 py-8 text-base text-text">
-            {t('session.restoring')}
-          </p>
-        ) : (
-          <Outlet />
-        )}
-      </main>
+      <div className="flex min-h-screen flex-col">
+        <AppHeader />
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-6xl flex-1">
+          {status === 'restoring' ? (
+            <p role="status" className="mx-auto w-full max-w-xl px-4 py-8 text-base text-text">
+              {t('session.restoring')}
+            </p>
+          ) : (
+            <Outlet />
+          )}
+        </main>
+        <footer className="border-t border-border-subtle bg-surface">
+          <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-3 gap-y-1 px-4 py-6 text-base text-text-muted sm:px-6">
+            <span className="flex items-center gap-2 font-bold text-text">
+              <PawPrint aria-hidden="true" className="size-5 text-brand-primary" />
+              {APP_NAME}
+            </span>
+            <span>{t('footer.tagline')}</span>
+          </div>
+        </footer>
+      </div>
       {/* On every page, outside the main landmark; it waits for the session restore (SCRUM-17). */}
       <Diango />
     </>
