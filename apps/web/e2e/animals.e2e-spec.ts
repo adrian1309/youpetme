@@ -44,13 +44,15 @@ test('an ADMIN registers an animal and a visitor finds it with filters and opens
   await visitor.goto('/animals');
   // Pill filters are a draft until "Buscar" applies them (SCRUM-56).
   // The inputs are visually hidden inside their pill: click the pill (its label).
-  const pill = (control: ReturnType<typeof visitor.getByRole>) =>
-    visitor.locator('label').filter({ has: control });
-  await pill(
-    visitor.getByRole('group', { name: 'Especie' }).getByRole('radio', { name: 'Gato' }),
-  ).click();
+  // `has` is searched inside each label, so scope to the group first.
+  const pill = (group: string, role: 'radio' | 'checkbox', option: string) =>
+    visitor
+      .getByRole('group', { name: group })
+      .locator('label')
+      .filter({ has: visitor.getByRole(role, { name: option, exact: true }) });
+  await pill('Especie', 'radio', 'Gato').click();
   const withChildren = visitor.getByRole('checkbox', { name: 'Bien con niños' });
-  await pill(withChildren).click();
+  await pill('Otros', 'checkbox', 'Bien con niños').click();
   await expect(withChildren).toBeChecked();
   await visitor.getByRole('button', { name: 'Buscar' }).click();
   await expect(visitor).toHaveURL(/species=CAT/);
