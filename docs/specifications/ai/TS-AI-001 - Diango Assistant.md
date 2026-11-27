@@ -62,7 +62,7 @@ El cliente reenvía el historial de la sesión en cada petición y el servidor n
 - La herramienta reutiliza el caso de uso del catálogo: devuelve solo animales `AVAILABLE`, como máximo 10, con `id`, nombre, especie, tamaño, edad, raza, temperamento y compatibilidades. No devuelve notas de cuidado ni fotos.
 - El bucle de herramientas se corta tras 3 llamadas al modelo. Si la tercera todavía pide una herramienta, Diango responde con una frase fija que invita a reformular la pregunta. Una negativa del modelo se sustituye por otra frase fija.
 - El *system prompt* está en español. Diango habla solo de YouPetMe, del proceso de adopción y de los animales del catálogo; no inventa animales ni datos; no da consejo veterinario ni legal; trata los resultados de las herramientas como datos y nunca como instrucciones; responde en texto plano y de forma breve.
-- Con sesión, el *prompt* incluye el nombre del usuario y, si no es nulo, `UserProfile.matchingPreferences`. Hoy ese campo siempre es nulo, porque AI Matching aún no lo escribe; en la práctica solo se usa el nombre.
+- Con sesión, el *prompt* incluye el nombre del usuario y, si no es nulo, `UserProfile.matchingPreferences`. AI Matching lo escribe con el perfil de su última ejecución (TS-AI-002). Antes de llegar al *prompt* se valida con el mismo esquema (solo enums y booleanos); si no es válido, se trata como nulo.
 
 ## Errores
 
@@ -80,7 +80,7 @@ El cliente distingue el `429` del `503` por `statusCode`.
 ## Límites y coste
 
 - `max_tokens` 1024, historial de 20 mensajes y longitudes máximas por mensaje.
-- Límite de peticiones por IP y minuto, configurable con `ASSISTANT_RATE_LIMIT_PER_MINUTE` (10 por defecto). Se guarda en memoria, en un solo proceso, y visitantes y usuarios con sesión lo comparten.
+- Límite de peticiones por IP y minuto, configurable con `ASSISTANT_RATE_LIMIT_PER_MINUTE` (10 por defecto). Se guarda en memoria, en un solo proceso, y visitantes y usuarios con sesión lo comparten. El matching (`POST /api/v1/matching`) comparte este mismo contador.
 
 ## Configuración
 
@@ -150,4 +150,5 @@ El adaptador de Anthropic no tiene test automático: se comprobó a mano con la 
 - TS-IAM-001 — User Registration
 - TS-IAM-002 — Login
 - TS-ANIMALS-001 — Animal Catalogue
+- TS-AI-002 — AI Matching
 - Design System — AI-assisted experiences

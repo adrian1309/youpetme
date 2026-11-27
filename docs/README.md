@@ -49,6 +49,10 @@ Technical behaviour and test expectations per story.
 | [TS-IAM-003](specifications/iam/TS-IAM-003%20-%20Logout.md) | Logout |
 | [TS-IAM-004](specifications/iam/TS-IAM-004%20-%20Password%20Recovery.md) | Password Recovery |
 | [TS-IAM-005](specifications/iam/TS-IAM-005%20-%20User%20Profile.md) | User Profile |
+| [TS-ANIMALS-001](specifications/animals/TS-ANIMALS-001%20-%20Animal%20Catalogue.md) | Animal Catalogue |
+| [TS-ADOPTION-001](specifications/adoptions/TS-ADOPTION-001%20-%20Adoption%20Requests.md) | Adoption Requests |
+| [TS-AI-001](specifications/ai/TS-AI-001%20-%20Diango%20Assistant.md) | Diango Assistant |
+| [TS-AI-002](specifications/ai/TS-AI-002%20-%20AI%20Matching.md) | AI Matching |
 
 ## Architecture
 
@@ -74,14 +78,15 @@ Accepted decisions with alternatives and consequences.
 | [ADR-006 — Modular Monolith Architecture](adr/ADR-006%20-%20Modular%20Monolith%20Architecture.md) | NestJS modular monolith, no microservices. |
 | [ADR-007 — Frontend Framework Selection](adr/ADR-007%20-%20Frontend%20Framework%20Selection.md) | React, TypeScript and Vite. |
 | [ADR-008 — Primary Database Selection](adr/ADR-008%20-%20Primary%20Database%20Selection.md) | PostgreSQL with Prisma. |
-| [ADR-009 — Styling and Accessible Component Foundation](adr/ADR-009%20-%20Styling%20and%20Accessible%20Component%20Foundation.md) | Tailwind, Radix UI and Framer Motion. |
-| [ADR-010 — AI Matching Approach](adr/ADR-010%20-%20AI%20Matching%20Approach.md) | LLM extraction, structured scoring and explanation; no vector DB in the MVP. |
+| [ADR-009 — Styling and Accessible Component Foundation](adr/ADR-009%20-%20Styling%20and%20Accessible%20Component%20Foundation.md) | Tailwind and Radix UI. |
+| [ADR-010 — AI Matching Approach](adr/ADR-010%20-%20AI%20Matching%20Approach.md) | LLM extraction, structured scoring with fixed reason codes; no vector DB in the MVP. |
 | [ADR-011 — AI Assistant (Diango) Behaviour](adr/ADR-011%20-%20AI%20Assistant%20Diango%20Behaviour.md) | Single agent with tool use, session memory only. |
 | [ADR-012 — Security Approach](adr/ADR-012%20-%20Security%20Approach.md) | Adapted SDL principles and automated security checks. |
 | [ADR-013 — Development Methodology: SDD, BDD and TDD](adr/ADR-013%20-%20Development%20Methodology%20SDD%20BDD%20TDD.md) | Test-first development is mandatory. |
 | [ADR-014 — Transactional Email Delivery](adr/ADR-014%20-%20Transactional%20Email%20Delivery.md) | Resend behind an `EmailSender` port. |
 | [ADR-015 — Local Object Storage for Development](adr/ADR-015%20-%20Local%20Object%20Storage%20for%20Development.md) | SeaweedFS replaces MinIO for local S3-compatible storage. |
 | [ADR-016 — Domain Event Delivery](adr/ADR-016%20-%20Domain%20Event%20Delivery.md) | In-process event dispatch after commit, behind an `EventPublisher` port. |
+| [ADR-017 — API Error Format](adr/ADR-017%20-%20API%20Error%20Format.md) | Stable error shape and business error codes. |
 
 ## UX / UI
 
